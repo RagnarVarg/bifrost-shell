@@ -311,7 +311,7 @@ Item {
 
         StyledText {
             x: 0; y: 4
-            text: "Arbetsytor"
+            text: "Workspaces"
             font.pixelSize: 28
             font.weight: Font.DemiBold
             color: Theme.surfaceText
@@ -474,7 +474,7 @@ Item {
                         anchors.left: parent.left
                         anchors.top: parent.top
                         anchors.topMargin: -30
-                        text: "Skrivbord " + workspace.workspaceValue + (workspace.workspaceValue === root.monitor?.activeWorkspace?.id ? " · Aktivt" : workspace.workspaceExists ? "" : " · Nytt")
+                        text: "Workspace " + workspace.workspaceValue + (workspace.workspaceValue === root.monitor?.activeWorkspace?.id ? " · Active" : workspace.workspaceExists ? "" : " · New")
                         font.pixelSize: 16
                         font.weight: Font.Medium
                         color: Theme.withAlpha(Theme.surfaceText, workspace.isCenterCard ? 1 : 0.65)
