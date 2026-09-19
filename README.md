@@ -27,7 +27,9 @@ No session history, location data, clipboard, notes, accounts, credentials, brow
 | Four fingers left/right | Switch workspace |
 | Four-finger pinch together | Open workspace overview |
 | Four-finger pinch apart | Close workspace overview |
-| Super+Tab | Workspace overview |
+| Super+Tab | Visible window switcher, most recently used first |
+| Super+Shift+Tab | Open the window switcher backwards |
+| Super+O | Workspace overview |
 | Super+W | Wallpaper carousel |
 | Super+Shift+Space | Existing **global** floating/tiling toggle |
 | Super + left mouse drag | Move a window; snap-aware for floating windows |
@@ -44,6 +46,12 @@ bash "$HOME/.config/hypr/scripts/workspace-floatmode-toggle.sh"
 
 The script records which windows it floated and restores those on toggling back. New windows follow that workspace's generated rule; other workspaces retain their own rules.
 
+## Window switcher
+
+Hold Super and press Tab to display running windows with application icons and titles. Continue with Tab or the arrow keys; Shift+Tab moves backwards. Release Super or press Enter to select, or Escape to cancel. Overview remains on Super+O and the four-finger pinch gesture.
+
+Rofi uses `-global-kb` to request that compositor shortcuts be inhibited while the picker is open. The latest keyboard-capture correction is included; physical keyboard navigation on the source system still awaits user confirmation. Default Tab bindings are cleared to avoid duplicate-binding errors. Window titles and addresses are kept in memory and are not saved.
+
 ## Requirements
 
 Developed on **CachyOS, Magic Trackpad and a 5120×1440 display**. Other distributions, devices and resolutions have not been fully tested.
@@ -57,6 +65,7 @@ Install these before applying the configuration:
 - Quickshell (`qs` and `quickshell`) with Qt Quick, Qt5Compat and the modules required by DMS.
 - Git, Python 3, Bash, jq and ImageMagick (including the `convert` compatibility command used by the thumbnail script).
 - A working systemd user session and D-Bus environment.
+- Rofi with Wayland support (configured with Rofi 2.0.0) for the window switcher.
 - Kitty for the default terminal shortcut; `notify-send` for toggle notifications.
 - Adwaita icons/fonts and Noto as system fallback resources.
 

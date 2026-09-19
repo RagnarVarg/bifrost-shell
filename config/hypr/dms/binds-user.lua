@@ -17,3 +17,9 @@ hl.unbind("SUPER + SHIFT + Space")
 hl.bind("SUPER + SHIFT + Space", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/floatmode-toggle.sh"), { description = "Toggle global floating/tiling mode" })
 hl.unbind("SUPER + W")
 hl.bind("SUPER + W", hl.dsp.exec_cmd("quickshell -n -c wallpaper-selector"), { description = "Wallpaper selector" })
+
+-- Visible MRU window switcher; overview remains on SUPER + O and pinch.
+hl.unbind("SUPER + TAB")
+hl.unbind("SUPER + SHIFT + TAB")
+hl.bind("SUPER + TAB", hl.dsp.exec_cmd('python3 "$HOME/.config/hypr/scripts/window-switcher.py"'), { description = "Switch windows" })
+hl.bind("SUPER + SHIFT + TAB", hl.dsp.exec_cmd('python3 "$HOME/.config/hypr/scripts/window-switcher.py" --backward'), { description = "Switch windows backwards" })

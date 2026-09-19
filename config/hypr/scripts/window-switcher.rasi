@@ -1,0 +1,15 @@
+* {
+    font: "Inter 16";
+    background-color: #1d2021;
+    text-color: #d4be98;
+    selected-normal-background: #7daea3;
+    selected-normal-foreground: #1d2021;
+}
+window { width: 900px; border: 2px; border-color: #7daea3; border-radius: 18px; padding: 18px; }
+mainbox { spacing: 12px; children: [ inputbar, listview, message ]; }
+inputbar { spacing: 12px; children: [prompt, entry]; }
+listview { lines: 7; fixed-height: false; scrollbar: false; spacing: 6px; }
+element { padding: 12px; border-radius: 10px; spacing: 12px; }
+element selected.normal { background-color: #7daea3; text-color: #1d2021; }
+element-icon { size: 32px; background-color: inherit; }
+element-text { vertical-align: 0.5; background-color: inherit; text-color: inherit; }
