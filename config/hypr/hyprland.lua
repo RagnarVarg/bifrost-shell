@@ -91,4 +91,8 @@ require("dms.binds-user")
 require("dms.windowrules")
 require("config.resize-border")
 require("config.floatmode")
+require("config.floatmode-workspace")
 require("config.border-colors")
+require("config.edge-snap")
+
+require("config.snap-preview-startup")

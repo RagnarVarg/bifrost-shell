@@ -78,7 +78,6 @@
           "id": "powerMenuButton",
           "enabled": true
         },
-        "focusedWindow",
         "cpuUsage",
         "memUsage",
         {

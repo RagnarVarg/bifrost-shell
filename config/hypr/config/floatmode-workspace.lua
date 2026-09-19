@@ -1,0 +1,2 @@
+-- Per-workspace floating/tiling overrides. Managed by workspace-floatmode-toggle.sh — do not edit manually.
+-- Loaded after config.floatmode so a workspace override here wins over the global floating/tiling toggle.
