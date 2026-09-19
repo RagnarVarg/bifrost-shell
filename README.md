@@ -4,6 +4,34 @@ A beginner-friendly, trackpad-first Hyprland desktop built on DankMaterialShell,
 
 Bifröst provides a starting point for people new to Hyprland: a coordinated bar, dock, theme and gesture configuration that you can explore and adapt instead of building everything from scratch. It is a collection of dotfiles, assets and customized shell code, not a Linux distribution.
 
+## Screenshots
+
+### Desktop
+
+Gruvbox styling, a transparent topbar and an automatically hiding dock.
+
+![Bifröst desktop with topbar and dock](docs/screenshots/desktop.png)
+
+### Workspace overview
+
+Browse workspace previews with two fingers and click to switch.
+
+![Workspace overview with wallpaper previews](docs/screenshots/workspace-overview.png)
+
+### Wallpaper carousel
+
+Open with Super+W, scroll with two fingers and click a wallpaper to apply it.
+
+![Wallpaper carousel with progressively sized cards](docs/screenshots/wallpaper-carousel.png)
+
+### Dashboard
+
+Quick access to the clock, calendar, media and desktop controls.
+
+![Desktop dashboard over an ultrawide wallpaper](docs/screenshots/dashboard.png)
+
+Screenshots show the original desktop; some labels use the system's Swedish locale.
+
 ## Included
 
 - Customized DankMaterialShell 1.6.1, including the bar, dock and workspace overview.
