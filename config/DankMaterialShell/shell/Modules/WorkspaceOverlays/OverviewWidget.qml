@@ -319,7 +319,7 @@ Item {
         StyledText {
             anchors.right: parent.right
             y: 14
-            text: "Svep för att bläddra · Klicka för att byta · Esc stänger"
+            text: "Swipe to browse · Click to switch · Esc to close"
             font.pixelSize: 16
             color: Theme.withAlpha(Theme.surfaceText, 0.72)
         }

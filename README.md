@@ -13,7 +13,7 @@ Bifröst provides a starting point for people new to Hyprland: a coordinated bar
 - **Super+W wallpaper carousel:** two-finger scrolling, narrow cards progressively smaller away from the center, one click to choose, and click outside to close.
 - 15 decorative wallpapers, with embedded metadata removed.
 - Latest exported edge-snap configuration: preview while dragging a floating window, half-screen placement on release and restoration of its saved floating size when dragged again. Mouse and three-finger gesture paths are present. Only the dragged window is changed.
-- Per-workspace floating/tiling **script**. The proposed topbar button is **not connected**: its component files are included as inactive work-in-progress, matching the source desktop. Do not register them without resolving the reported shell startup issue.
+- A per-workspace floating/tiling script, separate from the existing global keyboard shortcut.
 
 No session history, location data, clipboard, notes, accounts, credentials, browser profiles or unrelated home files are included. The local Mac sound pack is excluded.
 
@@ -42,7 +42,7 @@ To toggle only the active workspace:
 bash "$HOME/.config/hypr/scripts/workspace-floatmode-toggle.sh"
 ```
 
-The script records which windows it floated and restores those on toggling back. New windows follow that workspace's generated rule; other workspaces retain their own rules. It does not have a working bar button yet.
+The script records which windows it floated and restores those on toggling back. New windows follow that workspace's generated rule; other workspaces retain their own rules.
 
 ## Requirements
 
@@ -96,7 +96,6 @@ The installer does not enable services, restart the desktop or install dependenc
 - The manual bar padding is tuned for ultrawide and needs adjustment on smaller screens.
 - Edge snapping uses a fixed **2 px border**; update its `BORDER_SIZE` constant if changing that setting. The source configuration targets a scale-1 monitor at position 0,0. Mixed scaling, rotation and multi-monitor preview coordinates need further testing.
 - Saved pre-snap sizes are held in compositor memory, not persisted across login sessions.
-- The two-workspace-mode QML files are inactive. The script can be used directly; the topbar button is not advertised as complete.
 - This is a snapshot of customized DMS code. Future DMS updates may require manually merging changes.
 
 ## Validation
