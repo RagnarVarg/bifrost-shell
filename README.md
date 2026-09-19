@@ -101,6 +101,86 @@ The shell's optional controls (audio, brightness, updates, networking, etc.) als
 
 ## Install on a fresh CachyOS system
 
+These commands target a fresh CachyOS installation with working graphics drivers, Internet access and a systemd user session. Select Hyprland in the CachyOS installer or your login screen. Run the desktop setup from a terminal **inside your Hyprland session**, as your normal user; use `sudo` only where shown. Do not run `install.py` as root.
+
+### 1. Update and install the desktop packages
+
+```bash
+sudo pacman -Syu
+sudo pacman -S --needed hyprland dms-shell quickshell rofi kitty git python jq imagemagick libnotify qt6-5compat qt6-svg qt6-wayland qt6-multimedia qt6-shadertools matugen wl-clipboard cliphist wtype cava xdg-desktop-portal-hyprland xdg-desktop-portal-gtk adwaita-fonts adwaita-icon-theme noto-fonts noto-fonts-emoji
+```
+
+Pacman installs transitive dependencies automatically. If DMS asks you to choose a compositor provider, choose **dms-shell-hyprland**, not Niri. Repository packaging can change; if a package cannot be found, stop and check the official links below rather than downloading a similarly named package from an unknown source.
+
+Check versions before replacing your configuration:
+
+```bash
+hyprctl version
+dms --version
+qs --version
+rofi -version
+```
+
+The exported configuration uses Hyprland's Lua API and DMS 1.6.1 shell code. A newer package is not automatically guaranteed compatible; see the reference versions above.
+
+### 2. Install the recommended file manager
+
+Nautilus is the file manager used with this desktop. GVfs provides support for removable drives and other file locations; MTP support is useful for phones.
+
+```bash
+sudo pacman -S --needed nautilus gvfs gvfs-mtp
+```
+
+Optional: make it the default folder handler:
+
+```bash
+xdg-mime default org.gnome.Nautilus.desktop inode/directory
+```
+
+### 3. Audio
+
+Fresh CachyOS normally provides PipeWire already. The following ensures the expected audio components are present:
+
+```bash
+sudo pacman -S --needed pipewire pipewire-pulse wireplumber
+systemctl --user enable --now pipewire.socket pipewire-pulse.socket wireplumber.service
+wpctl status
+```
+
+If this is an existing system using PulseAudio or another session manager, review package conflicts before switching audio stacks. Do not enable competing session managers.
+
+### 4. Optional hardware controls
+
+Install brightness and power-profile support if your hardware supports them:
+
+```bash
+sudo pacman -S --needed brightnessctl power-profiles-daemon
+```
+
+Enable power profiles only if another power-management service such as TLP is not already managing the machine:
+
+```bash
+sudo systemctl enable --now power-profiles-daemon.service
+```
+
+For Bluetooth, including a wirelessly connected trackpad:
+
+```bash
+sudo pacman -S --needed bluez bluez-utils
+sudo systemctl enable --now bluetooth.service
+```
+
+Pair the device through the Bluetooth controls. For networking, keep the manager already configured by CachyOS. If a fresh installation has no network manager and you choose NetworkManager:
+
+```bash
+sudo pacman -S --needed networkmanager
+sudo systemctl enable --now NetworkManager.service
+```
+
+Do not enable NetworkManager alongside another service already managing the same network interface.
+
+### 5. Download and install Bifröst
+
 ```bash
 git clone https://github.com/RagnarVarg/bifrost-shell.git
 cd bifrost-shell
@@ -112,19 +192,79 @@ python3 install.py
 python3 install.py --apply
 ```
 
-Existing files are backed up under `~/.local/state/cachyos-shell-config/backups/`. The default monitor profile uses the display's preferred mode. For a matching **DP-2, 5120×1440, approximately 240 Hz** setup, use `--ultrawide` with `--apply`.
+Existing files are backed up under `~/.local/state/cachyos-shell-config/backups/`. Icons, cursor resources and panel fonts are bundled; no separate download is required for those included assets.
 
-After installation:
+The default monitor profile uses the display's preferred mode. **Instead of the normal apply command**, use the following only for a matching DP-2, 5120×1440, approximately 240 Hz setup:
 
-1. If installed, disable the old external gesture tool with `sudo systemctl disable --now three-finger-drag.service`.
-2. Run `systemctl --user daemon-reload`, then `systemctl --user enable --now dms.service`. Restart it if it was already running. The supplied override selects the customized shell directory.
-3. Run `hyprctl reload` and then `hyprctl configerrors`.
-4. Log out and back in to run the dedicated snap-preview startup hook. For the current session only, start it manually with `qs -n -d -p "$HOME/.config/hypr/scripts/snap-preview/shell.qml"` if it is not already running.
-5. Choose a wallpaper with Super+W.
+```bash
+python3 install.py --apply --ultrawide
+```
 
-Alternative manual DMS launch: `dms -c "$HOME/.config/DankMaterialShell/shell" run`. Do not run another DMS instance alongside the service.
+Optional icon-cache refresh:
 
-The installer does not enable services, restart the desktop or install dependencies automatically. To test copying in isolation, use `python3 install.py --apply --target /tmp/bifrost-test`.
+```bash
+gtk-update-icon-cache -f -t "$HOME/.local/share/icons/Gruvbox-Plus-Light"
+```
+
+### 6. Activate the customized shell
+
+Only if the old external gesture tool was previously installed:
+
+```bash
+sudo systemctl disable --now three-finger-drag.service
+```
+
+On a fresh installation, skip that command. Then, from inside Hyprland:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now dms.service
+systemctl --user restart dms.service
+hyprctl reload
+hyprctl configerrors
+```
+
+The DMS override selects the customized shell directory. Empty output from `hyprctl configerrors` means no configuration errors were reported. If DMS fails to start, inspect the log instead of repeatedly restarting it:
+
+```bash
+systemctl --user status dms.service --no-pager
+journalctl --user -u dms.service -n 80 --no-pager
+```
+
+Log out and back into Hyprland to start the snap-preview overlay. To start it in the current session **only if it is not already running**:
+
+```bash
+qs -n -d -p "$HOME/.config/hypr/scripts/snap-preview/shell.qml"
+```
+
+Alternative manual DMS launch, if you are not using the service:
+
+```bash
+dms -c "$HOME/.config/DankMaterialShell/shell" run
+```
+
+Do not run the manual instance alongside the service. Press **Super+W** to choose a wallpaper, **Super+O** for workspace overview and **Super+Tab** for the window switcher.
+
+### 7. Test before relying on the installation
+
+```bash
+hyprctl configerrors
+systemctl --user is-active dms.service
+```
+
+Check the bar, dock, volume controls, wallpaper selection, window switcher and trackpad gestures physically. This export has been syntax-checked and test-installed in an isolated directory; an end-to-end fresh-install test is still required.
+
+To test file copying without modifying your real configuration:
+
+```bash
+python3 install.py --apply --target /tmp/bifrost-test
+```
+
+### Official package sources and redistribution
+
+The commands above install software through CachyOS/Arch repositories; they do not redistribute proprietary installers or require copying software from another operating system. Package availability and licenses can change. Consult the [Arch DMS package](https://archlinux.org/packages/extra/x86_64/dms-shell/), [official DMS installation documentation](https://github.com/AvengeMedia/DankLinux-Docs/blob/master/docs/dankmaterialshell/installation.mdx) and the licenses shipped by the relevant projects.
+
+**This is not a blanket copyright clearance for the repository's assets.** The original wallpaper collection, screenshots containing those wallpapers, the original wallpaper-selector code and the Gruvbox Multi theme still require confirmation of their applicable redistribution terms. Attribution alone does not establish permission. See [THIRD_PARTY.md](THIRD_PARTY.md) and [GitHub's licensing guidance](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/licensing-a-repository). No macOS sound files, Apple fonts or proprietary application binaries are included.
 
 ## Portability and current limitations
 
