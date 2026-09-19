@@ -1,0 +1,8 @@
+{
+    "wallpaper_path": "Pictures/Wallpapers/",
+    "cache_path": ".cache/wallpaper-selector/thumbs/",
+    "number_of_pictures": 10,
+    "border_color": "#80FFFFFF",
+    "corner_radius": 18,
+    "cache_batch_size": 20
+}

@@ -1,0 +1,12 @@
+.env
+.env.*
+*.key
+*.pem
+*.log
+*.bak
+__pycache__/
+.DS_Store
+icon-theme.cache
+.local/state/
+.cache/
+work/
