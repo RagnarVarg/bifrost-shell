@@ -286,7 +286,7 @@ PageBase {
                     anchors.rightMargin: Theme.space.md
                     anchors.verticalCenter: parent.verticalCenter
                     from: 0.5
-                    to: 3
+                    to: 15
                     stepSize: 0.05
                     value: card.draft.sdrBrightness
                     onMoved: v => card.set("sdrBrightness", v)

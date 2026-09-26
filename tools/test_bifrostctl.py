@@ -71,6 +71,16 @@ class BifrostctlTest(unittest.TestCase):
             self.assertIn("bitdepth = " + str(depth), text)
             self.assertIn("sdrbrightness = 1.65", text)
 
+    def test_display_hdr_brightness_bounds(self):
+        cfg = ctl.Config(self.schema)
+        for brightness, expected in ((15, 15), (20, 15), (0.1, 0.5)):
+            output = dict(width=1920, height=1080, refresh=60, x=0, y=0,
+                          scale=1, vrr=False, bitdepth=10, cm="hdr", sdrBrightness=brightness)
+            cfg.set("displays.outputs", {"TEST": output})
+            cfg.save()
+            text = ctl.generate_hypr(ctl.Config(self.schema))
+            self.assertIn("sdrbrightness = " + str(expected), text)
+
     def test_border_resize_applies_both_values_independently_of_appearance(self):
         cfg = ctl.Config(self.schema)
         cfg.set("hyprland.manage", False)

@@ -163,7 +163,7 @@ CompositorBackend {
             bitdepth: o.bitdepth || 8
         };
         if (o.sdrBrightness !== undefined)
-            rule.sdrbrightness = Math.max(0.5, Math.min(3, Number(o.sdrBrightness) || 1));
+            rule.sdrbrightness = Math.max(0.5, Math.min(15, Number(o.sdrBrightness) || 1));
         if (o.cm)
             rule.cm = o.cm;
         if (o.cm === "hdr" || o.cm === "hdredid")
