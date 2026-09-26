@@ -966,5 +966,14 @@
   "Drag window borders or gaps with the left mouse button to resize windows.": "Dra i fönsterkanter eller mellanrum med vänster musknapp för att ändra fönsterstorleken.",
   "High dynamic range (HDR)": "Högt dynamiskt omfång (HDR)",
   "Requires an HDR-capable display. Choose Apply to test, then Keep to save.": "Kräver en bildskärm med HDR-stöd. Välj Verkställ för att testa och sedan Behåll för att spara.",
-  "Per output: { width, height, refresh, x, y, scale, vrr, bitdepth, cm }. Written to bifrost.lua.": "Per bildskärm: { width, height, refresh, x, y, scale, vrr, bitdepth, cm }. Skrivs till bifrost.lua."
+  "Brightness in HDR mode": "Ljusstyrka i HDR-läge",
+  "Adjusts desktop and SDR content brightness while HDR is enabled. 100% is the default.": "Justerar skrivbordets och SDR-innehållets ljusstyrka när HDR är aktiverat. 100 % är standard.",
+  "Use the Bifrost login theme": "Använd Bifrosts inloggningstema",
+  "Checking login screen…": "Kontrollerar inloggningsskärmen…",
+  "Bifrost login theme is not installed. It requires greetd; the current login manager is %1.": "Bifrosts inloggningstema är inte installerat. Det kräver greetd; nuvarande inloggningshanterare är %1.",
+  "The previous login configuration backup is missing; automatic restoration is unavailable.": "Säkerhetskopian av den tidigare inloggningskonfigurationen saknas; automatisk återställning är inte tillgänglig.",
+  "Administrator authentication is required. Changes take effect after reboot. Switching off restores the previous login manager.": "Administratörsbehörighet krävs. Ändringen gäller efter omstart. Avstängning återställer den tidigare inloggningshanteraren.",
+  "Login theme updated for the next reboot. Your current session stays open.": "Inloggningstemat har ändrats inför nästa omstart. Din nuvarande session hålls öppen.",
+  "Per output: { width, height, refresh, x, y, scale, vrr, bitdepth, cm, sdrBrightness }. Written to bifrost.lua.": "Per bildskärm: { width, height, refresh, x, y, scale, vrr, bitdepth, cm, sdrBrightness }. Skrivs till bifrost.lua.",
+  "Login screen installation is incomplete. Run the Bifrost installer again.": "Installationen av inloggningsskärmen är ofullständig. Kör Bifrosts installationsprogram igen."
 }

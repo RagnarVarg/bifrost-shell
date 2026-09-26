@@ -38,7 +38,7 @@ PageBase {
     function keep() {
         const saved = Object.assign({}, Config.get("displays.outputs") || {});
         const n = pending.next;
-        saved[n.name] = Object.assign({}, saved[n.name] || {}, { width: n.width, height: n.height, refresh: n.refresh, x: n.x, y: n.y, scale: n.scale, vrr: n.vrr, bitdepth: n.bitdepth, cm: n.cm });
+        saved[n.name] = Object.assign({}, saved[n.name] || {}, { width: n.width, height: n.height, refresh: n.refresh, x: n.x, y: n.y, scale: n.scale, vrr: n.vrr, bitdepth: n.bitdepth, cm: n.cm, sdrBrightness: n.sdrBrightness });
         Config.set("displays.outputs", saved);
         Ctl.run(["hypr", "generate", "--write"], null, page);
         pending = null;
@@ -130,7 +130,8 @@ PageBase {
                     scale: output.scale,
                     vrr: output.vrr,
                     bitdepth: output.bitdepth,
-                    cm: output.cm
+                    cm: output.cm,
+                    sdrBrightness: output.sdrBrightness === undefined ? 1 : output.sdrBrightness
                 })
             readonly property var resolutions: {
                 const seen = {};
@@ -140,7 +141,7 @@ PageBase {
                 }).sort((a, b) => b.width * b.height - a.width * a.height);
             }
             readonly property var refreshes: output.modes.filter(m => m.width === draft.width && m.height === draft.height).map(m => m.refresh).sort((a, b) => b - a)
-            readonly property bool changed: draft.width !== output.width || draft.height !== output.height || Math.abs(draft.refresh - output.refreshRate) > 0.5 || draft.scale !== output.scale || draft.x !== output.x || draft.y !== output.y || draft.vrr !== output.vrr || draft.bitdepth !== output.bitdepth || draft.cm !== output.cm
+            readonly property bool changed: draft.width !== output.width || draft.height !== output.height || Math.abs(draft.refresh - output.refreshRate) > 0.5 || draft.scale !== output.scale || draft.x !== output.x || draft.y !== output.y || draft.vrr !== output.vrr || draft.bitdepth !== output.bitdepth || draft.cm !== output.cm || Math.abs(draft.sdrBrightness - (output.sdrBrightness === undefined ? 1 : output.sdrBrightness)) > 0.001
 
             function set(key, value) {
                 const d = Object.assign({}, draft);
@@ -276,6 +277,37 @@ PageBase {
                 }
             }
 
+            Field {
+                label: I18n.tr("Brightness in HDR mode")
+                enabled: card.draft.cm === "hdr" || card.draft.cm === "hdredid"
+                BSlider {
+                    anchors.left: parent.left
+                    anchors.right: brightnessValue.left
+                    anchors.rightMargin: Theme.space.md
+                    anchors.verticalCenter: parent.verticalCenter
+                    from: 0.5
+                    to: 3
+                    stepSize: 0.05
+                    value: card.draft.sdrBrightness
+                    onMoved: v => card.set("sdrBrightness", v)
+                }
+                BText {
+                    id: brightnessValue
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Math.round(card.draft.sdrBrightness * 100) + "%"
+                    role: "mono"
+                }
+            }
+
+            BText {
+                width: parent.width
+                text: I18n.tr("Adjusts desktop and SDR content brightness while HDR is enabled. 100% is the default.")
+                role: "caption"
+                tone: "muted"
+                wrapMode: Text.WordWrap
+            }
+
             BText {
                 width: parent.width
                 text: I18n.tr("Requires an HDR-capable display. Choose Apply to test, then Keep to save.")
@@ -301,7 +333,8 @@ PageBase {
                         scale: card.output.scale,
                         vrr: card.output.vrr,
                         bitdepth: card.output.bitdepth,
-                        cm: card.output.cm
+                        cm: card.output.cm,
+                        sdrBrightness: card.output.sdrBrightness === undefined ? 1 : card.output.sdrBrightness
                     }, card.draft)
                 }
 

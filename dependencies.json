@@ -507,7 +507,15 @@
         "xdg-utils",
         "xdg-desktop-portal-hyprland",
         "xdg-desktop-portal-gtk",
-        "kitty"
+        "kitty",
+        "greetd",
+        "greetd-selinux",
+        "acl"
+      ],
+      "greeterPackages": [
+        "greetd",
+        "greetd-selinux",
+        "acl"
       ]
     },
     "ubuntu": {
@@ -596,7 +604,15 @@
         "xdg-utils",
         "xdg-desktop-portal-hyprland",
         "xdg-desktop-portal-gtk",
-        "kitty"
+        "kitty",
+        "greetd",
+        "acl",
+        "pkexec"
+      ],
+      "greeterPackages": [
+        "greetd",
+        "acl",
+        "pkexec"
       ]
     }
   }

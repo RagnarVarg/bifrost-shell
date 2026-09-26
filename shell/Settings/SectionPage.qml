@@ -115,6 +115,13 @@ Flickable {
             text: Compositor.displayName + " " + Compositor.version + " · " + I18n.tr("Bifrost runs next to another shell, so these settings are saved but applied only when Bifrost is the session shell.")
         }
 
+        Loader {
+            width: column.width
+            active: page.sectionId === "greeter"
+            visible: active
+            sourceComponent: Component { GreeterControl {} }
+        }
+
         Repeater {
             id: groupRepeater
 

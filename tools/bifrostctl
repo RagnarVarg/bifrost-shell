@@ -1398,6 +1398,49 @@ def greeter_cache() -> Path:
     return Path(os.environ.get("BIFROST_GREETER_CACHE") or "/var/cache/bifrost-greeter")
 
 
+def greeter_status(prefix=None, conf=None, manager=None):
+    import tomllib
+    prefix = Path(prefix or "/usr/share/bifrost-greeter")
+    conf = Path(conf or "/etc/greetd/config.toml")
+    manager = Path(manager or "/etc/systemd/system/display-manager.service")
+    launcher = prefix / "bin/bifrost-greeter"
+    installed = launcher.is_file() and os.access(launcher, os.X_OK)
+    helper = prefix / "greeter/manage-login.py"
+    try:
+        command = tomllib.loads(conf.read_text()).get("default_session", {}).get("command", "")
+        argv = shlex.split(command)
+    except (OSError, ValueError):
+        argv = []
+    theme_configured = bool(argv and argv[0] == str(launcher))
+    display_manager = manager.resolve().stem if manager.exists() else "unknown"
+    backups = list(conf.parent.glob(conf.name + ".before-bifrost-*"))
+    ready = installed and helper.is_file() and bool(argv) and display_manager != "unknown"
+    enabled = theme_configured and display_manager == "greetd"
+    cache = greeter_cache()
+    return {"ok": True, "installed": installed, "enabled": enabled,
+            "displayManager": display_manager, "canEnable": ready,
+            "canDisable": ready and bool(backups), "hasBackup": bool(backups),
+            "cache": str(cache), "writable": cache.is_dir() and os.access(cache, os.W_OK)}
+
+
+def greeter_switch(action):
+    state = greeter_status()
+    if action not in ("enable", "disable"):
+        return {"ok": False, "error": "Invalid login screen action"}
+    if not state["canEnable" if action == "enable" else "canDisable"]:
+        return {"ok": False, "error": "Login screen switching is unavailable; install Bifrost for greetd first and keep its configuration backup."}
+    try:
+        result = subprocess.run(["pkexec", "/usr/share/bifrost-greeter/greeter/manage-login.py", action],
+                                capture_output=True, text=True, timeout=110)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"ok": False, "error": str(exc)}
+    state = greeter_status()
+    state["ok"] = result.returncode == 0 and state["enabled"] == (action == "enable")
+    if not state["ok"]:
+        state["error"] = (result.stderr + result.stdout).strip() or "Login screen change was not applied"
+    return state
+
+
 def greeter_keyboard():
     """The main keyboard's layout(s) as Hyprland has them now."""
     code, out = run(["hyprctl", "devices", "-j"], timeout=3)
@@ -1685,7 +1728,7 @@ def generate_hypr(cfg) -> str:
         lines.append("local apply_output = (function()\n" + (REPO / "shell/Compat/MonitorApply.lua").read_text() + "\nend)()")
         lines.append("-- Displays (Settings → System → Displays)")
         for name, o in outputs.items():
-            lines.append(f'apply_output({{ output = {lua_str(name)}, mode = "{output_mode(o)}", position = "{o["x"]}x{o["y"]}", scale = {o["scale"]}, vrr = {1 if o.get("vrr") else 0}, bitdepth = {o.get("bitdepth", 8)}' + (f', cm = {lua_str(o["cm"])}' if o.get("cm") else "") + ' })')
+            lines.append(f'apply_output({{ output = {lua_str(name)}, mode = "{output_mode(o)}", position = "{o["x"]}x{o["y"]}", scale = {o["scale"]}, vrr = {1 if o.get("vrr") else 0}, bitdepth = {o.get("bitdepth", 8)}' + (f', cm = {lua_str(o["cm"])}' if o.get("cm") else "") + (f', sdrbrightness = {max(0.5, min(3, float(o["sdrBrightness"])))}' if "sdrBrightness" in o else "") + ' })')
         lines.append("")
     if v("hyprland.layerRules"):
         menus_blur = blur_amount(mat("menus", "blur")) > 0
@@ -1835,7 +1878,7 @@ def main(argv=None):
     p.add_argument("--json", action="store_true")
     p.add_argument("--write", action="store_true")
     p = sub.add_parser("greeter", help="the login screen's copy of your look")
-    p.add_argument("action", choices=["sync", "status"])
+    p.add_argument("action", choices=["sync", "status", "enable", "disable"])
     p.add_argument("--json", action="store_true")
     p = sub.add_parser("keybinds", help="the keybinding editor's operations")
     p.add_argument("action", choices=["list", "check", "set", "off", "reset", "add"])
@@ -1899,13 +1942,10 @@ def main(argv=None):
         cache = greeter_cache()
         if args.action == "sync":
             res = greeter_sync(Config(Schema()))
+        elif args.action == "status":
+            res = greeter_status()
         else:
-            try:
-                meta = json.loads((cache / "greeter.json").read_text())
-            except (OSError, json.JSONDecodeError):
-                meta = None
-            res = {"ok": meta is not None, "cache": str(cache), "installed": Path("/usr/share/bifrost-greeter/bin/bifrost-greeter").exists(),
-                   "writable": cache.is_dir() and os.access(cache, os.W_OK), "synced": meta}
+            res = greeter_switch(args.action)
         print(json.dumps(res, ensure_ascii=False) if args.json else json.dumps(res, indent=2, ensure_ascii=False))
         return 0 if res["ok"] else 1
     if args.cmd == "keybinds":

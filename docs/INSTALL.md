@@ -11,8 +11,9 @@ Python 3 must already be installed; only package operations use sudo.
 ```
 
 For unattended use, `--install-deps --yes` accepts the displayed package plan
-and the per-user installation questions. `--yes` alone never installs system
-packages. A failed package command or missing/old required runtime stops the
+and installation questions, including the inactive login screen. The login-screen
+step uses sudo to install missing greetd/ACL packages and root-owned files; use
+`--no-greeter` to skip it. A failed package command or missing/old required runtime stops the
 installer. The version requirements in `dependencies.json` are checked again
 after installing packages, before copying Bifrost files. Hyprland need not be
 running for this check.
@@ -57,9 +58,15 @@ first, or pass `--no-hypr` to install Bifrost without hooking the compositor.
 Existing Lua configurations receive the installer-owned hook with a backup.
 The installer does not change an existing compositor's monitor configuration.
 
-The Bifrost greetd login screen remains optional and separate. The dependency
-recipe does not install or enable greetd, stop GDM/SDDM, or install a fallback
-greeter. Keep your current login screen for the first session test.
+The installer includes greetd and copies the Bifrost login screen as root, but
+leaves the current display manager selected. `--no-greeter` skips the login-screen
+copy. Settings → Login screen shows installation status and an administrator-authenticated
+switch. Enabling selects greetd for the next reboot; disabling restores the previous
+display manager and greetd configuration. The current session is never stopped.
+The root-owned switch helper stores the previous manager in `/var/lib/bifrost-login/`.
+The greeter uses greetd's bundled agreety as its crash fallback, with no DMS dependency.
+Fedora's greetd account is read from its configuration; appearance-cache access is
+prepared for the installing user with an ACL.
 
 ```sh
 ~/.local/bin/bifrostctl doctor

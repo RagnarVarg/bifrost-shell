@@ -9,7 +9,7 @@ import qs.Compat
 Singleton {
     readonly property string path: Paths.repoDir + "/tools/bifrostctl"
 
-    function run(args: var, callback: var, owner: var) {
+    function run(args: var, callback: var, owner: var, timeoutMs: int) {
         Exec.run(["python3", path].concat(args), (code, out, err) => {
             let data = null;
             try {
@@ -17,6 +17,6 @@ Singleton {
             } catch (e) {}
             if (callback)
                 callback(code === 0, (out + err).trim(), data);
-        }, 30000, owner);
+        }, timeoutMs > 0 ? timeoutMs : 30000, owner);
     }
 }

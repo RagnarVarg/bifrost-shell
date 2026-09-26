@@ -10,7 +10,7 @@
 #   greeter/install-greeter.sh --status         what greetd uses now.
 #   sudo greeter/install-greeter.sh --uninstall --disable, then remove /usr/share/bifrost-greeter.
 #
-# Safety: bifrost-greeter starts dms-greeter by itself whenever the Bifrost
+# Safety: bifrost-greeter starts agreety by itself whenever the Bifrost
 # login screen ends without a login (missing files, a crash). If the screen is
 # ever black anyway: Ctrl+Alt+F2, log in, run --disable, then
 #   sudo systemctl restart greetd
@@ -22,7 +22,7 @@ repo="$(cd "$(dirname "$0")/.." && pwd)"
 prefix="${BIFROST_GREETER_PREFIX:-/usr/share/bifrost-greeter}"
 cache="${BIFROST_GREETER_CACHE:-/var/cache/bifrost-greeter}"
 conf="${GREETD_CONFIG:-/etc/greetd/config.toml}"
-guser="${GREETER_USER:-greeter}"
+guser="${GREETER_USER:-$(python3 -c 'import tomllib,sys; print(tomllib.load(open(sys.argv[1], "rb"))["default_session"]["user"])' "$conf" 2>/dev/null || echo greeter)}"
 launcher="$prefix/bin/bifrost-greeter"
 
 say() { printf '%s\n' "$*"; }
@@ -47,8 +47,9 @@ install_files() {
     cp "$repo/dependencies.json" "$tmp/"
     mkdir -p "$tmp/bin"
     cp "$repo/greeter/bin/bifrost-greeter" "$tmp/bin/"
-    chmod 755 "$tmp/bin/bifrost-greeter" "$tmp/greeter/session.sh"
-    find "$tmp" -name '*.qmlc' -delete
+    chmod 755 "$tmp/bin/bifrost-greeter" "$tmp/greeter/session.sh" "$tmp/greeter/manage-login.py"
+    find "$tmp" -type f \( -name '*.qmlc' -o -name '*.pyc' \) -delete
+    find "$tmp" -type d -name '__pycache__' -empty -delete
     chmod -R a+rX "$tmp"
     rm -rf "$prefix.old"
     [[ -e "$prefix" ]] && mv "$prefix" "$prefix.old"
@@ -63,12 +64,15 @@ install_files() {
         chown "$guser":"$guser" "$cache/state"
         chmod 0770 "$cache/state"
     fi
+    if [[ $(id -u) -eq 0 && -n "${SUDO_USER:-}" ]] && command -v setfacl >/dev/null; then
+        setfacl -m "u:$SUDO_USER:rwx,d:u:$SUDO_USER:rwx" "$cache"
+    fi
     say ""
     say "Installed. greetd is unchanged. Next:"
     say "  1. bifrostctl greeter sync          (as yourself; also automatic when your look changes)"
-    say "  2. sudo $0 --enable"
+    say "  2. Enable the login theme in Bifrost Settings (applies after reboot)."
     local me="${SUDO_USER:-}"
-    if [[ -n "$me" ]] && ! id -nG "$me" | tr ' ' '\n' | grep -qx "$guser"; then
+    if [[ -n "$me" ]] && ! command -v setfacl >/dev/null && ! id -nG "$me" | tr ' ' '\n' | grep -qx "$guser"; then
         say "  Note: $me is not in group $guser, so the copy cannot be written: sudo usermod -aG $guser $me (then log in again)"
     fi
 }
@@ -82,8 +86,8 @@ enable() {
         say "Already enabled: $cmd"
         return
     fi
-    [[ -x /usr/bin/dms-greeter ]] || say "Warning: /usr/bin/dms-greeter (the automatic fallback) is not installed."
-    local backup; backup="$conf.before-bifrost-$(date +%Y%m%d-%H%M%S)"
+    [[ -x /usr/bin/agreety ]] || say "Warning: /usr/bin/agreety (the fallback) is not installed."
+    local backup; backup="$conf.before-bifrost-$(date +%Y%m%d-%H%M%S-%N)"
     cp -p "$conf" "$backup"
     awk -v cmd="command = \"$launcher\"" '
         /^\[default_session\]/ { s = 1; print; next }
@@ -120,7 +124,7 @@ status() {
     say "installed:       $([[ -x "$launcher" ]] && echo "yes ($prefix)" || echo no)"
     say "cache:           $([[ -d "$cache" ]] && echo "$cache" || echo "missing")"
     say "last copy:       $([[ -r "$cache/greeter.json" ]] && date -r "$cache/greeter.json" '+%F %T' || echo never)"
-    say "fallback:        $([[ -x /usr/bin/dms-greeter ]] && echo "dms-greeter installed" || echo "dms-greeter MISSING")"
+    say "fallback:        $([[ -x /usr/bin/agreety ]] && echo "agreety installed" || echo "agreety MISSING")"
     local log="/run/user/$(id -u "$guser" 2>/dev/null || echo 0)/bifrost-greeter/fallback.log"
     [[ -r "$log" ]] && { say "fallback log:"; tail -5 "$log"; }
     return 0

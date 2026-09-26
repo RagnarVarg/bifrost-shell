@@ -225,22 +225,15 @@ EOF
 cp "$data_home/applications/bifrost-settings.desktop" "$data_home/applications/bifrost.settings.desktop"
 printf 'NoDisplay=true\n' >>"$data_home/applications/bifrost.settings.desktop"
 
-# ── 7. greetd login screen ───────────────────────────────────────────────
-# Installing only copies files to /usr/share/bifrost-greeter; greetd keeps its
-# current greeter until --enable. Needs sudo, so it is never done under --yes.
-greeter_sh="$dest/greeter/install-greeter.sh"
-if ((greeter)) && [[ -x "$greeter_sh" ]] && { command -v greetd >/dev/null || [[ -d /etc/greetd ]]; }; then
-    if ((yes)); then
-        say "greetd found. Login screen (needs sudo): sudo $greeter_sh"
-    elif ask "Install or update the Bifrost login screen for greetd (needs sudo; greetd itself is not switched)?"; then
-        if sudo "$greeter_sh"; then
-            "$dest/tools/bifrostctl" greeter sync || warn "login screen installed, but copying your look failed"
-        else
-            warn "login screen not installed"
+# ── 7. login screen: install only; Settings activates it for next boot ──
+if ((greeter)); then
+    if ask "Install/update the Bifrost login screen (sudo; leave the current login manager enabled)?"; then
+        if ! command -v greetd >/dev/null || ! command -v setfacl >/dev/null || ! command -v pkexec >/dev/null; then
+            python3 "$dest/tools/dependencies.py" --install-greeter --yes
         fi
-    fi
-    if ! grep -qF bifrost-greeter /etc/greetd/config.toml 2>/dev/null; then
-        say "greetd does not use the Bifrost login screen. Switch with: sudo $greeter_sh --enable"
+        sudo "$dest/greeter/install-greeter.sh"
+        "$dest/tools/bifrostctl" greeter sync || warn "Login screen installed; appearance sync will retry later."
+        say "Login screen installed. Enable it in Settings → Login screen when ready; it starts after reboot."
     fi
 fi
 

@@ -150,6 +150,7 @@ def main():
     action = parser.add_mutually_exclusive_group()
     action.add_argument('--plan', action='store_true')
     action.add_argument('--install', action='store_true')
+    action.add_argument('--install-greeter', action='store_true')
     action.add_argument('--check', action='store_true')
     action.add_argument('--tool', choices=['qt-shadertools', 'qt'])
     parser.add_argument('--yes', action='store_true')
@@ -166,12 +167,14 @@ def main():
             return 1
         print(command[0])
         return 0
-    if not (args.plan or args.install):
+    if not (args.plan or args.install or args.install_greeter):
         return preflight()
     distro, version = distro_info()
     distro, version = args.distro or distro, args.version or version
     try:
         platform, commands = package_plan(distro, version)
+        if args.install_greeter:
+            commands = [platform["install"] + platform["greeterPackages"]]
     except ValueError as error:
         print(error, file=sys.stderr)
         return 2
@@ -189,7 +192,7 @@ def main():
     prefix = [] if os.geteuid() == 0 else ['sudo']
     for command in commands:
         subprocess.run(prefix + command, check=True)
-    return preflight()
+    return 0 if args.install_greeter else preflight()
 
 
 if __name__ == '__main__':

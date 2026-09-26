@@ -33,7 +33,8 @@ class DependenciesTest(unittest.TestCase):
             self.assertIn('rsync', commands[-1])
             self.assertTrue(platform['repositories'])
             self.assertNotIn('dms', platform['packages'])
-            self.assertNotIn('greetd', platform['packages'])
+            self.assertIn('greetd', platform['packages'])
+            self.assertIn('greetd', platform['greeterPackages'])
         self.assertRaises(ValueError, deps.package_plan, 'ubuntu', '24.04')
         self.assertRaises(ValueError, deps.package_plan, 'debian', '13')
 

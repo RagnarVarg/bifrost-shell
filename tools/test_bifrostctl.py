@@ -61,7 +61,7 @@ class BifrostctlTest(unittest.TestCase):
         cfg = ctl.Config(self.schema)
         for cm, depth in (("hdr", 10), ("hdredid", 10), ("srgb", 8)):
             output = dict(width=1920, height=1080, refresh=60, x=0, y=0,
-                          scale=1, vrr=False, bitdepth=depth, cm=cm)
+                          scale=1, vrr=False, bitdepth=depth, cm=cm, sdrBrightness=1.65)
             cfg.set("displays.outputs", {"TEST": output})
             cfg.save()
             loaded = ctl.Config(self.schema)
@@ -69,6 +69,7 @@ class BifrostctlTest(unittest.TestCase):
             text = ctl.generate_hypr(loaded)
             self.assertIn('cm = "' + cm + '"', text)
             self.assertIn("bitdepth = " + str(depth), text)
+            self.assertIn("sdrbrightness = 1.65", text)
 
     def test_border_resize_applies_both_values_independently_of_appearance(self):
         cfg = ctl.Config(self.schema)
@@ -471,6 +472,55 @@ class BifrostctlTest(unittest.TestCase):
         self.assertIn("follow = true", by[norm("SUPER + code:10")]["dispatch"])
         self.assertIn(norm("SUPER + ALT + code:10"), by)
         self.assertEqual(len(by), len(binds))
+
+    def test_login_status_and_switch_reject_uninstalled(self):
+        root = Path(self.tmp.name)
+        prefix = root / "share"
+        conf = root / "config.toml"
+        manager = root / "display-manager.service"
+        unit = root / "gdm.service"
+        unit.touch()
+        manager.symlink_to(unit)
+        conf.write_text('[default_session]\ncommand = "agreety"\nuser = "greeter"\n')
+        status = ctl.greeter_status(prefix, conf, manager)
+        self.assertFalse(status["installed"])
+        self.assertFalse(status["canEnable"])
+        self.assertEqual(status["displayManager"], "gdm")
+        with patch.object(ctl, "greeter_status", return_value=status), patch.object(ctl.subprocess, "run") as run:
+            self.assertFalse(ctl.greeter_switch("enable")["ok"])
+            run.assert_not_called()
+        (prefix / "bin").mkdir(parents=True)
+        launcher = prefix / "bin/bifrost-greeter"
+        launcher.write_text("#!/bin/sh\n")
+        launcher.chmod(0o755)
+        (prefix / "greeter").mkdir()
+        (prefix / "greeter/manage-login.py").touch()
+        self.assertTrue(ctl.greeter_status(prefix, conf, manager)["canEnable"])
+        self.assertFalse(ctl.greeter_status(prefix, conf, manager)["enabled"])
+
+    def test_login_manager_switch_and_rollback_do_not_stop_session(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("login_manager", ctl.REPO / "greeter/manage-login.py")
+        manager = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(manager)
+        root = Path(self.tmp.name)
+        state = root / "state/previous.json"
+        with patch.object(manager, "STATE", state), patch.object(manager, "current_manager", return_value="gdm.service"), patch.object(manager.Path, "is_file", return_value=True), patch.object(manager, "run") as run:
+            manager.switch("enable")
+            self.assertEqual(json.loads(state.read_text())["previous"], "gdm.service")
+            calls = [c.args for c in run.call_args_list]
+            self.assertIn(("/usr/bin/systemctl", "enable", "--force", "greetd.service"), calls)
+            self.assertFalse(any(x in c for c in calls for x in ("--now", "stop", "restart")))
+        with patch.object(manager, "STATE", state), patch.object(manager, "current_manager", return_value="greetd.service"), patch.object(manager, "run") as run:
+            manager.switch("disable")
+            self.assertFalse(state.exists())
+            run.assert_any_call("/usr/bin/systemctl", "enable", "--force", "gdm.service")
+        with patch.object(manager, "STATE", state), patch.object(manager, "current_manager", return_value="gdm.service"), patch.object(manager.Path, "is_file", return_value=True), patch.object(manager, "run") as run:
+            run.side_effect = [None, None, RuntimeError("failed to enable"), None, None, None]
+            with self.assertRaises(RuntimeError):
+                manager.switch("enable")
+            self.assertFalse(state.exists())
+            run.assert_any_call("/usr/bin/systemctl", "enable", "--force", "gdm.service")
 
     def test_greeter_sync_copies_the_look_not_the_home(self):
         cache = Path(self.tmp.name) / "greeter-cache"

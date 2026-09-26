@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bifrost's login screen for greetd, with dms-greeter as the safety net.
+# Bifrost's login screen for greetd, with agreety as the safety net.
 #   /etc/greetd/config.toml:  command = "/usr/share/bifrost-greeter/bin/bifrost-greeter"
 #
 # Starts a minimal Hyprland (greeter/hyprland.lua) that runs the login screen
@@ -7,7 +7,7 @@
 # marker and greetd starts your session. Without that marker – Hyprland or
 # Quickshell missing, a crash, a broken file – this starts the previous
 # greeter instead, so there is always a login screen:
-#   BIFROST_GREETER_FALLBACK (default: dms-greeter --command hyprland --cache-dir /var/cache/dms-greeter)
+#   BIFROST_GREETER_FALLBACK (default: agreety --cmd start-hyprland)
 # Logs: $XDG_RUNTIME_DIR/bifrost-greeter/ (greeter.log, hyprland.log, fallback.log).
 self="$0"; [[ -L "$self" ]] && self="$(readlink -f "$self")"
 root="${BIFROST_GREETER_ROOT:-$(cd "$(dirname "$self")/.." && pwd)}"
@@ -18,7 +18,7 @@ run="${BIFROST_GREETER_RUN:-${XDG_RUNTIME_DIR:-/tmp}/bifrost-greeter}"
 mkdir -p "$run" && chmod 700 "$run"
 export BIFROST_GREETER_RUN="$run"
 rm -f "$run/launched" "$run/greeter.exit"
-fallback="${BIFROST_GREETER_FALLBACK:-/usr/bin/dms-greeter --command hyprland --cache-dir /var/cache/dms-greeter}"
+fallback="${BIFROST_GREETER_FALLBACK:-/usr/bin/agreety --cmd start-hyprland}"
 
 # Language of the copied settings, so texts and dates match the session.
 if [[ -z "${LANG:-}" && -r "$BIFROST_GREETER_CACHE/greeter.json" ]]; then
