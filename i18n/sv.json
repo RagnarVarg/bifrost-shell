@@ -606,7 +606,6 @@
   "Partly cloudy": "Växlande molnighet",
   "Password": "Lösenord",
   "Per display": "Per skärm",
-  "Per output: { width, height, refresh, x, y, scale, vrr, bitdepth }. Written to bifrost.lua.": "Per utgång: { width, height, refresh, x, y, scale, vrr, bitdepth }. Skrivs till bifrost.lua.",
   "Percent": "Procent",
   "Pin to dock": "Fäst i docken",
   "Pinch in": "Nyp ihop",
@@ -964,5 +963,8 @@
   "Your shortcuts are paused while recording (Super+Esc resumes them).": "Dina kortkommandon är pausade under registreringen (Super+Esc återupptar dem).",
   "your Hyprland config": "din Hyprland-konfiguration",
   "Resize windows by dragging borders": "Ändra fönsterstorlek genom att dra i kanterna",
-  "Drag window borders or gaps with the left mouse button to resize windows.": "Dra i fönsterkanter eller mellanrum med vänster musknapp för att ändra fönsterstorleken."
+  "Drag window borders or gaps with the left mouse button to resize windows.": "Dra i fönsterkanter eller mellanrum med vänster musknapp för att ändra fönsterstorleken.",
+  "High dynamic range (HDR)": "Högt dynamiskt omfång (HDR)",
+  "Requires an HDR-capable display. Choose Apply to test, then Keep to save.": "Kräver en bildskärm med HDR-stöd. Välj Verkställ för att testa och sedan Behåll för att spara.",
+  "Per output: { width, height, refresh, x, y, scale, vrr, bitdepth, cm }. Written to bifrost.lua.": "Per bildskärm: { width, height, refresh, x, y, scale, vrr, bitdepth, cm }. Skrivs till bifrost.lua."
 }

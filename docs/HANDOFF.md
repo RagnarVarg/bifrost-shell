@@ -890,3 +890,7 @@ Validation: 515 QML / 41 CLI tests pass, validate and required doctor checks and
 
 ### Input: resize windows from borders (2026-09-27)
 Added schema-backed input.resizeOnBorder toggle to the Input hub, using SettingsRows and Swedish translation. Applies general.resize_on_border via generated Lua independently of appearance management; default false, enabled for this user's requested workflow. Installed copy updated and service restarted for schema refresh. Live apply verified with hyprctl (true), Settings Input mapped. 535 QML, 45 CLI, delayed-startup and 9 dependency tests pass; sandbox selftest emits a hyprctl version probe error with relocated runtime. validate OK.
+
+### Displays: HDR toggle (2026-09-27)
+Added per-display HDR switch to Settings → Displays. Uses the existing Apply/Keep/15-second rollback flow: HDR selects cm=hdr with 10-bit; off selects srgb with 8-bit. Existing hdredid is shown as HDR. Colour mode and bit depth participate in draft change detection; Keep now persists cm (previously lost), including when another display setting changes. Confirmation/current-mode summaries identify HDR/SDR. Swedish UI included.
+Validation: 535 QML, 46 CLI tests including HDR/hdredid/SDR persistence and generated rules, delayed-startup and 9 dependency tests pass; validate OK. Installed copy updated. Actual HDR modesetting and physical image quality remain user acceptance checks; current screen mode was not changed.

@@ -5,7 +5,7 @@ import qs.Core
 import qs.Components.Controls
 import qs.Components.Text
 
-// Displays: resolution, refresh rate, scale, position, VRR. Changes apply at
+// Displays: resolution, refresh rate, scale, position, VRR and HDR. Changes apply at
 // once and revert after a countdown unless kept; kept settings are stored in
 // Bifrost's config (displays.outputs) and written into bifrost.lua. The
 // user's own Hyprland files are never touched.
@@ -25,7 +25,7 @@ PageBase {
     }
 
     function describe(o) {
-        return o.width + " × " + o.height + " @ " + Math.round(o.refresh || o.refreshRate) + " Hz, " + I18n.tr("Scale") + " " + o.scale;
+        return o.width + " × " + o.height + " @ " + Math.round(o.refresh || o.refreshRate) + " Hz, " + I18n.tr("Scale") + " " + o.scale + " · " + (o.cm === "hdr" || o.cm === "hdredid" ? "HDR" : "SDR");
     }
 
     function apply(previous, next) {
@@ -38,7 +38,7 @@ PageBase {
     function keep() {
         const saved = Object.assign({}, Config.get("displays.outputs") || {});
         const n = pending.next;
-        saved[n.name] = Object.assign({}, saved[n.name] || {}, { width: n.width, height: n.height, refresh: n.refresh, x: n.x, y: n.y, scale: n.scale, vrr: n.vrr, bitdepth: n.bitdepth });
+        saved[n.name] = Object.assign({}, saved[n.name] || {}, { width: n.width, height: n.height, refresh: n.refresh, x: n.x, y: n.y, scale: n.scale, vrr: n.vrr, bitdepth: n.bitdepth, cm: n.cm });
         Config.set("displays.outputs", saved);
         Ctl.run(["hypr", "generate", "--write"], null, page);
         pending = null;
@@ -140,11 +140,16 @@ PageBase {
                 }).sort((a, b) => b.width * b.height - a.width * a.height);
             }
             readonly property var refreshes: output.modes.filter(m => m.width === draft.width && m.height === draft.height).map(m => m.refresh).sort((a, b) => b - a)
-            readonly property bool changed: draft.width !== output.width || draft.height !== output.height || Math.abs(draft.refresh - output.refreshRate) > 0.5 || draft.scale !== output.scale || draft.x !== output.x || draft.y !== output.y || draft.vrr !== output.vrr
+            readonly property bool changed: draft.width !== output.width || draft.height !== output.height || Math.abs(draft.refresh - output.refreshRate) > 0.5 || draft.scale !== output.scale || draft.x !== output.x || draft.y !== output.y || draft.vrr !== output.vrr || draft.bitdepth !== output.bitdepth || draft.cm !== output.cm
 
             function set(key, value) {
                 const d = Object.assign({}, draft);
                 d[key] = value;
+                if (key === "hdr") {
+                    d.cm = value ? "hdr" : "srgb";
+                    d.bitdepth = value ? 10 : 8;
+                    delete d.hdr;
+                }
                 if (key === "resolution") {
                     d.width = value.width;
                     d.height = value.height;
@@ -257,6 +262,26 @@ PageBase {
                     checked: card.draft.vrr
                     onToggled: c => card.set("vrr", c)
                 }
+            }
+
+            Field {
+                label: I18n.tr("High dynamic range (HDR)")
+
+                BToggle {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    checked: card.draft.cm === "hdr" || card.draft.cm === "hdredid"
+                    enabled: Compositor.supports("outputConfig")
+                    onToggled: on => card.set("hdr", on)
+                }
+            }
+
+            BText {
+                width: parent.width
+                text: I18n.tr("Requires an HDR-capable display. Choose Apply to test, then Keep to save.")
+                role: "caption"
+                tone: "muted"
+                wrapMode: Text.WordWrap
             }
 
             Row {

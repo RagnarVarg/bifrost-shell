@@ -57,6 +57,19 @@ class BifrostctlTest(unittest.TestCase):
         self.assertEqual(ctl.deep_get(ctl.Config(self.schema).values,"input.devices")[0], value)
         self.assertFalse(ctl.coerce(self.schema.entries["input.gestures"],{"3:evil()":"workspace"})[0])
 
+    def test_display_hdr_sdr_roundtrip_and_generated_colour_mode(self):
+        cfg = ctl.Config(self.schema)
+        for cm, depth in (("hdr", 10), ("hdredid", 10), ("srgb", 8)):
+            output = dict(width=1920, height=1080, refresh=60, x=0, y=0,
+                          scale=1, vrr=False, bitdepth=depth, cm=cm)
+            cfg.set("displays.outputs", {"TEST": output})
+            cfg.save()
+            loaded = ctl.Config(self.schema)
+            self.assertEqual(ctl.deep_get(loaded.values, "displays.outputs")[0]["TEST"], output)
+            text = ctl.generate_hypr(loaded)
+            self.assertIn('cm = "' + cm + '"', text)
+            self.assertIn("bitdepth = " + str(depth), text)
+
     def test_border_resize_applies_both_values_independently_of_appearance(self):
         cfg = ctl.Config(self.schema)
         cfg.set("hyprland.manage", False)
