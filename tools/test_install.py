@@ -45,6 +45,8 @@ with tempfile.TemporaryDirectory(prefix='bifrost-install-') as td:
     for command in ('bifrost-shell', 'bifrost-settings', 'bifrostctl'):
         assert (home/'.local/bin'/command).is_symlink()
     assert '%h/.local/share/bifrost-shell/bin/bifrost-shell' in (config/'systemd/user/bifrost.service').read_text()
+    for app_id in ('bifrost.shell', 'bifrost.settings'):
+        assert 'NoDisplay=true' in (home/'.local/share/applications'/f'{app_id}.desktop').read_text()
     (dest/'obsolete-test-file').write_text('stale')
     # Simulate an earlier installed hook and verify upgrade preserves its backup.
     legacy = hook.replace('dofile((os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")) .. "/bifrost/hypr/bifrost.lua")', 'dofile(os.getenv("HOME") .. "/.config/bifrost/hypr/bifrost.lua")')

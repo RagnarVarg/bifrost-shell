@@ -95,7 +95,7 @@ if ((uninstall)); then
     for c in "${commands[@]}" bifrostctl; do
         [[ -L "$bin_dir/$c" ]] && rm -f "$bin_dir/$c"
     done
-    rm -f "$data_home/applications/bifrost-settings.desktop"
+    rm -f "$data_home/applications/bifrost-settings.desktop" "$data_home/applications/bifrost.shell.desktop" "$data_home/applications/bifrost.settings.desktop"
     unhook_hypr
     rm -rf "$dest"
     say "Bifrost removed. Your settings are still in $config_home/bifrost."
@@ -212,6 +212,18 @@ Icon=preferences-desktop
 Categories=Settings;DesktopSettings;
 StartupWMClass=bifrost.settings
 EOF
+
+# Qt's host portal registration resolves the exact QML AppId as a desktop ID.
+cat >"$data_home/applications/bifrost.shell.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Bifrost Shell
+Exec=$dest/bin/bifrost-shell
+Icon=preferences-desktop
+NoDisplay=true
+EOF
+cp "$data_home/applications/bifrost-settings.desktop" "$data_home/applications/bifrost.settings.desktop"
+printf 'NoDisplay=true\n' >>"$data_home/applications/bifrost.settings.desktop"
 
 # ── 7. greetd login screen ───────────────────────────────────────────────
 # Installing only copies files to /usr/share/bifrost-greeter; greetd keeps its
