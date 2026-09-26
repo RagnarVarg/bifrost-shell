@@ -22,6 +22,7 @@ class StartupTest(unittest.TestCase):
             (base / 'dependencies.json').symlink_to(ROOT / 'dependencies.json')
             replies = {
                 'j/status': {'configProvider': 'lua'},
+                'j/version': {'version': '0.56.2'},
                 'j/monitors': [{'id': 0, 'name': 'TEST', 'x': 0, 'y': 0,
                                 'width': 1920, 'height': 1080, 'scale': 1,
                                 'focused': True, 'activeWorkspace': {'id': 1, 'name': '1'}}],
@@ -74,7 +75,7 @@ ShellRoot {
     Timer {
         interval: 1600; running: true
         onTriggered: {
-            console.log("STARTUP_RESULT " + JSON.stringify({monitors: backend.monitors, workspaces: backend.workspaces}));
+            console.info("STARTUP_RESULT " + JSON.stringify({monitors: backend.monitors, workspaces: backend.workspaces}));
             Qt.quit();
         }
     }
@@ -89,7 +90,7 @@ ShellRoot {
                 output = result.stdout + result.stderr
                 lines = [line.split('STARTUP_RESULT ', 1)[1] for line in output.splitlines()
                          if 'STARTUP_RESULT ' in line]
-                self.assertTrue(lines, output)
+                self.assertTrue(lines, f'exit={result.returncode}\n{output}')
                 state = json.loads(lines[-1])
                 self.assertEqual([m['name'] for m in state['monitors']], ['TEST'], output)
                 self.assertEqual([w['id'] for w in state['workspaces']], [1], output)

@@ -42,12 +42,12 @@ Singleton {
             return;
         connected = state === "Connected";
         busy = /Connecting|Reconnecting|Disconnecting|Interrupted/.test(state);
-        Exec.run(["piactl", "get", "region"], (c, r) => root.detail = c === 0 ? "PIA · " + r.trim() : "PIA");
+        Exec.runOptional(["piactl", "get", "region"], (c, r) => root.detail = c === 0 ? "PIA · " + r.trim() : "PIA");
     }
 
     function refresh() {
         if (provider === "" || provider === "pia") {
-            Exec.run(["piactl", "get", "connectionstate"], (code, out) => {
+            Exec.runOptional(["piactl", "get", "connectionstate"], (code, out) => {
                 if (code === 0) {
                     provider = "pia";
                     applyPia(out);
@@ -84,7 +84,7 @@ Singleton {
         if (!provider || busy || (provider === "nm" && NetworkStatus.managementBusy)) return;
         busy = true;
         if (provider === "pia")
-            Exec.run(["piactl", connected ? "disconnect" : "connect"], () => root.refresh());
+            Exec.runOptional(["piactl", connected ? "disconnect" : "connect"], () => root.refresh());
         else if (provider === "nm")
             NetworkStatus.manage(["connection", connected ? "down" : "up", "uuid", nmConnection], () => root.refresh());
     }

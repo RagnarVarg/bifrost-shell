@@ -27,6 +27,22 @@ Singleton {
         p.running = true;
     }
 
+    // Probe optional executables through a known shell: a failed QProcess
+    // start does not emit exited on every supported Quickshell build.
+    // Cache missing tools until restart; keep argv as positional arguments.
+    property var missingTools: ({})
+    function runOptional(command, callback, timeoutMs) {
+        if (missingTools[command[0]]) {
+            if (callback) callback(127, "", "");
+            return;
+        }
+        run(["/bin/sh", "-c", 'command -v "$1" >/dev/null 2>&1 || exit 127; exec "$@"', "bifrost-optional"].concat(command),
+            (code, out, err) => {
+                if (code === 127) missingTools[command[0]] = true;
+                if (callback) callback(code, out, err);
+            }, timeoutMs || defaultTimeoutMs);
+    }
+
     Component {
         id: processComponent
 

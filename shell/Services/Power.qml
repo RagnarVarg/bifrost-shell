@@ -30,12 +30,13 @@ Singleton {
     readonly property var order: ["power-saver", "balanced", "performance"]
 
     function set(p: string) {
+        if (!available || profiles.indexOf(p) < 0) return;
         profile = p;
-        Exec.run(["powerprofilesctl", "set", p], () => root.refresh());
+        Exec.runOptional(["powerprofilesctl", "set", p], () => root.refresh());
     }
 
     function refresh() {
-        Exec.run(["powerprofilesctl", "get"], (code, out) => {
+        Exec.runOptional(["powerprofilesctl", "get"], (code, out) => {
             available = code === 0;
             if (available)
                 profile = out.trim();
@@ -44,7 +45,7 @@ Singleton {
 
     Component.onCompleted: {
         refresh();
-        Exec.run(["powerprofilesctl", "list"], (code, out) => {
+        Exec.runOptional(["powerprofilesctl", "list"], (code, out) => {
             if (code === 0)
                 profiles = (out.match(/^\*?\s*([a-z-]+):/gm) || []).map(l => l.replace(/[*:\s]/g, "")).sort((a, b) => root.order.indexOf(a) - root.order.indexOf(b));
         });

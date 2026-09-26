@@ -57,6 +57,7 @@ ShellRoot {
     property int passed: 0
     property int failed: 0
     property var hoverCase: null
+    property bool optionalPending: true
     property bool finishPending: false
     property bool stdinPending: true
 
@@ -1075,7 +1076,7 @@ ShellRoot {
     }
 
     function finish() {
-        if (hoverCase || stdinPending) {
+        if (hoverCase || stdinPending || optionalPending) {
             finishPending = true;
             return;
         }
@@ -1114,6 +1115,17 @@ ShellRoot {
                 test.stdinPending = false;
                 if (test.finishPending) test.finish();
             }, 3000, test, "abcdef\n");
+            Exec.runOptional(["bifrost-selftest-nonexistent-tool"], (code) => {
+                test.check("missing optional command completes with 127", code === 127);
+                Exec.runOptional(["bifrost-selftest-nonexistent-tool"], (cached) => {
+                    test.check("missing optional command cached", cached === 127 && Exec.missingTools["bifrost-selftest-nonexistent-tool"] === true);
+                    Exec.runOptional(["printf", "%s", "literal $HOME; $(false)"], (ok, out) => {
+                        test.check("optional command preserves argv", ok === 0 && out === "literal $HOME; $(false)");
+                        test.optionalPending = false;
+                        if (test.finishPending) test.finish();
+                    });
+                });
+            });
             test.testLogic();
             test.testSchema();
             test.testConfig();

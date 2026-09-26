@@ -12,15 +12,21 @@ BarWidget {
     readonly property bool show: win !== null && (!bar || !win.monitor || win.monitor === bar.modelData.name)
 
     shown: show && !vertical && Compositor.supports("windowList")
-    implicitWidth: shown ? Math.min(title.implicitWidth, Theme.space.xxxl * 12) + Theme.space.md : 0
+    implicitWidth: shown ? Math.min(titleMetrics.advanceWidth, Theme.space.xxxl * 12) + Theme.space.md : 0
     implicitHeight: 0
+
+    TextMetrics {
+        id: titleMetrics
+        font: title.font
+        text: title.text
+    }
 
     BText {
         id: title
 
         anchors.verticalCenter: parent.verticalCenter
         x: Theme.space.sm
-        width: parent.width - Theme.space.md
+        width: Math.max(0, parent.width - Theme.space.md)
         text: widget.win ? widget.win.title : ""
         role: "label"
         tone: "muted"

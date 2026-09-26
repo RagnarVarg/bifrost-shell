@@ -31,7 +31,7 @@ Singleton {
     }
 
     function sample() {
-        Exec.run(["nvidia-smi", "--query-gpu=name,utilization.gpu,temperature.gpu,memory.used,memory.total", "--format=csv,noheader,nounits"], (code, out) => {
+        Exec.runOptional(["nvidia-smi", "--query-gpu=name,utilization.gpu,temperature.gpu,memory.used,memory.total", "--format=csv,noheader,nounits"], (code, out) => {
             probed = true;
             const f = code === 0 ? out.split("\n")[0].split(",").map(s => s.trim()) : [];
             available = f.length >= 5 && !isNaN(Number(f[1]));
