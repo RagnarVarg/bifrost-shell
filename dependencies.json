@@ -1,0 +1,603 @@
+{
+  "_comment": "Single source of truth for Bifrost's external dependencies and minimum versions. Read by `bifrostctl doctor` and by shell/Compat/Deps.qml. Update `tested` when verifying a new upstream release.",
+  "version": 1,
+  "dependencies": [
+    {
+      "id": "quickshell",
+      "level": "required",
+      "min": "0.3.0",
+      "tested": "0.3.1",
+      "purpose": "QML shell runtime (layer shell, IPC, file IO, services)",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "qs",
+          "--version"
+        ],
+        "regex": "Quickshell (\\d+\\.\\d+\\.\\d+)"
+      },
+      "install": {
+        "arch": "pacman -S quickshell",
+        "fedora": "dnf install quickshell",
+        "ubuntu": "apt install quickshell"
+      }
+    },
+    {
+      "id": "qt",
+      "level": "required",
+      "min": "6.8.0",
+      "tested": "6.11.2",
+      "purpose": "Qt Quick runtime used by Quickshell",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "/usr/lib/qt6/bin/qtpaths",
+          "--qt-version"
+        ],
+        "regex": "(\\d+\\.\\d+\\.\\d+)",
+        "alternatives": [
+          "qtpaths-qt6",
+          "qtpaths6",
+          "/usr/lib64/qt6/bin/qtpaths",
+          "qtpaths"
+        ]
+      },
+      "install": {
+        "arch": "pacman -S qt6-declarative",
+        "fedora": "dnf install qt6-qtbase",
+        "ubuntu": "apt install qt6-base-dev-tools"
+      }
+    },
+    {
+      "id": "hyprland",
+      "level": "required",
+      "min": "0.55.0",
+      "tested": "0.56.2",
+      "purpose": "Compositor. >= 0.55 is needed for the Lua config and `hyprctl eval` used by the Hyprland adapter",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "Hyprland",
+          "--version"
+        ],
+        "regex": "Hyprland\\s+v?(\\d+\\.\\d+(?:\\.\\d+)?)"
+      },
+      "install": {
+        "arch": "pacman -S hyprland",
+        "fedora": "dnf install hyprland",
+        "ubuntu": "apt install hyprland"
+      },
+      "features": {
+        "luaConfig": "0.55.0",
+        "hyprctlEval": "0.55.0"
+      }
+    },
+    {
+      "id": "quickshell-modules",
+      "level": "required",
+      "purpose": "Quickshell QML modules Bifrost imports",
+      "check": {
+        "type": "qml-modules",
+        "modules": [
+          "Quickshell",
+          "Quickshell.Io",
+          "Quickshell.Wayland",
+          "Quickshell.Hyprland",
+          "Quickshell.Widgets",
+          "Quickshell.DBusMenu",
+          "Quickshell.Services.SystemTray",
+          "Quickshell.Services.Notifications",
+          "Quickshell.Services.Mpris",
+          "Quickshell.Services.Pipewire",
+          "Quickshell.Services.UPower",
+          "Quickshell.Services.Pam",
+          "Quickshell.Bluetooth",
+          "Quickshell.Networking",
+          "Quickshell.Services.Polkit",
+          "Quickshell.Services.Greetd",
+          "QtQuick",
+          "QtQuick.Effects",
+          "Qt.labs.folderlistmodel"
+        ]
+      }
+    },
+    {
+      "id": "qt-shadertools",
+      "level": "build",
+      "min": "6.8.0",
+      "tested": "6.11.2",
+      "purpose": "qsb shader compiler; only needed to rebuild shell/Components/Shaders/*.qsb (compiled files are committed)",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "/usr/lib/qt6/bin/qsb",
+          "--version"
+        ],
+        "regex": "qsb (\\d+\\.\\d+\\.\\d+)",
+        "alternatives": [
+          "qsb-qt6",
+          "/usr/lib64/qt6/bin/qsb",
+          "qsb"
+        ]
+      },
+      "install": {
+        "arch": "pacman -S qt6-shadertools",
+        "fedora": "dnf install qt6-qtshadertools",
+        "ubuntu": "apt install qt6-shader-baker"
+      }
+    },
+    {
+      "id": "python",
+      "level": "required",
+      "min": "3.10",
+      "tested": "3.14.7",
+      "purpose": "tools/bifrostctl (config CLI, doctor, importers)",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "python3",
+          "--version"
+        ],
+        "regex": "Python (\\d+\\.\\d+(?:\\.\\d+)?)"
+      },
+      "install": {
+        "arch": "pacman -S python",
+        "fedora": "dnf install python3",
+        "ubuntu": "apt install python3"
+      }
+    },
+    {
+      "id": "font-geist",
+      "level": "recommended",
+      "purpose": "Primary UI typeface (falls back to the system sans-serif)",
+      "check": {
+        "type": "font",
+        "family": "Geist"
+      },
+      "install": {
+        "arch": "yay -S ttf-geist-variable"
+      }
+    },
+    {
+      "id": "font-geist-mono",
+      "level": "recommended",
+      "purpose": "Monospace for technical readouts (CPU/RAM, paths, versions)",
+      "check": {
+        "type": "font",
+        "family": "Geist Mono"
+      },
+      "install": {
+        "arch": "yay -S ttf-geist-mono-variable"
+      }
+    },
+    {
+      "id": "font-noto-runic",
+      "level": "optional",
+      "purpose": "Rune labels for workspaces (workspaces.labels = runes)",
+      "check": {
+        "type": "font",
+        "family": "Noto Sans Runic"
+      },
+      "install": {
+        "arch": "pacman -S noto-fonts"
+      }
+    },
+    {
+      "id": "fontconfig",
+      "level": "required",
+      "purpose": "Font detection for doctor",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "fc-list",
+          "--version"
+        ],
+        "regex": "(\\d+\\.\\d+\\.\\d+)"
+      },
+      "install": {
+        "arch": "pacman -S fontconfig",
+        "fedora": "dnf install fontconfig",
+        "ubuntu": "apt install fontconfig"
+      }
+    },
+    {
+      "id": "awww",
+      "level": "optional",
+      "purpose": "Wallpaper transitions (Bifrost can also draw its own wallpaper layer)",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "awww",
+          "--version"
+        ],
+        "regex": "(\\d+\\.\\d+\\.\\d+)"
+      },
+      "install": {
+        "arch": "pacman -S awww"
+      }
+    },
+    {
+      "id": "matugen",
+      "level": "optional",
+      "purpose": "Wallpaper-derived palettes (future theme feature)",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "matugen",
+          "--version"
+        ],
+        "regex": "(\\d+\\.\\d+\\.\\d+)"
+      },
+      "install": {
+        "arch": "pacman -S matugen"
+      }
+    },
+    {
+      "id": "brightnessctl",
+      "level": "optional",
+      "purpose": "Backlight control (laptops); external monitors use DDC",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "brightnessctl",
+          "--version"
+        ],
+        "regex": "(\\d+\\.\\d+)"
+      },
+      "install": {
+        "arch": "pacman -S brightnessctl",
+        "fedora": "dnf install brightnessctl",
+        "ubuntu": "apt install brightnessctl"
+      }
+    },
+    {
+      "id": "networkmanager",
+      "level": "optional",
+      "purpose": "Network status/control fallback (nmcli) where Quickshell.Networking is insufficient",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "nmcli",
+          "--version"
+        ],
+        "regex": "(\\d+\\.\\d+\\.\\d+)"
+      },
+      "install": {
+        "arch": "pacman -S networkmanager",
+        "fedora": "dnf install NetworkManager",
+        "ubuntu": "apt install network-manager"
+      }
+    },
+    {
+      "id": "nvidia-smi",
+      "level": "optional",
+      "purpose": "NVIDIA GPU temperature/usage for the GPU widget",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "nvidia-smi",
+          "--version"
+        ],
+        "regex": "NVIDIA-SMI version\\s*:\\s*(\\d+\\.\\d+(?:\\.\\d+)?)"
+      },
+      "install": {
+        "arch": "pacman -S nvidia-utils"
+      }
+    },
+    {
+      "id": "power-profiles-daemon",
+      "level": "optional",
+      "purpose": "Power profile switching in the control center",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "powerprofilesctl",
+          "version"
+        ],
+        "regex": "(\\d+\\.\\d+(?:\\.\\d+)?)"
+      },
+      "install": {
+        "arch": "pacman -S power-profiles-daemon",
+        "fedora": "dnf install power-profiles-daemon",
+        "ubuntu": "apt install power-profiles-daemon"
+      }
+    },
+    {
+      "id": "piactl",
+      "level": "optional",
+      "purpose": "Private Internet Access VPN status/toggle in the control center",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "piactl",
+          "--version"
+        ],
+        "regex": "(\\d+\\.\\d+(?:\\.\\d+)?)"
+      },
+      "install": {
+        "arch": "PIA client from privateinternetaccess.com"
+      }
+    },
+    {
+      "id": "ddcutil",
+      "level": "optional",
+      "purpose": "Brightness of external monitors over DDC/CI",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "ddcutil",
+          "--version"
+        ],
+        "regex": "ddcutil (\\d+\\.\\d+(?:\\.\\d+)?)"
+      },
+      "install": {
+        "arch": "pacman -S ddcutil (needs i2c-dev access)",
+        "fedora": "dnf install ddcutil",
+        "ubuntu": "apt install ddcutil"
+      }
+    },
+    {
+      "id": "wireplumber",
+      "level": "recommended",
+      "purpose": "PipeWire session manager (audio in control center/OSD)",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "wireplumber",
+          "--version"
+        ],
+        "regex": "(\\d+\\.\\d+\\.\\d+)"
+      },
+      "install": {
+        "arch": "pacman -S wireplumber",
+        "fedora": "dnf install wireplumber",
+        "ubuntu": "apt install wireplumber"
+      }
+    },
+    {
+      "id": "python-gobject",
+      "level": "recommended",
+      "purpose": "Hidden Wi-Fi connection through NetworkManager D-Bus; the Bluetooth pairing agent",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "python3",
+          "-c",
+          "from gi.repository import Gio, GLib; print(\"available\")"
+        ]
+      },
+      "install": {
+        "arch": "pacman -S python-gobject",
+        "fedora": "dnf install python3-gobject",
+        "ubuntu": "apt install python3-gi"
+      }
+    },
+    {
+      "id": "rsync",
+      "level": "required",
+      "purpose": "Installation and graphical session startup",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "rsync",
+          "--version"
+        ]
+      },
+      "install": {
+        "arch": "pacman -S rsync",
+        "fedora": "dnf install rsync",
+        "ubuntu": "apt install rsync"
+      }
+    },
+    {
+      "id": "flock",
+      "level": "required",
+      "purpose": "Installation and graphical session startup",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "flock",
+          "--help"
+        ]
+      },
+      "install": {
+        "arch": "pacman -S util-linux",
+        "fedora": "dnf install util-linux",
+        "ubuntu": "apt install util-linux"
+      }
+    },
+    {
+      "id": "systemd",
+      "level": "required",
+      "purpose": "Installation and graphical session startup",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "systemctl",
+          "--version"
+        ]
+      },
+      "install": {
+        "arch": "pacman -S systemd",
+        "fedora": "dnf install systemd",
+        "ubuntu": "apt install systemd"
+      }
+    },
+    {
+      "id": "dbus-environment",
+      "level": "required",
+      "purpose": "Installation and graphical session startup",
+      "check": {
+        "type": "executable",
+        "cmd": [
+          "dbus-update-activation-environment"
+        ]
+      },
+      "install": {
+        "arch": "pacman -S dbus",
+        "fedora": "dnf install dbus-tools",
+        "ubuntu": "apt install dbus-bin"
+      }
+    }
+  ],
+  "platforms": {
+    "fedora": {
+      "versions": [
+        "44"
+      ],
+      "repositories": [
+        {
+          "name": "lionheartp/Hyprland",
+          "url": "https://copr.fedorainfracloud.org/coprs/lionheartp/Hyprland/",
+          "command": [
+            "dnf",
+            "copr",
+            "enable",
+            "-y",
+            "lionheartp/Hyprland"
+          ]
+        },
+        {
+          "name": "errornointernet/quickshell",
+          "url": "https://copr.fedorainfracloud.org/coprs/errornointernet/quickshell/",
+          "command": [
+            "dnf",
+            "copr",
+            "enable",
+            "-y",
+            "errornointernet/quickshell"
+          ]
+        }
+      ],
+      "bootstrap": [
+        "dnf",
+        "install",
+        "-y",
+        "dnf5-plugins"
+      ],
+      "install": [
+        "dnf",
+        "install",
+        "-y"
+      ],
+      "packages": [
+        "quickshell",
+        "hyprland",
+        "qt6-qtbase",
+        "qt6-qtdeclarative",
+        "qt6-qtsvg",
+        "qt6-qtwayland",
+        "qt6-qtimageformats",
+        "python3",
+        "python3-gobject",
+        "fontconfig",
+        "rsync",
+        "util-linux",
+        "dbus-tools",
+        "grim",
+        "slurp",
+        "wl-clipboard",
+        "libnotify",
+        "NetworkManager",
+        "bluez",
+        "brightnessctl",
+        "wireplumber",
+        "pipewire",
+        "polkit",
+        "xdg-utils",
+        "xdg-desktop-portal-hyprland",
+        "xdg-desktop-portal-gtk",
+        "kitty"
+      ]
+    },
+    "ubuntu": {
+      "versions": [
+        "26.04"
+      ],
+      "repositories": [
+        {
+          "name": "universe",
+          "url": "https://packages.ubuntu.com/resolute/",
+          "command": [
+            "add-apt-repository",
+            "-y",
+            "universe"
+          ]
+        },
+        {
+          "name": "ppa:cppiber/hyprland",
+          "url": "https://launchpad.net/~cppiber/+archive/ubuntu/hyprland",
+          "command": [
+            "add-apt-repository",
+            "-y",
+            "ppa:cppiber/hyprland"
+          ]
+        },
+        {
+          "name": "ppa:avengemedia/danklinux",
+          "url": "https://launchpad.net/~avengemedia/+archive/ubuntu/danklinux",
+          "command": [
+            "add-apt-repository",
+            "-y",
+            "ppa:avengemedia/danklinux"
+          ]
+        }
+      ],
+      "prepare": [
+        "apt-get",
+        "update"
+      ],
+      "bootstrap": [
+        "apt-get",
+        "install",
+        "-y",
+        "software-properties-common",
+        "ca-certificates"
+      ],
+      "refresh": [
+        "apt-get",
+        "update"
+      ],
+      "install": [
+        "apt-get",
+        "install",
+        "-y"
+      ],
+      "packages": [
+        "quickshell",
+        "hyprland",
+        "qt6-base-dev-tools",
+        "qt6-wayland",
+        "libqt6svg6",
+        "qt6-image-formats-plugins",
+        "qml6-module-qtquick",
+        "qml6-module-qtquick-window",
+        "qml6-module-qtquick-effects",
+        "qml6-module-qtqml-workerscript",
+        "qml6-module-qt-labs-folderlistmodel",
+        "python3",
+        "python3-gi",
+        "gir1.2-glib-2.0",
+        "fontconfig",
+        "rsync",
+        "util-linux",
+        "dbus-user-session",
+        "dbus-bin",
+        "grim",
+        "slurp",
+        "wl-clipboard",
+        "libnotify-bin",
+        "network-manager",
+        "bluez",
+        "brightnessctl",
+        "wireplumber",
+        "pipewire",
+        "polkitd",
+        "xdg-utils",
+        "xdg-desktop-portal-hyprland",
+        "xdg-desktop-portal-gtk",
+        "kitty"
+      ]
+    }
+  }
+}

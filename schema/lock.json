@@ -1,0 +1,35 @@
+{
+  "section": "lock",
+  "label": "Lock screen",
+  "icon": "lock",
+  "groups": {
+    "general": "General",
+    "security": "Security"
+  },
+  "settings": [
+    {
+      "key": "lock.showClock",
+      "type": "bool",
+      "default": true,
+      "label": "Show clock",
+      "group": "general"
+    },
+    {
+      "key": "lock.showMedia",
+      "type": "bool",
+      "default": true,
+      "label": "Show media",
+      "group": "general"
+    },
+    {
+      "key": "lock.pamService",
+      "type": "string",
+      "default": "login",
+      "label": "PAM service",
+      "description": "Service in /etc/pam.d that checks the password",
+      "group": "security",
+      "advanced": true,
+      "apply": "reload"
+    }
+  ]
+}

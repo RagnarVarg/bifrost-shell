@@ -1,0 +1,135 @@
+{
+  "section": "clock",
+  "label": "Clock & date",
+  "icon": "sun",
+  "groups": {
+    "time": "Time",
+    "date": "Date",
+    "region": "Language",
+    "menu": "Clock menu"
+  },
+  "settings": [
+    {
+      "key": "clock.format",
+      "type": "enum",
+      "default": "24h",
+      "options": [
+        "24h",
+        "12h"
+      ],
+      "optionLabels": {
+        "24h": "24 hours",
+        "12h": "12 hours"
+      },
+      "label": "Time format",
+      "group": "time"
+    },
+    {
+      "key": "clock.showSeconds",
+      "type": "bool",
+      "default": false,
+      "label": "Show seconds",
+      "group": "time"
+    },
+    {
+      "key": "clock.showDate",
+      "type": "bool",
+      "default": true,
+      "label": "Show date",
+      "group": "date"
+    },
+    {
+      "key": "clock.dateFormat",
+      "type": "string",
+      "default": "ddd d MMM",
+      "label": "Date format",
+      "description": "Qt format, e.g. \"ddd d MMM\" or \"yyyy-MM-dd\"",
+      "group": "date",
+      "dependsOn": "clock.showDate"
+    },
+    {
+      "key": "clock.weekNumber",
+      "type": "bool",
+      "default": false,
+      "label": "Show week number",
+      "group": "date"
+    },
+    {
+      "key": "clock.locale",
+      "type": "enum",
+      "default": "system",
+      "options": [
+        "system",
+        "sv_SE",
+        "en_GB",
+        "en_US",
+        "nb_NO",
+        "da_DK",
+        "fi_FI",
+        "de_DE"
+      ],
+      "optionLabels": {
+        "system": "System",
+        "sv_SE": "Swedish",
+        "en_GB": "English (UK)",
+        "en_US": "English (US)",
+        "nb_NO": "Norwegian",
+        "da_DK": "Danish",
+        "fi_FI": "Finnish",
+        "de_DE": "German"
+      },
+      "label": "Date language",
+      "description": "Names of days and months",
+      "group": "region"
+    },
+    {
+      "key": "clock.menu.weather",
+      "type": "bool",
+      "default": true,
+      "label": "Weather",
+      "description": "Current weather and forecast in the clock menu, from Open-Meteo (api.open-meteo.com) for the location under Appearance or your time zone, rounded to about 1 km",
+      "group": "menu",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "clock.menu.temperatureUnit",
+      "type": "enum",
+      "default": "celsius",
+      "options": [
+        "celsius",
+        "fahrenheit"
+      ],
+      "optionLabels": {
+        "celsius": "Celsius (°C)",
+        "fahrenheit": "Fahrenheit (°F)"
+      },
+      "label": "Temperature unit",
+      "group": "menu",
+      "scope": "shell",
+      "apply": "live",
+      "dependsOnValue": {
+        "clock.menu.weather": true
+      }
+    },
+    {
+      "key": "clock.menu.media",
+      "type": "bool",
+      "default": true,
+      "label": "Now playing",
+      "description": "What is playing, with media controls, in the clock menu",
+      "group": "menu",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "clock.weather.location",
+      "type": "object",
+      "default": {},
+      "editor": "WeatherLocationEditor",
+      "label": "Weather location",
+      "description": "Search for a city and select a result. Empty uses the appearance location or system time zone.",
+      "group": "menu"
+    }
+  ]
+}

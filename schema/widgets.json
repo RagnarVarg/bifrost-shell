@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "_comment": "Bar widget registry. Each selectable id has a WidgetHost implementation.",
+  "widgets": [
+    {
+      "id": "launcher",
+      "label": "Launcher",
+      "icon": "apps"
+    },
+    {
+      "id": "workspaces",
+      "label": "Workspaces",
+      "icon": "layers"
+    },
+    {
+      "id": "activeWindow",
+      "label": "Active window",
+      "icon": "display"
+    },
+    {
+      "id": "clock",
+      "label": "Clock",
+      "icon": "sun"
+    },
+    {
+      "id": "media",
+      "label": "Media",
+      "icon": "music"
+    },
+    {
+      "id": "systemStats",
+      "label": "System (CPU/RAM)",
+      "icon": "cpu"
+    },
+    {
+      "id": "gpu",
+      "label": "GPU",
+      "icon": "memory"
+    },
+    {
+      "id": "battery",
+      "label": "Battery",
+      "icon": "battery"
+    },
+    {
+      "id": "tray",
+      "label": "System tray",
+      "icon": "apps"
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+      "icon": "bell"
+    },
+    {
+      "id": "display",
+      "label": "Display (HDR)",
+      "icon": "display"
+    },
+    {
+      "id": "status",
+      "label": "Status (network, Bluetooth, sound)",
+      "icon": "wifi"
+    },
+    {
+      "id": "controlCenter",
+      "label": "Control center",
+      "icon": "toggles"
+    },
+    {
+      "id": "settings",
+      "label": "Settings button",
+      "icon": "settings"
+    },
+    {
+      "id": "power",
+      "label": "Power (system menu)",
+      "icon": "power"
+    },
+    {
+      "id": "spacer",
+      "label": "Spacer",
+      "icon": "minus",
+      "multiple": true
+    },
+    {
+      "id": "screenshot",
+      "label": "Screenshot",
+      "icon": "camera"
+    }
+  ]
+}

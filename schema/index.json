@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "appearance",
+      "label": "Appearance",
+      "icon": "palette",
+      "pages": [
+        {
+          "id": "themeBrowser",
+          "label": "Get more themes",
+          "icon": "palette",
+          "page": "ThemeBrowserPage"
+        }
+      ]
+    },
+    {
+      "id": "shell",
+      "label": "Shell",
+      "icon": "layout"
+    },
+    {
+      "id": "widgets",
+      "label": "Widgets & info",
+      "icon": "apps"
+    },
+    {
+      "id": "system",
+      "label": "System",
+      "icon": "display",
+      "pages": [
+        {
+          "id": "network",
+          "label": "Network",
+          "icon": "wifi",
+          "page": "NetworkPage"
+        },
+        {
+          "id": "bluetooth",
+          "label": "Bluetooth",
+          "icon": "bluetooth",
+          "page": "BluetoothPage"
+        },
+        {
+          "id": "monitors",
+          "label": "Displays",
+          "icon": "display",
+          "page": "DisplayPage"
+        }
+      ]
+    },
+    {
+      "id": "profiles",
+      "label": "Profiles & data",
+      "icon": "layers",
+      "pages": [
+        {
+          "id": "profiles",
+          "label": "Profiles & presets",
+          "icon": "layers",
+          "page": "ProfilesPage"
+        },
+        {
+          "id": "transfer",
+          "label": "Import & export",
+          "icon": "open",
+          "page": "TransferPage"
+        },
+        {
+          "id": "data",
+          "label": "Data & diagnostics",
+          "icon": "info",
+          "page": "DataPage"
+        }
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "file": "appearance.json",
+      "category": "appearance"
+    },
+    {
+      "file": "wallpaper.json",
+      "category": "appearance"
+    },
+    {
+      "file": "materials.json",
+      "category": "appearance"
+    },
+    {
+      "file": "settings-ui.json",
+      "category": "appearance"
+    },
+    {
+      "file": "typography.json",
+      "category": "appearance"
+    },
+    {
+      "file": "motion.json",
+      "category": "appearance"
+    },
+    {
+      "file": "bar.json",
+      "category": "shell"
+    },
+    {
+      "file": "workspaces.json",
+      "category": "shell"
+    },
+    {
+      "file": "launcher.json",
+      "category": "shell"
+    },
+    {
+      "file": "dock.json",
+      "category": "shell"
+    },
+    {
+      "file": "controlcenter.json",
+      "category": "shell"
+    },
+    {
+      "file": "osd.json",
+      "category": "shell"
+    },
+    {
+      "file": "notifications.json",
+      "category": "shell"
+    },
+    {
+      "file": "lock.json",
+      "category": "shell"
+    },
+    {
+      "file": "greeter.json",
+      "category": "shell"
+    },
+    {
+      "file": "power.json",
+      "category": "shell"
+    },
+    {
+      "file": "clock.json",
+      "category": "widgets"
+    },
+    {
+      "file": "systemstats.json",
+      "category": "widgets"
+    },
+    {
+      "file": "keybinds.json",
+      "category": "system"
+    },
+    {
+      "file": "displays.json",
+      "category": "system"
+    },
+    {
+      "file": "hyprland.json",
+      "category": "system"
+    },
+    {
+      "file": "input.json",
+      "category": "system"
+    }
+  ]
+}

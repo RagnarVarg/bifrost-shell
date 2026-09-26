@@ -1,0 +1,327 @@
+{
+  "section": "input",
+  "label": "Input",
+  "icon": "keyboard",
+  "page": "InputPage",
+  "description": "Keyboard, mouse and trackpad settings.",
+  "settings": [
+    {
+      "key": "input.devices",
+      "type": "object",
+      "default": {},
+      "scope": "hyprland",
+      "apply": "live",
+      "label": "Input devices",
+      "deviceFields": [
+        {
+          "key": "kb_layout",
+          "label": "Keyboard layouts",
+          "type": "string",
+          "kinds": [
+            "keyboard"
+          ],
+          "pattern": "^[a-zA-Z0-9_+-]+(,[a-zA-Z0-9_+-]+){0,3}$",
+          "description": "Choose up to four layouts. Changes apply to the selected keyboard."
+        },
+        {
+          "key": "kb_variant",
+          "label": "Layout variants",
+          "type": "string",
+          "kinds": [
+            "keyboard"
+          ],
+          "pattern": "^[a-zA-Z0-9_+,-]*$"
+        },
+        {
+          "key": "kb_options",
+          "label": "XKB options",
+          "type": "string",
+          "kinds": [
+            "keyboard"
+          ],
+          "pattern": "^[a-zA-Z0-9_:+,-]*$"
+        },
+        {
+          "key": "repeat_delay",
+          "label": "Repeat delay",
+          "type": "int",
+          "kinds": [
+            "keyboard"
+          ],
+          "min": 0,
+          "max": 2000,
+          "step": 25,
+          "unit": "ms"
+        },
+        {
+          "key": "repeat_rate",
+          "label": "Repeat rate",
+          "type": "int",
+          "kinds": [
+            "keyboard"
+          ],
+          "min": 0,
+          "max": 200,
+          "step": 1,
+          "unit": "Hz"
+        },
+        {
+          "key": "numlock_by_default",
+          "label": "Num Lock on startup",
+          "type": "bool",
+          "kinds": [
+            "keyboard"
+          ]
+        },
+        {
+          "key": "sensitivity",
+          "label": "Pointer speed",
+          "type": "real",
+          "kinds": [
+            "mouse",
+            "trackpad"
+          ],
+          "min": -1,
+          "max": 1,
+          "step": 0.05,
+          "capability": "accel"
+        },
+        {
+          "key": "accel_profile",
+          "label": "Acceleration profile",
+          "type": "enum",
+          "kinds": [
+            "mouse",
+            "trackpad"
+          ],
+          "options": [
+            "adaptive",
+            "flat"
+          ],
+          "optionLabels": [
+            "Adaptive",
+            "Flat (no acceleration)"
+          ],
+          "capability": "profiles"
+        },
+        {
+          "key": "natural_scroll",
+          "label": "Natural scrolling",
+          "type": "bool",
+          "kinds": [
+            "mouse",
+            "trackpad"
+          ],
+          "capability": "natural"
+        },
+        {
+          "key": "left_handed",
+          "label": "Left-handed buttons",
+          "type": "bool",
+          "kinds": [
+            "mouse",
+            "trackpad"
+          ],
+          "capability": "leftHanded"
+        },
+        {
+          "key": "scroll_factor",
+          "label": "Scroll speed",
+          "type": "real",
+          "kinds": [
+            "mouse",
+            "trackpad"
+          ],
+          "min": 0.1,
+          "max": 5,
+          "step": 0.1
+        },
+        {
+          "key": "middle_button_emulation",
+          "label": "Middle-click emulation",
+          "type": "bool",
+          "kinds": [
+            "mouse",
+            "trackpad"
+          ],
+          "capability": "middle"
+        },
+        {
+          "key": "scroll_method",
+          "label": "Scroll method",
+          "type": "enum",
+          "kinds": [
+            "mouse",
+            "trackpad"
+          ],
+          "options": [
+            "2fg",
+            "edge",
+            "on_button_down",
+            "no_scroll"
+          ],
+          "optionLabels": [
+            "Two-finger",
+            "Edge scrolling",
+            "While holding a button",
+            "Disabled"
+          ],
+          "capability": "scrollMethods"
+        },
+        {
+          "key": "scroll_button",
+          "label": "Scroll button",
+          "type": "enum",
+          "kinds": [
+            "mouse"
+          ],
+          "capability": "buttons",
+          "options": [
+            0,
+            272,
+            273,
+            274,
+            275,
+            276,
+            277,
+            278,
+            279
+          ],
+          "optionLabels": [
+            "Disabled",
+            "Left button",
+            "Right button",
+            "Middle button",
+            "Side button",
+            "Extra button",
+            "Forward button",
+            "Back button",
+            "Task button"
+          ]
+        },
+        {
+          "key": "tap_to_click",
+          "label": "Tap to click",
+          "type": "bool",
+          "kinds": [
+            "trackpad"
+          ],
+          "capability": "tap"
+        },
+        {
+          "key": "tap_and_drag",
+          "label": "Tap-and-drag",
+          "type": "bool",
+          "kinds": [
+            "trackpad"
+          ],
+          "capability": "tap"
+        },
+        {
+          "key": "drag_lock",
+          "label": "Drag lock",
+          "type": "enum",
+          "kinds": [
+            "trackpad"
+          ],
+          "options": [
+            0,
+            1,
+            2
+          ],
+          "optionLabels": [
+            "Disabled",
+            "With timeout",
+            "Sticky"
+          ],
+          "capability": "tap"
+        },
+        {
+          "key": "disable_while_typing",
+          "label": "Disable while typing",
+          "type": "bool",
+          "kinds": [
+            "trackpad"
+          ],
+          "capability": "dwt"
+        },
+        {
+          "key": "clickfinger_behavior",
+          "label": "Click method",
+          "type": "enum",
+          "kinds": [
+            "trackpad"
+          ],
+          "options": [
+            false,
+            true
+          ],
+          "optionLabels": [
+            "Button areas",
+            "Clickfinger"
+          ],
+          "capability": "clickMethods"
+        }
+      ]
+    },
+    {
+      "key": "input.gestures",
+      "type": "object",
+      "default": {},
+      "scope": "hyprland",
+      "apply": "live",
+      "label": "Trackpad gestures",
+      "mapKeyPattern": "^[34]:(swipe|horizontal|vertical|left|right|up|down|pinchin|pinchout)$",
+      "valueOptions": [
+        "none",
+        "workspace",
+        "move",
+        "resize",
+        "float",
+        "close",
+        "fullscreen",
+        "launcher",
+        "controlcenter",
+        "notifications",
+        "overview",
+        "overview-open",
+        "overview-close"
+      ]
+    },
+    {
+      "key": "input.activeLayouts",
+      "type": "object",
+      "default": {},
+      "scope": "hyprland",
+      "apply": "live",
+      "label": "Active keyboard layouts",
+      "mapKeyPattern": "^[^\\x00-\\x1f]{1,256}$",
+      "valueOptions": [
+        0,
+        1,
+        2,
+        3
+      ]
+    }
+  ],
+  "subpages": [
+    {
+      "id": "input/keyboard",
+      "label": "Keyboard",
+      "icon": "keyboard",
+      "page": "InputPage"
+    },
+    {
+      "id": "input/mouse",
+      "label": "Mouse",
+      "icon": "mouse",
+      "page": "InputPage"
+    },
+    {
+      "id": "input/trackpad",
+      "label": "Trackpad",
+      "icon": "trackpad",
+      "page": "InputPage"
+    }
+  ]
+}

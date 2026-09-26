@@ -1,0 +1,9 @@
+{
+  "name": "Spacious",
+  "description": "Spacious density with more air everywhere",
+  "values": {
+    "appearance": {
+      "density": "spacious"
+    }
+  }
+}

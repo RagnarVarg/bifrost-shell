@@ -1,0 +1,61 @@
+{
+  "_comment": "Bifrost default keybindings (and, under actions, further actions the Shortcuts page offers for your own) (Hyprland). The single source for the binds in the generated ~/.config/bifrost/hypr/bifrost.lua. Modelled on the DMS defaults, with Bifrost IPC and system commands instead. Each bind is unbound first, so a key never triggers twice. Each bind has a stable id (keybinds.overrides changes its keys by id; SUPER+1..9 get workspace-N / move-to-N / move-follow-N). Actions: ipc = 'bifrost-ipc <target> <fn> [args]', run = a command (bin/ wrappers resolve against the install), dispatch = a Hyprland Lua dispatcher expression. Groups can be switched off in Settings → Keybindings; keybinds.custom adds or replaces binds, keybinds.disabled removes them.",
+  "groups": {
+    "shell": "Bifrost",
+    "media": "Volume, media & brightness",
+    "screenshots": "Screenshots",
+    "windows": "Windows",
+    "workspaces": "Workspaces"
+  },
+  "actions": [
+    { "id": "control-center", "ipc": "controlcenter toggle", "description": "Control center" },
+    { "id": "clock-menu", "ipc": "bar statusMenu clock", "description": "Calendar & weather" },
+    { "id": "system-menu", "ipc": "bar statusMenu system", "description": "System menu" }
+  ],
+  "binds": [
+    { "group": "shell", "id": "launcher", "keys": "SUPER + space", "ipc": "launcher toggle", "description": "Launcher" },
+    { "group": "shell", "id": "overview", "keys": "SUPER + O", "ipc": "overview toggle", "description": "Window overview" },
+    { "group": "shell", "id": "settings", "keys": "SUPER + comma", "run": "bifrost-settings", "description": "Settings" },
+    { "group": "shell", "id": "notifications", "keys": "SUPER + N", "ipc": "notifications toggle", "description": "Notification center" },
+    { "group": "shell", "id": "power-menu", "keys": "SUPER + X", "ipc": "power toggle", "description": "Power menu" },
+    { "group": "shell", "id": "lock", "keys": "SUPER + ALT + L", "ipc": "lock lock", "description": "Lock screen" },
+    { "group": "shell", "id": "terminal", "keys": "SUPER + T", "run": "bifrost-terminal", "description": "Terminal" },
+
+    { "group": "media", "id": "volume-up", "keys": "XF86AudioRaiseVolume", "ipc": "audio increment", "locked": true, "repeating": true, "description": "Volume up" },
+    { "group": "media", "id": "volume-down", "keys": "XF86AudioLowerVolume", "ipc": "audio decrement", "locked": true, "repeating": true, "description": "Volume down" },
+    { "group": "media", "id": "mute", "keys": "XF86AudioMute", "ipc": "audio mute", "locked": true, "description": "Mute" },
+    { "group": "media", "id": "mic-mute", "keys": "XF86AudioMicMute", "ipc": "audio micMute", "locked": true, "description": "Mute microphone" },
+    { "group": "media", "id": "play", "keys": "XF86AudioPlay", "ipc": "media playPause", "locked": true, "description": "Play/pause" },
+    { "group": "media", "id": "pause", "keys": "XF86AudioPause", "ipc": "media playPause", "locked": true, "description": "Play/pause" },
+    { "group": "media", "id": "next-track", "keys": "XF86AudioNext", "ipc": "media next", "locked": true, "description": "Next track" },
+    { "group": "media", "id": "previous-track", "keys": "XF86AudioPrev", "ipc": "media previous", "locked": true, "description": "Previous track" },
+    { "group": "media", "id": "stop", "keys": "XF86AudioStop", "ipc": "media stop", "locked": true, "description": "Stop" },
+    { "group": "media", "id": "brightness-up", "keys": "XF86MonBrightnessUp", "ipc": "brightness increment", "locked": true, "repeating": true, "description": "Brightness up" },
+    { "group": "media", "id": "brightness-down", "keys": "XF86MonBrightnessDown", "ipc": "brightness decrement", "locked": true, "repeating": true, "description": "Brightness down" },
+
+    { "group": "screenshots", "id": "screenshot-area", "keys": "Print", "run": "bifrost-screenshot region", "description": "Screenshot of an area" },
+    { "group": "screenshots", "id": "screenshot-screen", "keys": "CTRL + Print", "run": "bifrost-screenshot full", "description": "Screenshot of the screen" },
+    { "group": "screenshots", "id": "screenshot-window", "keys": "ALT + Print", "run": "bifrost-screenshot window", "description": "Screenshot of the active window" },
+
+    { "group": "windows", "id": "close-window", "keys": "SUPER + Q", "dispatch": "hl.dsp.window.close()", "description": "Close window" },
+    { "group": "windows", "id": "maximize", "keys": "SUPER + F", "dispatch": "hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\" })", "description": "Maximize" },
+    { "group": "windows", "id": "fullscreen", "keys": "SUPER + SHIFT + F", "dispatch": "hl.dsp.window.fullscreen({ mode = \"fullscreen\", action = \"toggle\" })", "description": "Fullscreen" },
+    { "group": "windows", "id": "float", "keys": "SUPER + SHIFT + T", "dispatch": "hl.dsp.window.float({ action = \"toggle\" })", "description": "Float/tile" },
+    { "group": "windows", "id": "focus-left", "keys": "SUPER + left", "dispatch": "hl.dsp.focus({ direction = \"l\" })", "description": "Focus left" },
+    { "group": "windows", "id": "focus-right", "keys": "SUPER + right", "dispatch": "hl.dsp.focus({ direction = \"r\" })", "description": "Focus right" },
+    { "group": "windows", "id": "focus-up", "keys": "SUPER + up", "dispatch": "hl.dsp.focus({ direction = \"u\" })", "description": "Focus up" },
+    { "group": "windows", "id": "focus-down", "keys": "SUPER + down", "dispatch": "hl.dsp.focus({ direction = \"d\" })", "description": "Focus down" },
+    { "group": "windows", "id": "move-left", "keys": "SUPER + SHIFT + left", "dispatch": "hl.dsp.window.move({ direction = \"l\" })", "description": "Move left" },
+    { "group": "windows", "id": "move-right", "keys": "SUPER + SHIFT + right", "dispatch": "hl.dsp.window.move({ direction = \"r\" })", "description": "Move right" },
+    { "group": "windows", "id": "move-up", "keys": "SUPER + SHIFT + up", "dispatch": "hl.dsp.window.move({ direction = \"u\" })", "description": "Move up" },
+    { "group": "windows", "id": "move-down", "keys": "SUPER + SHIFT + down", "dispatch": "hl.dsp.window.move({ direction = \"d\" })", "description": "Move down" },
+    { "group": "windows", "id": "drag-window", "keys": "SUPER + mouse:272", "dispatch": "hl.dsp.window.drag()", "mouse": true, "description": "Drag window" },
+    { "group": "windows", "id": "resize-window", "keys": "SUPER + mouse:273", "dispatch": "hl.dsp.window.resize()", "mouse": true, "description": "Resize window" },
+
+    { "group": "workspaces", "id": "workspace-next-scroll", "keys": "SUPER + mouse_down", "dispatch": "hl.dsp.focus({ workspace = \"e+1\" })", "description": "Next workspace" },
+    { "group": "workspaces", "id": "workspace-previous-scroll", "keys": "SUPER + mouse_up", "dispatch": "hl.dsp.focus({ workspace = \"e-1\" })", "description": "Previous workspace" },
+    { "group": "workspaces", "id": "workspace-next", "keys": "SUPER + Page_Down", "dispatch": "hl.dsp.focus({ workspace = \"e+1\" })", "description": "Next workspace" },
+    { "group": "workspaces", "id": "workspace-previous", "keys": "SUPER + Page_Up", "dispatch": "hl.dsp.focus({ workspace = \"e-1\" })", "description": "Previous workspace" }
+  ],
+  "_workspaceDigits": "SUPER+1..9 are generated from keybinds.workspaceStyle: 'focus' = SUPER+N shows workspace N, SUPER+SHIFT+N moves the window there (DMS); 'moveFollow' = SUPER+N moves the window and follows, SUPER+ALT+N only shows, SUPER+SHIFT+N moves without following."
+}

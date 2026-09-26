@@ -1,0 +1,47 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg1" x1="20" y1="20" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8ED0FF"></stop>
+      <stop offset="0.5" stop-color="#6EA8FF"></stop>
+      <stop offset="1" stop-color="#8A7CFF"></stop>
+    </linearGradient>
+
+    <linearGradient id="bg2" x1="30" y1="28" x2="98" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9FE0FF" stop-opacity="0.95"></stop>
+      <stop offset="1" stop-color="#7A72FF" stop-opacity="0.95"></stop>
+    </linearGradient>
+
+    <linearGradient id="bg3" x1="40" y1="36" x2="90" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B8EBFF" stop-opacity="0.98"></stop>
+      <stop offset="1" stop-color="#8C82FF" stop-opacity="0.98"></stop>
+    </linearGradient>
+
+    <linearGradient id="shine" x1="35" y1="24" x2="80" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="white" stop-opacity="0.75"></stop>
+      <stop offset="1" stop-color="white" stop-opacity="0"></stop>
+    </linearGradient>
+
+    <filter id="shadow" x="0" y="0" width="128" height="128" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1E2148" flood-opacity="0.28"></feDropShadow>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <!-- Back window -->
+    <rect x="18" y="26" width="64" height="48" rx="14" fill="url(#bg1)" fill-opacity="0.65"></rect>
+    <rect x="18.75" y="26.75" width="62.5" height="46.5" rx="13.25" stroke="white" stroke-opacity="0.35" stroke-width="1.5"></rect>
+
+    <!-- Middle window -->
+    <rect x="36" y="34" width="64" height="48" rx="14" fill="url(#bg2)" fill-opacity="0.82"></rect>
+    <rect x="36.75" y="34.75" width="62.5" height="46.5" rx="13.25" stroke="white" stroke-opacity="0.4" stroke-width="1.5"></rect>
+
+    <!-- Front window -->
+    <rect x="48" y="48" width="62" height="46" rx="14" fill="url(#bg3)"></rect>
+    <rect x="48.75" y="48.75" width="60.5" height="44.5" rx="13.25" stroke="white" stroke-opacity="0.45" stroke-width="1.5"></rect>
+
+    <!-- subtle glass highlight -->
+    <path d="M24 31C24 28.2386 26.2386 26 29 26H69C60 31 49 39 41 50C35 58 30 67 28 74H24V31Z" fill="url(#shine)"></path>
+    <path d="M42 39C42 36.2386 44.2386 34 47 34H87C79 39 68 47 61 57C56 64 51 73 49 82H42V39Z" fill="url(#shine)" opacity="0.7"></path>
+    <path d="M53 53C53 50.2386 55.2386 48 58 48H96C90 52 82 59 76 67C72 73 68 81 66 94H53V53Z" fill="url(#shine)" opacity="0.65"></path>
+  </g>
+</svg>

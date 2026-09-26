@@ -1,0 +1,9 @@
+{
+  "name": "Compact",
+  "description": "Compact density with a thinner bar and smaller dock",
+  "values": {
+    "appearance": {
+      "density": "compact"
+    }
+  }
+}

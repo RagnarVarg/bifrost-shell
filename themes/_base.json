@@ -1,0 +1,548 @@
+{
+  "id": "_base",
+  "name": "Bifrost base tokens",
+  "_comment": "Structural tokens shared by all themes. Themes override palette/opacity/materials per variant. Colours are opaque #RRGGBB; translucency is expressed as { color, alpha } and resolved centrally. '@a.b' references another token.",
+  "space": {
+    "xxs": 2,
+    "xs": 3,
+    "sm": 5,
+    "md": 7,
+    "lg": 10,
+    "xl": 14,
+    "xxl": 20,
+    "xxxl": 28
+  },
+  "radius": {
+    "xs": 3,
+    "sm": 5,
+    "md": 8,
+    "lg": 10,
+    "xl": 14,
+    "full": 9999
+  },
+  "border": {
+    "hairline": 1,
+    "material": 1,
+    "thick": 2,
+    "focus": 2
+  },
+  "opacity": {
+    "hairline": 0.1,
+    "innerBorder": 0.16,
+    "outerBorder": 0.5,
+    "disabled": 0.38,
+    "scrim": 0.45,
+    "stateHover": 0.055,
+    "statePressed": 0.1,
+    "stateSelected": 0.14,
+    "stateActive": 0.2,
+    "track": 0.16,
+    "controlFill": 0.06,
+    "fieldFill": 0.3,
+    "divider": 0.08
+  },
+  "elevation": {
+    "none": {
+      "blur": 0,
+      "y": 0,
+      "spread": 0,
+      "opacity": 0
+    },
+    "low": {
+      "blur": 10,
+      "y": 2,
+      "spread": 0,
+      "opacity": 0.18
+    },
+    "mid": {
+      "blur": 20,
+      "y": 6,
+      "spread": 0,
+      "opacity": 0.24
+    },
+    "high": {
+      "blur": 32,
+      "y": 12,
+      "spread": 0,
+      "opacity": 0.3
+    }
+  },
+  "motion": {
+    "duration": {
+      "instant": 0,
+      "fast": 100,
+      "normal": 180,
+      "slow": 290,
+      "emphasis": 420
+    },
+    "easing": {
+      "standard": [
+        0.2,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "decelerate": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "accelerate": [
+        0.3,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "emphasized": [
+        0.05,
+        0.7,
+        0.1,
+        1.0
+      ],
+      "linear": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ]
+    }
+  },
+  "font": {
+    "ui": "Geist",
+    "mono": "Geist Mono",
+    "size": {
+      "xs": 10,
+      "sm": 11,
+      "md": 12,
+      "lg": 14,
+      "xl": 17,
+      "xxl": 21,
+      "display": 30,
+      "hero": 88
+    },
+    "weight": {
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    },
+    "letterSpacing": {
+      "tight": -0.2,
+      "normal": 0,
+      "wide": 0.6
+    },
+    "runic": "Noto Sans Runic"
+  },
+  "color": {
+    "bg": "@palette.base",
+    "surface": "@palette.surface",
+    "surfaceRaised": "@palette.surfaceRaised",
+    "text": "@palette.text",
+    "textMuted": "@palette.textMuted",
+    "textFaint": "@palette.textFaint",
+    "accent": "@palette.accent",
+    "onAccent": "@palette.accentText",
+    "focus": "@palette.accent",
+    "success": "@palette.success",
+    "warning": "@palette.warning",
+    "danger": "@palette.danger",
+    "hairline": {
+      "color": "@palette.silver",
+      "alpha": "@opacity.hairline"
+    },
+    "innerBorder": {
+      "color": "@palette.silverBright",
+      "alpha": "@opacity.innerBorder"
+    },
+    "outerBorder": {
+      "color": "@palette.void",
+      "alpha": "@opacity.outerBorder"
+    },
+    "scrim": {
+      "color": "@palette.void",
+      "alpha": "@opacity.scrim"
+    },
+    "shadow": "@palette.void",
+    "textOnGlass": "@palette.text",
+    "icon": "@palette.silver",
+    "iconMuted": "@palette.textMuted",
+    "track": {
+      "color": "@palette.silver",
+      "alpha": "@opacity.track"
+    },
+    "trackActive": "@palette.accent",
+    "knob": "@palette.silverBright",
+    "controlFill": {
+      "color": "@palette.silver",
+      "alpha": "@opacity.controlFill"
+    },
+    "fieldFill": {
+      "color": "@palette.void",
+      "alpha": "@opacity.fieldFill"
+    },
+    "divider": {
+      "color": "@palette.silver",
+      "alpha": "@opacity.divider"
+    }
+  },
+  "textShadow": {
+    "_comment": "Soft shadow under text laid directly over a picture (the login screen's date): readable over light areas, no glow or outline.",
+    "blur": 0.6,
+    "blurMax": 10,
+    "opacity": 0.6,
+    "offsetY": 1
+  },
+  "glass": {
+    "_comment": "Bifrost standard glass, approved 2026-09-24 ('thick, clear glass', from the gallery's 'Tjockt' variant and the user's own tuning). The tint is light so the desktop stays visible; thickness comes from depth (darker toward the bottom), density (more opaque toward the bottom, clearest at the top edge), a clear top highlight and a thin silver rim. grain is barely visible on purpose. edgeTopBias = how much brighter the rim is at the top. bevel/bevelStrength = the bevelled inner edge at thickness 1 (px, light strength); refraction = default colour split along it (0 = none). Settings → Glass & materials scales all of this per surface.",
+    "tint": "@palette.base",
+    "blur": true,
+    "grain": 0.012,
+    "highlight": 0.06,
+    "highlightColor": "@palette.silverBright",
+    "depth": 0.36,
+    "density": 0.32,
+    "sheen": 0.02,
+    "edgeTopBias": 0.5,
+    "bevel": 3,
+    "bevelStrength": 0.08,
+    "refraction": 0.0,
+    "_blurMask": "Compositor blur follows the glass through its alpha: Hyprland blurs a Bifrost layer only where the surface's alpha is above ignore_alpha (bifrostctl writes these values). Clean glass: the tiny threshold. Glass that draws a shadow or glow outside itself: the higher one, and the shader keeps the body above it and everything outside below it, so no blur shows past the rounded corners.",
+    "blurMask": 0.01,
+    "blurMaskShadowed": 0.12,
+    "_windowRadiusMax": "Largest corner radius Hyprland can clip an app window to (window rule 'rounding' is at most 20). Glass drawn as a whole app window (Settings) is capped to it, so its blur, tint and border keep one shape.",
+    "windowRadiusMax": 20
+  },
+  "materials": {
+    "bar": {
+      "tint": "@glass.tint",
+      "opacity": 0.48,
+      "blur": "@glass.blur",
+      "radius": "@radius.lg",
+      "grain": "@glass.grain",
+      "highlight": "@glass.highlight",
+      "highlightColor": "@glass.highlightColor",
+      "innerBorder": "@color.innerBorder",
+      "outerBorder": "@color.outerBorder",
+      "borderWidth": "@border.material",
+      "elevation": "@elevation.low",
+      "depth": "@glass.depth",
+      "sheen": "@glass.sheen",
+      "edgeTopBias": "@glass.edgeTopBias",
+      "density": "@glass.density"
+    },
+    "dock": {
+      "tint": "@glass.tint",
+      "opacity": 0.46,
+      "blur": "@glass.blur",
+      "radius": "@radius.xl",
+      "grain": "@glass.grain",
+      "highlight": "@glass.highlight",
+      "highlightColor": "@glass.highlightColor",
+      "innerBorder": "@color.innerBorder",
+      "outerBorder": "@color.outerBorder",
+      "borderWidth": "@border.material",
+      "elevation": "@elevation.mid",
+      "depth": "@glass.depth",
+      "sheen": "@glass.sheen",
+      "edgeTopBias": "@glass.edgeTopBias",
+      "density": "@glass.density"
+    },
+    "panel": {
+      "tint": "@glass.tint",
+      "opacity": 0.52,
+      "blur": "@glass.blur",
+      "radius": "@radius.xl",
+      "grain": "@glass.grain",
+      "highlight": "@glass.highlight",
+      "highlightColor": "@glass.highlightColor",
+      "innerBorder": "@color.innerBorder",
+      "outerBorder": "@color.outerBorder",
+      "borderWidth": "@border.material",
+      "elevation": "@elevation.high",
+      "depth": "@glass.depth",
+      "sheen": "@glass.sheen",
+      "edgeTopBias": "@glass.edgeTopBias",
+      "density": "@glass.density"
+    },
+    "popover": {
+      "tint": "@glass.tint",
+      "opacity": 0.58,
+      "blur": "@glass.blur",
+      "radius": "@radius.lg",
+      "grain": "@glass.grain",
+      "highlight": "@glass.highlight",
+      "highlightColor": "@glass.highlightColor",
+      "innerBorder": "@color.innerBorder",
+      "outerBorder": "@color.outerBorder",
+      "borderWidth": "@border.material",
+      "elevation": "@elevation.mid",
+      "depth": "@glass.depth",
+      "sheen": "@glass.sheen",
+      "edgeTopBias": "@glass.edgeTopBias",
+      "density": "@glass.density"
+    },
+    "osd": {
+      "tint": "@glass.tint",
+      "opacity": 0.54,
+      "blur": "@glass.blur",
+      "radius": "@radius.xl",
+      "grain": "@glass.grain",
+      "highlight": "@glass.highlight",
+      "highlightColor": "@glass.highlightColor",
+      "innerBorder": "@color.innerBorder",
+      "outerBorder": "@color.outerBorder",
+      "borderWidth": "@border.material",
+      "elevation": "@elevation.mid",
+      "depth": "@glass.depth",
+      "sheen": "@glass.sheen",
+      "edgeTopBias": "@glass.edgeTopBias",
+      "density": "@glass.density"
+    },
+    "tooltip": {
+      "tint": "@palette.surfaceRaised",
+      "opacity": 0.8,
+      "blur": false,
+      "radius": "@radius.sm",
+      "grain": 0,
+      "highlight": 0,
+      "highlightColor": "@glass.highlightColor",
+      "innerBorder": "@color.hairline",
+      "outerBorder": "@color.outerBorder",
+      "borderWidth": "@border.hairline",
+      "elevation": "@elevation.low",
+      "depth": 0.08,
+      "sheen": 0,
+      "edgeTopBias": "@glass.edgeTopBias",
+      "density": 0
+    },
+    "lock": {
+      "tint": "@glass.tint",
+      "opacity": 0.25,
+      "blur": "@glass.blur",
+      "radius": "@radius.xl",
+      "grain": "@glass.grain",
+      "highlight": "@glass.highlight",
+      "highlightColor": "@glass.highlightColor",
+      "innerBorder": "@color.innerBorder",
+      "outerBorder": "@color.outerBorder",
+      "borderWidth": "@border.material",
+      "elevation": "@elevation.none",
+      "depth": "@glass.depth",
+      "sheen": "@glass.sheen",
+      "edgeTopBias": "@glass.edgeTopBias",
+      "density": "@glass.density"
+    },
+    "settingsGroups": {
+      "tint": "@glass.tint",
+      "opacity": 0.52,
+      "blur": "@glass.blur",
+      "radius": "@radius.xl",
+      "grain": "@glass.grain",
+      "highlight": "@glass.highlight",
+      "highlightColor": "@glass.highlightColor",
+      "innerBorder": "@color.innerBorder",
+      "outerBorder": "@color.outerBorder",
+      "borderWidth": "@border.material",
+      "elevation": "@elevation.high",
+      "depth": "@glass.depth",
+      "sheen": "@glass.sheen",
+      "edgeTopBias": "@glass.edgeTopBias",
+      "density": "@glass.density"
+    }
+  },
+  "prism": {
+    "_comment": "Bifrost refraction look for selected/active/focus. tint = how far the fill leans toward the aurora stops, caustic = soft split-light line under the top edge, edge = rim strength, dispersion = how much the rim hue shifts around the perimeter, driftSeconds = slow hue drift period (0 = static).",
+    "enabled": true,
+    "stops": "@palette.aurora",
+    "angle": 115,
+    "spread": 0.6,
+    "edgeWidth": 1,
+    "tint": 0.36,
+    "caustic": 0.14,
+    "edge": 0.62,
+    "dispersion": 0.7,
+    "driftSeconds": 0,
+    "intensity": {
+      "hover": 0.3,
+      "selected": 0.6,
+      "active": 0.8,
+      "focus": 0.5
+    }
+  },
+  "typography": {
+    "display": {
+      "family": "@font.ui",
+      "size": "@font.size.display",
+      "weight": "@font.weight.semibold",
+      "letterSpacing": "@font.letterSpacing.tight"
+    },
+    "title": {
+      "family": "@font.ui",
+      "size": "@font.size.xl",
+      "weight": "@font.weight.semibold",
+      "letterSpacing": "@font.letterSpacing.tight"
+    },
+    "heading": {
+      "family": "@font.ui",
+      "size": "@font.size.lg",
+      "weight": "@font.weight.semibold",
+      "letterSpacing": "@font.letterSpacing.normal"
+    },
+    "body": {
+      "family": "@font.ui",
+      "size": "@font.size.md",
+      "weight": "@font.weight.regular",
+      "letterSpacing": "@font.letterSpacing.normal"
+    },
+    "label": {
+      "family": "@font.ui",
+      "size": "@font.size.md",
+      "weight": "@font.weight.medium",
+      "letterSpacing": "@font.letterSpacing.normal"
+    },
+    "caption": {
+      "family": "@font.ui",
+      "size": "@font.size.sm",
+      "weight": "@font.weight.regular",
+      "letterSpacing": "@font.letterSpacing.normal"
+    },
+    "overline": {
+      "family": "@font.ui",
+      "size": "@font.size.xs",
+      "weight": "@font.weight.semibold",
+      "letterSpacing": "@font.letterSpacing.wide",
+      "uppercase": true
+    },
+    "mono": {
+      "family": "@font.mono",
+      "size": "@font.size.sm",
+      "weight": "@font.weight.regular",
+      "letterSpacing": "@font.letterSpacing.normal"
+    },
+    "readout": {
+      "family": "@font.mono",
+      "size": "@font.size.lg",
+      "weight": "@font.weight.medium",
+      "letterSpacing": "@font.letterSpacing.tight"
+    },
+    "hero": {
+      "family": "@font.ui",
+      "size": "@font.size.hero",
+      "weight": "@font.weight.regular",
+      "letterSpacing": "@font.letterSpacing.tight"
+    }
+  },
+  "icon": {
+    "size": {
+      "sm": 14,
+      "md": 18,
+      "lg": 22,
+      "xl": 28
+    },
+    "stroke": 1.5
+  },
+  "control": {
+    "height": {
+      "sm": 28,
+      "md": 34,
+      "lg": 40
+    },
+    "paddingX": "@space.lg",
+    "gap": "@space.md",
+    "radius": "@radius.md",
+    "toggle": {
+      "width": 40,
+      "height": 22,
+      "knob": 16
+    },
+    "slider": {
+      "track": 4,
+      "knob": 16,
+      "height": 24
+    },
+    "field": {
+      "height": 34,
+      "radius": "@radius.md"
+    },
+    "chip": {
+      "height": 24,
+      "radius": "@radius.full"
+    },
+    "settingsScroll": {
+      "pixelMultiplier": 1.8,
+      "rowsPerNotch": 3
+    }
+  },
+  "layout": {
+    "_comment": "Window/page layout sizes for Bifrost apps (Settings).",
+    "settingsWidth": 1180,
+    "settingsHeight": 820,
+    "sidebarWidth": 248,
+    "pageMaxWidth": 780,
+    "editorWidth": 300,
+    "popupMaxHeight": 320,
+    "launcherWidth": 900,
+    "launcherHeight": 620,
+    "controlCenterWidth": 392,
+    "clockMenuWidth": 560,
+    "workspacePreviewWidth": 440,
+    "osdWidth": 300,
+    "promptWidth": 400,
+    "notificationWidth": 380,
+    "lockCardWidth": 360
+  },
+  "states": {
+    "hover": {
+      "fill": "prism",
+      "color": "@palette.silver",
+      "opacity": "@opacity.stateHover",
+      "prism": "@prism.intensity.hover"
+    },
+    "pressed": {
+      "fill": "solid",
+      "color": "@palette.silver",
+      "opacity": "@opacity.statePressed",
+      "prism": 0
+    },
+    "selected": {
+      "fill": "prism",
+      "color": "@palette.accent",
+      "opacity": "@opacity.stateSelected",
+      "prism": "@prism.intensity.selected"
+    },
+    "active": {
+      "fill": "prism",
+      "color": "@palette.accent",
+      "opacity": "@opacity.stateActive",
+      "prism": "@prism.intensity.active"
+    },
+    "focus": {
+      "fill": "ring",
+      "color": "@color.focus",
+      "width": "@border.focus",
+      "prism": "@prism.intensity.focus"
+    }
+  },
+  "density": {
+    "_comment": "Density profiles (appearance.density). Factors on spacing (space, paddings, gaps), control and list-row heights, icon sizes and panel thickness (bar height, dock icons). Applied centrally in ThemeLogic.build and Core/Metrics.",
+    "compact": {
+      "space": 0.66,
+      "control": 0.84,
+      "icon": 0.88,
+      "panel": 0.82
+    },
+    "standard": {
+      "space": 1,
+      "control": 1,
+      "icon": 1,
+      "panel": 1
+    },
+    "spacious": {
+      "space": 1.45,
+      "control": 1.18,
+      "icon": 1.12,
+      "panel": 1.22
+    }
+  }
+}

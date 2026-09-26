@@ -1,0 +1,174 @@
+{
+  "section": "appearance",
+  "label": "Theme & colours",
+  "icon": "palette",
+  "groups": {
+    "theme": "Theme",
+    "location": "Location for automatic mode",
+    "colors": "Colours",
+    "shape": "Shape",
+    "identity": "Bifrost identity"
+  },
+  "settings": [
+    {
+      "key": "appearance.theme",
+      "type": "string",
+      "default": "bifrost-graphite",
+      "label": "Theme",
+      "group": "theme",
+      "editor": "ThemeEditor"
+    },
+    {
+      "key": "appearance.mode",
+      "type": "enum",
+      "default": "dark",
+      "options": [
+        "light",
+        "dark",
+        "system",
+        "auto"
+      ],
+      "optionLabels": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System",
+        "auto": "Automatic"
+      },
+      "label": "Light or dark",
+      "description": "System follows the system preference; Automatic switches to light at sunrise and to dark at sunset where you are",
+      "group": "theme",
+      "editor": "ThemeModeEditor"
+    },
+    {
+      "key": "appearance.syncSystem",
+      "type": "bool",
+      "default": true,
+      "label": "Apply to apps",
+      "description": "Also switches GTK and Qt apps, browsers (through the XDG portal) and the icon theme between light and dark",
+      "group": "theme"
+    },
+    {
+      "key": "appearance.location.latitude",
+      "type": "real",
+      "default": null,
+      "nullable": true,
+      "min": -90,
+      "max": 90,
+      "step": 0.01,
+      "unit": "°",
+      "label": "Latitude",
+      "description": "For Automatic. Empty = from the system time zone",
+      "group": "location",
+      "input": "field",
+      "nullLabel": "From time zone"
+    },
+    {
+      "key": "appearance.location.longitude",
+      "type": "real",
+      "default": null,
+      "nullable": true,
+      "min": -180,
+      "max": 180,
+      "step": 0.01,
+      "unit": "°",
+      "label": "Longitude",
+      "description": "For Automatic. Empty = from the system time zone",
+      "group": "location",
+      "input": "field",
+      "nullLabel": "From time zone"
+    },
+    {
+      "key": "appearance.accent",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Accent colour",
+      "description": "Used everywhere: selection, sliders, focus rings, window borders. Empty = Bifrost default (the theme's accent)",
+      "group": "colors",
+      "inherit": "palette.accent",
+      "nullLabel": "Bifrost default"
+    },
+    {
+      "key": "appearance.foreground.light",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Text and icons (light mode)",
+      "description": "Shell text and monochrome icons, including the top panel. Empty uses the theme colour.",
+      "group": "colors",
+      "inherit": "palette.text",
+      "nullLabel": "Theme"
+    },
+    {
+      "key": "appearance.foreground.dark",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Text and icons (dark mode)",
+      "description": "Shell text and monochrome icons, including the top panel. Empty uses the theme colour.",
+      "group": "colors",
+      "inherit": "palette.text",
+      "nullLabel": "Theme"
+    },
+    {
+      "key": "appearance.density",
+      "type": "enum",
+      "default": "standard",
+      "options": [
+        "compact",
+        "standard",
+        "spacious"
+      ],
+      "optionLabels": {
+        "compact": "Compact",
+        "standard": "Standard",
+        "spacious": "Spacious"
+      },
+      "label": "Density",
+      "description": "Compact = tighter panels, rows and spacing everywhere; Spacious = more air. Applies to the bar, dock, menus, popups and Settings",
+      "group": "shape"
+    },
+    {
+      "key": "appearance.radiusScale",
+      "type": "real",
+      "default": 1.0,
+      "min": 0,
+      "max": 2,
+      "step": 0.05,
+      "label": "Corner radius",
+      "description": "Scales every radius in the theme",
+      "group": "shape"
+    },
+    {
+      "key": "appearance.spacingScale",
+      "type": "real",
+      "default": 1.0,
+      "min": 0.5,
+      "max": 2,
+      "step": 0.05,
+      "label": "Spacing scale",
+      "description": "Scales every distance in the theme",
+      "group": "shape"
+    },
+    {
+      "key": "appearance.prism.enabled",
+      "type": "bool",
+      "default": true,
+      "label": "Bifrost prism",
+      "description": "Subtle refraction on active and selected elements",
+      "group": "identity"
+    },
+    {
+      "key": "appearance.prism.intensity",
+      "type": "real",
+      "default": 1.0,
+      "min": 0,
+      "max": 3,
+      "step": 0.05,
+      "label": "Prism intensity",
+      "group": "identity",
+      "dependsOn": "appearance.prism.enabled",
+      "description": "0 = off, 1 = standard, 3 = strong colour, glow and rim on hover, selection and active items"
+    }
+  ]
+}

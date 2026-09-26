@@ -1,0 +1,61 @@
+{
+  "section": "controlCenter",
+  "label": "Control center",
+  "icon": "tune",
+  "groups": {
+    "placement": "Placement",
+    "content": "Content"
+  },
+  "settings": [
+    {
+      "key": "controlCenter.placement",
+      "type": "enum",
+      "default": "bar",
+      "options": [
+        "bar",
+        "dock"
+      ],
+      "label": "Placement",
+      "description": "Top panel = the control center grows out of the bar under its button, as one glass with the bar; Dock = it grows out of the dock. The bar button, keybind and IPC all open it there. Without a dock it opens at the bar.",
+      "group": "placement",
+      "scope": "shell",
+      "apply": "live",
+      "optionLabels": {
+        "bar": "Top panel",
+        "dock": "Dock"
+      }
+    },
+    {
+      "key": "controlCenter.showSystem",
+      "type": "bool",
+      "default": true,
+      "label": "System status",
+      "group": "content"
+    },
+    {
+      "key": "controlCenter.showMedia",
+      "type": "bool",
+      "default": true,
+      "label": "Media",
+      "group": "content"
+    },
+    {
+      "key": "controlCenter.showMicrophone",
+      "type": "bool",
+      "default": false,
+      "label": "Microphone slider",
+      "group": "content"
+    },
+    {
+      "key": "controlCenter.volumeStep",
+      "type": "int",
+      "default": 5,
+      "min": 1,
+      "max": 20,
+      "unit": "%",
+      "label": "Volume step",
+      "description": "For scrolling and volume keys",
+      "group": "content"
+    }
+  ]
+}

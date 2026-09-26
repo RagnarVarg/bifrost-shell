@@ -1,0 +1,57 @@
+{
+  "section": "wallpaper",
+  "label": "Wallpaper",
+  "icon": "display",
+  "groups": {
+    "image": "Image",
+    "display": "Display"
+  },
+  "settings": [
+    {
+      "key": "wallpaper.path",
+      "type": "path",
+      "default": "",
+      "label": "Image",
+      "description": "Shown when Bifrost is the session shell",
+      "group": "image",
+      "editor": "WallpaperEditor"
+    },
+    {
+      "key": "wallpaper.directory",
+      "type": "path",
+      "default": "~/Pictures/Wallpapers",
+      "label": "Folder to choose from",
+      "group": "image"
+    },
+    {
+      "key": "wallpaper.fillMode",
+      "type": "enum",
+      "default": "fill",
+      "options": [
+        "fill",
+        "fit",
+        "center",
+        "tile"
+      ],
+      "optionLabels": {
+        "fill": "Fill",
+        "fit": "Fit",
+        "center": "Centre",
+        "tile": "Tile"
+      },
+      "label": "Scaling",
+      "group": "display"
+    },
+    {
+      "key": "wallpaper.transitionMs",
+      "type": "int",
+      "default": 600,
+      "min": 0,
+      "max": 3000,
+      "step": 50,
+      "unit": "ms",
+      "label": "Transition",
+      "group": "display"
+    }
+  ]
+}

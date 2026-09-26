@@ -1,0 +1,132 @@
+{
+  "section": "power",
+  "label": "Power & system menu",
+  "icon": "power",
+  "groups": {
+    "general": "General",
+    "idle": "When idle"
+  },
+  "settings": [
+    {
+      "key": "power.confirm",
+      "type": "bool",
+      "default": true,
+      "label": "Confirm",
+      "description": "Restart, shutdown and log out need a second click",
+      "group": "general"
+    },
+    {
+      "key": "power.softwareApp",
+      "type": "string",
+      "default": "",
+      "label": "Software app",
+      "description": "Desktop id that System menu → Software opens. Empty = find automatically",
+      "group": "general",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "power.idle.screenOffMinutes",
+      "type": "enum",
+      "default": 0,
+      "options": [
+        0,
+        1,
+        2,
+        5,
+        10,
+        15,
+        30,
+        60
+      ],
+      "optionLabels": {
+        "0": "Never",
+        "1": "1 minute",
+        "2": "2 minutes",
+        "5": "5 minutes",
+        "10": "10 minutes",
+        "15": "15 minutes",
+        "30": "30 minutes",
+        "60": "1 hour"
+      },
+      "label": "Turn off the screen after",
+      "description": "The screens go dark (DPMS) after this long without input; any key or mouse movement turns them back on. Doesn't lock or sleep",
+      "group": "idle",
+      "scope": "hyprland",
+      "apply": "live",
+      "requires": {
+        "capability": "displayPower"
+      }
+    },
+    {
+      "key": "power.idle.lockMinutes",
+      "type": "enum",
+      "default": 0,
+      "options": [
+        0,
+        1,
+        2,
+        5,
+        10,
+        15,
+        30,
+        60
+      ],
+      "optionLabels": {
+        "0": "Never",
+        "1": "1 minute",
+        "2": "2 minutes",
+        "5": "5 minutes",
+        "10": "10 minutes",
+        "15": "15 minutes",
+        "30": "30 minutes",
+        "60": "1 hour"
+      },
+      "label": "Lock after",
+      "description": "Locks the session after this long without input. Separate from turning off the screen",
+      "group": "idle",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "power.idle.suspendMinutes",
+      "type": "enum",
+      "default": 0,
+      "options": [
+        0,
+        1,
+        2,
+        5,
+        10,
+        15,
+        30,
+        60
+      ],
+      "optionLabels": {
+        "0": "Never",
+        "1": "1 minute",
+        "2": "2 minutes",
+        "5": "5 minutes",
+        "10": "10 minutes",
+        "15": "15 minutes",
+        "30": "30 minutes",
+        "60": "1 hour"
+      },
+      "label": "Sleep after",
+      "description": "Puts the computer to sleep after this long without input",
+      "group": "idle",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "power.idle.respectInhibitors",
+      "type": "bool",
+      "default": true,
+      "label": "Stay awake while apps ask to",
+      "description": "A playing video or a presentation that asks the system to stay awake postpones all three",
+      "group": "idle",
+      "scope": "shell",
+      "apply": "live"
+    }
+  ]
+}

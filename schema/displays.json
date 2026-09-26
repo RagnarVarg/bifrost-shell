@@ -1,0 +1,18 @@
+{
+  "section": "displays",
+  "label": "Displays",
+  "icon": "display",
+  "hidden": true,
+  "description": "Edited on the System → Displays page.",
+  "settings": [
+    {
+      "key": "displays.outputs",
+      "type": "object",
+      "default": {},
+      "label": "Display configuration",
+      "scope": "hyprland",
+      "advanced": true,
+      "description": "Per output: { width, height, refresh, x, y, scale, vrr, bitdepth }. Written to bifrost.lua."
+    }
+  ]
+}

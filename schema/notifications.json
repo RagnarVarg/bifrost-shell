@@ -1,0 +1,82 @@
+{
+  "section": "notifications",
+  "label": "Notifications",
+  "icon": "bell",
+  "groups": {
+    "general": "General",
+    "popups": "Popups",
+    "history": "History"
+  },
+  "settings": [
+    {
+      "key": "notifications.server",
+      "type": "bool",
+      "default": true,
+      "label": "Bifrost handles notifications",
+      "description": "Registers Bifrost as the notification daemon",
+      "group": "general",
+      "apply": "restart"
+    },
+    {
+      "key": "notifications.position",
+      "type": "enum",
+      "default": "top-right",
+      "options": [
+        "top-left",
+        "top",
+        "top-right",
+        "bottom-left",
+        "bottom",
+        "bottom-right"
+      ],
+      "label": "Position",
+      "group": "popups",
+      "optionLabels": {
+        "top-left": "Top left",
+        "top": "Top",
+        "top-right": "Top right",
+        "bottom-left": "Bottom left",
+        "bottom": "Bottom",
+        "bottom-right": "Bottom right"
+      }
+    },
+    {
+      "key": "notifications.timeoutMs",
+      "type": "int",
+      "default": 5000,
+      "min": 1000,
+      "max": 30000,
+      "step": 500,
+      "unit": "ms",
+      "label": "Display time",
+      "group": "popups"
+    },
+    {
+      "key": "notifications.doNotDisturb",
+      "type": "bool",
+      "default": false,
+      "label": "Do not disturb",
+      "group": "general",
+      "description": "Popups aren't shown (except critical ones); everything goes to the notification center"
+    },
+    {
+      "key": "notifications.maxVisible",
+      "type": "int",
+      "default": 4,
+      "min": 1,
+      "max": 10,
+      "label": "Popups at once",
+      "group": "popups"
+    },
+    {
+      "key": "notifications.historyLimit",
+      "type": "int",
+      "default": 50,
+      "min": 10,
+      "max": 500,
+      "step": 10,
+      "label": "Kept in the notification center",
+      "group": "history"
+    }
+  ]
+}

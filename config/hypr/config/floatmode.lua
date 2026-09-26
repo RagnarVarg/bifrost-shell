@@ -1,1 +1,0 @@
--- Floating/Tiling toggle: TILING mode. Managed by floatmode-toggle.sh — do not edit manually.

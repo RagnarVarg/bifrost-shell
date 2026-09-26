@@ -1,0 +1,81 @@
+{
+  "section": "systemStats",
+  "label": "System & GPU",
+  "icon": "cpu",
+  "groups": {
+    "general": "General",
+    "cpu": "Processor and memory",
+    "gpu": "GPU"
+  },
+  "settings": [
+    {
+      "key": "systemStats.intervalMs",
+      "type": "int",
+      "default": 2000,
+      "min": 500,
+      "max": 10000,
+      "step": 250,
+      "unit": "ms",
+      "label": "Update interval",
+      "group": "general"
+    },
+    {
+      "key": "systemStats.showCpu",
+      "type": "bool",
+      "default": true,
+      "label": "Show CPU",
+      "group": "cpu"
+    },
+    {
+      "key": "systemStats.showRam",
+      "type": "bool",
+      "default": true,
+      "label": "Show RAM",
+      "group": "cpu"
+    },
+    {
+      "key": "systemStats.ramUnit",
+      "type": "enum",
+      "default": "percent",
+      "options": [
+        "percent",
+        "gb"
+      ],
+      "optionLabels": {
+        "percent": "Percent",
+        "gb": "GB"
+      },
+      "label": "Show RAM as",
+      "group": "cpu",
+      "dependsOn": "systemStats.showRam"
+    },
+    {
+      "key": "systemStats.warnPercent",
+      "type": "int",
+      "default": 85,
+      "min": 50,
+      "max": 100,
+      "unit": "%",
+      "label": "Warning level",
+      "description": "Values above the level are highlighted",
+      "group": "general"
+    },
+    {
+      "key": "gpu.show",
+      "type": "enum",
+      "default": "both",
+      "options": [
+        "temp",
+        "usage",
+        "both"
+      ],
+      "optionLabels": {
+        "temp": "Temperature",
+        "usage": "Load",
+        "both": "Both"
+      },
+      "label": "GPU shows",
+      "group": "gpu"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+# For a plain Hyprland session without UWSM or another session manager.
+# Started by Bifrost's generated hook only when no graphical session is active.
+[Unit]
+Description=Bifrost graphical session
+BindsTo=graphical-session.target
+Before=graphical-session.target
+Wants=graphical-session-pre.target
+After=graphical-session-pre.target

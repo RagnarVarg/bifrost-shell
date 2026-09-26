@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Opens the user's terminal, exactly once: keybinds.terminal, then the
+# system default (xdg-terminal-exec, $TERMINAL), then the first installed one.
+#   bifrost-terminal                 a terminal with the user's shell
+#   bifrost-terminal btop [args…]    that command in a terminal (any terminal:
+#                                    the flag that starts a command differs)
+# ~/.local/bin/<cmd> links to <install>/bin/<cmd>: follow that one link only,
+# so the install path stays as installed (even when it is itself a symlink).
+self="$0"; [[ -L "$self" ]] && self="$(readlink "$self")"
+dir="$(cd "$(dirname "$self")/.." && pwd)"
+
+# What goes between a terminal and the command it should run.
+exec_flag() {
+    case "$(basename "$1")" in
+        xdg-terminal-exec|kitty|foot|footclient) printf "" ;;
+        wezterm) printf '%s' 'start --' ;;
+        gnome-terminal|ptyxis|kgx) printf '%s' '--' ;;
+        xfce4-terminal) printf '%s' '-x' ;;
+        *) printf '%s' '-e' ;;   # alacritty, ghostty, konsole, xterm, st, urxvt …
+    esac
+}
+
+# run TERMINAL_COMMAND [command…] – TERMINAL_COMMAND is shell text and may
+# carry its own options (keybinds.terminal = "kitty --single-instance").
+run() {
+    local term="$1"; shift
+    local flag=""
+    (($#)) && flag="$(exec_flag "${term%% *}")"
+    exec sh -c "$term $flag \"\$@\"" sh "$@"
+}
+
+custom="$("$dir/tools/bifrostctl" get keybinds.terminal 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin) or "")' 2>/dev/null)"
+[[ -n "$custom" ]] && run "$custom" "$@"
+command -v xdg-terminal-exec >/dev/null && run xdg-terminal-exec "$@"
+[[ -n "${TERMINAL:-}" ]] && command -v "${TERMINAL%% *}" >/dev/null && run "$TERMINAL" "$@"
+for t in kitty foot alacritty wezterm ghostty konsole gnome-terminal ptyxis xfce4-terminal xterm; do
+    command -v "$t" >/dev/null && run "$t" "$@"
+done
+notify-send -a Bifrost "No terminal found" "Set one in Bifrost Settings → Keybindings → Terminal." 2>/dev/null
+exit 1

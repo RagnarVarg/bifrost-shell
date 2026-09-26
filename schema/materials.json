@@ -1,0 +1,222 @@
+{
+  "section": "materials",
+  "label": "Glass & materials",
+  "icon": "layers",
+  "page": "MaterialsPage",
+  "description": "One glass material for every Bifrost surface. 'All surfaces' sets the look everywhere; each surface can override any property, or follow All surfaces completely with 'Link all surfaces'. Empty = inherit (from All surfaces, or from the theme's approved standard glass).",
+  "template": {
+    "prefix": "materials",
+    "instances": [
+      {
+        "id": "all",
+        "label": "All surfaces",
+        "description": "The base for every surface below"
+      },
+      {
+        "id": "bar",
+        "label": "Top bar",
+        "description": "The bar, its menus and the frame",
+        "namespaces": [
+          "bar"
+        ]
+      },
+      {
+        "id": "dock",
+        "label": "Dock",
+        "description": "The dock",
+        "namespaces": [
+          "dock"
+        ]
+      },
+      {
+        "id": "menus",
+        "label": "Popup menus",
+        "description": "Dropdowns, dock and tray menus, tooltips"
+      },
+      {
+        "id": "launcher",
+        "label": "Launcher",
+        "description": "The launcher and the power menu",
+        "namespaces": [
+          "launcher",
+          "power"
+        ]
+      },
+      {
+        "id": "controlCenter",
+        "label": "Control center",
+        "description": "The control center",
+        "namespaces": [
+          "controlcenter"
+        ]
+      },
+      {
+        "id": "notifications",
+        "label": "Notifications",
+        "description": "Notification popups, the notification center and system prompts",
+        "namespaces": [
+          "notifications",
+          "notificationcenter",
+          "prompt"
+        ]
+      },
+      {
+        "id": "settings",
+        "label": "Settings",
+        "description": "The Settings window",
+        "window": "bifrost.settings"
+      },
+      {
+        "id": "osd",
+        "label": "OSD",
+        "description": "Volume and brightness indicator",
+        "namespaces": [
+          "osd"
+        ]
+      },
+      {
+        "id": "settingsGroups",
+        "label": "Settings groups",
+        "description": "Glass containers inside Settings. Background blur is shared by the Settings window.",
+        "window": true
+      }
+    ],
+    "settings": [
+      {
+        "key": "transparency",
+        "type": "int",
+        "globalDefault": null,
+        "min": 0,
+        "max": 100,
+        "unit": "%",
+        "label": "Transparency",
+        "description": "0 % = solid, 100 % = clear glass. Empty = the standard glass"
+      },
+      {
+        "key": "blur",
+        "type": "int",
+        "globalDefault": 20,
+        "min": 0,
+        "max": 100,
+        "unit": "%",
+        "label": "Background blur",
+        "description": "Blurs what is behind the surface (done by the compositor). 0 = off. The compositor has one blur strength for everything it blurs: the strongest surface with blur on sets it",
+        "scope": "hyprland"
+      },
+      {
+        "key": "tint",
+        "type": "color",
+        "globalDefault": null,
+        "label": "Tint",
+        "description": "Colour of the glass. Empty = the theme's graphite"
+      },
+      {
+        "key": "thickness",
+        "type": "real",
+        "globalDefault": null,
+        "min": 0,
+        "max": 4,
+        "step": 0.05,
+        "label": "Glass thickness",
+        "description": "Depth, density, bevelled edge and inner light. 1 = standard, 4 = very thick",
+        "nullLabel": "Standard"
+      },
+      {
+        "key": "grain",
+        "type": "real",
+        "globalDefault": null,
+        "min": 0,
+        "max": 0.3,
+        "step": 0.005,
+        "label": "Grain",
+        "description": "Fine noise in the glass. Empty = the standard glass"
+      },
+      {
+        "key": "refraction",
+        "type": "real",
+        "globalDefault": null,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "label": "Refraction",
+        "description": "Light bending along the bevelled edge, with a faint colour split. Simulated: the compositor doesn't let a panel read what is behind it"
+      },
+      {
+        "key": "glow",
+        "type": "real",
+        "globalDefault": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "label": "Prism glow",
+        "description": "Aurora-coloured glow along the rim. 0 = off"
+      },
+      {
+        "key": "border",
+        "type": "bool",
+        "globalDefault": true,
+        "label": "Border",
+        "description": "Shows an outline around Bifrost's glass surfaces, such as panels, the dock and menus. All surfaces applies to linked surfaces. Application window borders are configured under Windows & compositor."
+      },
+      {
+        "key": "borderWidth",
+        "type": "real",
+        "globalDefault": null,
+        "min": 0,
+        "max": 6,
+        "step": 0.5,
+        "unit": "px",
+        "label": "Border thickness",
+        "description": "Thickness of the outline around the glass"
+      },
+      {
+        "key": "borderOpacity",
+        "type": "int",
+        "globalDefault": null,
+        "min": 0,
+        "max": 100,
+        "unit": "%",
+        "label": "Border opacity",
+        "description": "How visible the outline is. 0 = transparent, 100 = fully opaque"
+      },
+      {
+        "key": "borderColor",
+        "type": "color",
+        "globalDefault": null,
+        "label": "Border colour",
+        "description": "Colour of the outline. Empty = the theme's silver"
+      },
+      {
+        "key": "radius",
+        "type": "int",
+        "globalDefault": null,
+        "min": 0,
+        "max": 40,
+        "unit": "px",
+        "label": "Corner radius",
+        "description": "Empty = the theme's radius for the surface"
+      },
+      {
+        "key": "shadow",
+        "scope": "hyprland",
+        "type": "real",
+        "globalDefault": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.05,
+        "label": "Shadow",
+        "description": "0 = no shadow, 1 = standard, 3 = deep. All surfaces also controls Hyprland window shadows when Bifrost manages window appearance. Shadows drawn by apps are unaffected."
+      }
+    ]
+  },
+  "settings": [
+    {
+      "key": "materials.link",
+      "type": "bool",
+      "default": false,
+      "label": "Link all surfaces",
+      "description": "All surfaces sets every property for every surface. Each surface keeps its own values; they come back when this is turned off",
+      "scope": "hyprland"
+    }
+  ]
+}

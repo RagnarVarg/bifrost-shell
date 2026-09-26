@@ -1,0 +1,236 @@
+{
+  "section": "dock",
+  "label": "Dock",
+  "icon": "layout",
+  "groups": {
+    "general": "General",
+    "appearance": "Appearance",
+    "apps": "Apps",
+    "placement": "Placement",
+    "hover": "Hover effects"
+  },
+  "settings": [
+    {
+      "key": "dock.enabled",
+      "type": "bool",
+      "default": true,
+      "label": "Show dock",
+      "group": "general"
+    },
+    {
+      "key": "dock.autohide",
+      "type": "bool",
+      "default": false,
+      "label": "Autohide",
+      "description": "Appears at the chosen screen edge. Free position stays visible so its drag handle remains reachable.",
+      "group": "general"
+    },
+    {
+      "key": "dock.position",
+      "type": "enum",
+      "default": "bottom",
+      "options": [
+        "bottom",
+        "top",
+        "left",
+        "right",
+        "free"
+      ],
+      "optionLabels": {
+        "bottom": "Bottom",
+        "top": "Top",
+        "left": "Left",
+        "right": "Right",
+        "free": "Free position"
+      },
+      "label": "Position",
+      "description": "Choose a screen edge, or drag the handle in Free position. Edge docks join the frame when enabled.",
+      "group": "placement"
+    },
+    {
+      "key": "dock.freeX",
+      "type": "real",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "label": "Horizontal position",
+      "description": "Position within the available screen area (0–1).",
+      "group": "placement",
+      "dependsOnValue": {
+        "dock.position": "free"
+      }
+    },
+    {
+      "key": "dock.freeY",
+      "type": "real",
+      "default": 0.85,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "label": "Vertical position",
+      "description": "Position within the available screen area (0–1).",
+      "group": "placement",
+      "dependsOnValue": {
+        "dock.position": "free"
+      }
+    },
+    {
+      "key": "dock.smartHide",
+      "type": "bool",
+      "default": true,
+      "label": "Smart",
+      "description": "Visible when no window covers the dock",
+      "group": "general",
+      "dependsOn": "dock.autohide"
+    },
+    {
+      "key": "dock.iconSize",
+      "type": "int",
+      "default": 40,
+      "min": 28,
+      "max": 72,
+      "step": 2,
+      "unit": "px",
+      "label": "Icon size",
+      "group": "appearance"
+    },
+    {
+      "key": "dock.margin",
+      "type": "int",
+      "default": 10,
+      "min": 0,
+      "max": 48,
+      "unit": "px",
+      "label": "Distance to screen edge",
+      "group": "appearance"
+    },
+    {
+      "key": "dock.showRunning",
+      "type": "bool",
+      "default": true,
+      "label": "Show running apps",
+      "description": "Also apps that aren't pinned",
+      "group": "apps"
+    },
+    {
+      "key": "dock.pinned",
+      "type": "list",
+      "default": [],
+      "label": "Pinned apps",
+      "description": "Desktop ids in order. Pin and move them most easily by right-clicking in the dock.",
+      "group": "apps"
+    },
+    {
+      "key": "dock.launcher.enabled",
+      "type": "bool",
+      "default": false,
+      "label": "Launcher button",
+      "description": "Add the app launcher to the dock.",
+      "group": "apps"
+    },
+    {
+      "key": "dock.launcher.index",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 64,
+      "label": "Launcher position",
+      "description": "0 = first. Higher values move the launcher along the dock.",
+      "group": "apps",
+      "dependsOn": "dock.launcher.enabled"
+    },
+    {
+      "key": "dock.preview",
+      "type": "bool",
+      "default": true,
+      "label": "Window previews",
+      "description": "Show live window previews when hovering over running apps.",
+      "group": "apps"
+    },
+    {
+      "key": "dock.order",
+      "type": "list",
+      "default": [],
+      "label": "Icon order",
+      "description": "Saved by dragging icons in the dock. Running apps keep their position without being pinned.",
+      "group": "apps"
+    },
+    {
+      "key": "dock.extraPadding",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 80,
+      "unit": "px",
+      "label": "Extra dock space",
+      "description": "Make the dock larger without resizing app icons.",
+      "group": "appearance"
+    },
+    {
+      "key": "dock.trash.enabled",
+      "type": "bool",
+      "default": false,
+      "label": "Trash button",
+      "description": "Open the trash from the dock.",
+      "group": "apps"
+    },
+    {
+      "key": "dock.overview.enabled",
+      "type": "bool",
+      "default": false,
+      "label": "Overview button",
+      "description": "Show a button for the window overview in the dock.",
+      "group": "apps"
+    },
+    {
+      "key": "dock.hover.scale",
+      "type": "real",
+      "default": 1.15,
+      "min": 1,
+      "max": 1.8,
+      "step": 0.05,
+      "label": "Hover magnification",
+      "description": "1 = no magnification. Applies to app icons and dock buttons.",
+      "group": "hover"
+    },
+    {
+      "key": "dock.hover.lift",
+      "type": "int",
+      "default": 2,
+      "min": 0,
+      "max": 24,
+      "unit": "px",
+      "label": "Hover lift",
+      "description": "Move hovered icons toward the desktop. 0 = no lift.",
+      "group": "hover"
+    },
+    {
+      "key": "dock.hover.highlight",
+      "type": "bool",
+      "default": true,
+      "label": "Hover background",
+      "group": "hover"
+    },
+    {
+      "key": "dock.hover.names",
+      "type": "bool",
+      "default": true,
+      "label": "Show app names on hover",
+      "description": "Shows a label when no window preview is enabled for the icon.",
+      "group": "hover"
+    },
+    {
+      "key": "dock.hover.delay",
+      "type": "int",
+      "default": 500,
+      "min": 0,
+      "max": 2000,
+      "step": 50,
+      "unit": "ms",
+      "label": "Hover preview delay",
+      "description": "Wait before showing a window preview or app name.",
+      "group": "hover"
+    }
+  ]
+}

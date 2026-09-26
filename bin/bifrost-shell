@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Starts the Bifrost shell in the foreground (used by bifrost.service).
+# ~/.local/bin/<cmd> links to <install>/bin/<cmd>: follow that one link only,
+# so the install path stays as installed (even when it is itself a symlink).
+self="$0"; [[ -L "$self" ]] && self="$(readlink "$self")"
+dir="$(cd "$(dirname "$self")/.." && pwd)"
+export BIFROST_RUN_MODE="${BIFROST_RUN_MODE:-production}"
+# shellcheck source=../scripts/env.sh
+source "$dir/scripts/env.sh"
+# Without a Wayland compositor (it died on logout while the session target
+# lives on) Quickshell would fall back to X11 and crash; systemd's quick
+# restarts would then hit the start limit. Wait briefly, then exit cleanly.
+sock="${WAYLAND_DISPLAY:-wayland-0}"; [[ "$sock" == /* ]] || sock="${XDG_RUNTIME_DIR:-/run/user/$UID}/$sock"
+# A crashed compositor can leave its socket behind; a live one holds the lock.
+alive() { [[ -S "$sock" ]] && ! flock -n "$sock.lock" true 2>/dev/null; }
+for _ in {1..30}; do alive && break; sleep 0.1; done
+if ! alive; then
+    echo "bifrost-shell: no Wayland compositor at $sock, not starting" >&2
+    exit 0
+fi
+# Hyprland starts the session target while it still loads its config, before
+# its request socket exists. Quickshell's Hyprland IPC learns monitors and
+# workspaces only from its first request or a monitor-added event, so a shell
+# started that early never knows any (smart hide, workspaces). Wait until
+# Hyprland answers with a monitor, at most ~10 s.
+if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && command -v hyprctl >/dev/null; then
+    for _ in {1..100}; do
+        [[ "$(hyprctl monitors -j 2>/dev/null)" == *'"activeWorkspace"'* ]] && break
+        sleep 0.1
+    done
+fi
+exec qs -n -p "$dir/shell"

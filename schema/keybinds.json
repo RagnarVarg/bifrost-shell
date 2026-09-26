@@ -1,0 +1,144 @@
+{
+  "section": "keybinds",
+  "label": "Keybindings",
+  "icon": "type",
+  "description": "Bifrost's keyboard shortcuts, written to ~/.config/bifrost/hypr/bifrost.lua and applied live. A key Bifrost binds is unbound first, so it never runs twice.",
+  "subpages": [
+    {
+      "id": "keybinds/shortcuts",
+      "label": "Shortcuts",
+      "icon": "keyboard",
+      "page": "KeybindsPage"
+    }
+  ],
+  "groups": {
+    "general": "General",
+    "groups": "Groups",
+    "custom": "Your own"
+  },
+  "requires": {
+    "compositor": [
+      "hyprland"
+    ]
+  },
+  "settings": [
+    {
+      "key": "keybinds.enabled",
+      "type": "bool",
+      "default": true,
+      "label": "Bifrost keybindings",
+      "description": "Off = Bifrost binds no keys at all",
+      "group": "general",
+      "scope": "hyprland"
+    },
+    {
+      "key": "keybinds.terminal",
+      "type": "string",
+      "default": "",
+      "label": "Terminal",
+      "description": "Command for Super+T. Empty = the system default (xdg-terminal-exec, $TERMINAL, then an installed terminal)",
+      "group": "general",
+      "scope": "shell"
+    },
+    {
+      "key": "keybinds.workspaceStyle",
+      "type": "enum",
+      "default": "focus",
+      "options": [
+        "focus",
+        "moveFollow"
+      ],
+      "optionLabels": {
+        "focus": "Super+N shows",
+        "moveFollow": "Super+N moves window"
+      },
+      "label": "Super + number",
+      "description": "Shows workspace N (Shift moves the window), or moves the window there and follows (Alt only shows)",
+      "group": "general",
+      "scope": "hyprland",
+      "dependsOn": "keybinds.groups.workspaces"
+    },
+    {
+      "key": "keybinds.groups.shell",
+      "type": "bool",
+      "default": true,
+      "label": "Bifrost",
+      "description": "Launcher (Super+Space), Settings, notifications, power menu, lock, terminal",
+      "group": "groups",
+      "scope": "hyprland",
+      "dependsOn": "keybinds.enabled"
+    },
+    {
+      "key": "keybinds.groups.media",
+      "type": "bool",
+      "default": true,
+      "label": "Volume, media & brightness keys",
+      "group": "groups",
+      "scope": "hyprland",
+      "dependsOn": "keybinds.enabled"
+    },
+    {
+      "key": "keybinds.groups.screenshots",
+      "type": "bool",
+      "default": true,
+      "label": "Screenshots",
+      "description": "Print = area, Ctrl+Print = screen, Alt+Print = window",
+      "group": "groups",
+      "scope": "hyprland",
+      "dependsOn": "keybinds.enabled"
+    },
+    {
+      "key": "keybinds.groups.windows",
+      "type": "bool",
+      "default": true,
+      "label": "Window management",
+      "description": "Close, maximize, float, focus and move with Super + arrows",
+      "group": "groups",
+      "scope": "hyprland",
+      "dependsOn": "keybinds.enabled"
+    },
+    {
+      "key": "keybinds.groups.workspaces",
+      "type": "bool",
+      "default": true,
+      "label": "Workspaces",
+      "description": "Super + number, Super + scroll, Super + Page Up/Down",
+      "group": "groups",
+      "scope": "hyprland",
+      "dependsOn": "keybinds.enabled"
+    },
+    {
+      "key": "keybinds.custom",
+      "type": "list",
+      "default": [],
+      "label": "Own keybindings",
+      "description": "One per line: 'SUPER + X: ipc controlcenter toggle', '…: run command' or '…: dispatch hl.dsp.…'. Replaces a default on the same keys",
+      "group": "custom",
+      "scope": "hyprland",
+      "advanced": true,
+      "dependsOn": "keybinds.enabled"
+    },
+    {
+      "key": "keybinds.disabled",
+      "type": "list",
+      "default": [],
+      "label": "Disabled keys",
+      "description": "Key combinations Bifrost should leave unbound, e.g. 'SUPER + Q'",
+      "group": "custom",
+      "scope": "hyprland",
+      "advanced": true,
+      "dependsOn": "keybinds.enabled"
+    },
+    {
+      "key": "keybinds.overrides",
+      "type": "object",
+      "default": {},
+      "label": "Changed shortcuts",
+      "description": "Bifrost shortcuts moved to other keys, by id; an empty value turns one off. Edited on the Shortcuts page",
+      "group": "custom",
+      "scope": "hyprland",
+      "advanced": true,
+      "dependsOn": "keybinds.enabled"
+    }
+  ]
+}

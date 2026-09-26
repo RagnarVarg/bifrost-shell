@@ -1,0 +1,2160 @@
+#!/usr/bin/env python3
+"""bifrostctl — command-line access to Bifrost's configuration and health.
+
+    bifrostctl path                         where config lives
+    bifrostctl list [SECTION]               settings with value / default / apply mode
+    bifrostctl get KEY
+    bifrostctl set KEY VALUE                VALUE is JSON; bare words are strings
+    bifrostctl reset KEY | --section S | --all
+    bifrostctl show                         resolved values as JSON
+    bifrostctl validate                     schema + config.json problems
+    bifrostctl doctor                       dependency / environment health check
+    bifrostctl preset list | set NAME       built-in / user presets (partial base layers)
+    bifrostctl profile list | save NAME | load NAME | delete NAME
+    bifrostctl export [FILE]                write a .bifrost.json bundle (default: exports dir)
+    bifrostctl import FILE [--apply]        show / apply a bundle (backs up first)
+    bifrostctl hypr generate [--write]     preview / write ~/.config/bifrost/hypr/bifrost.lua
+    bifrostctl hypr verify                  check the generated file with Hyprland --verify-config
+    bifrostctl hypr apply                   write bifrost.lua and run it in the live Hyprland
+    bifrostctl hypr binds [--json]          the effective keybindings
+    bifrostctl hypr status [--json]         generated file current? hooked into hyprland.lua?
+    bifrostctl icons list|effective|index [THEME] [--json]   icon themes, the one Bifrost uses, its lookup index
+    bifrostctl appearance status|apply [--variant V] [--json] push light/dark + icons to GTK, Qt, the portal
+    bifrostctl env                          environment for Bifrost's Quickshell processes
+    bifrostctl doctor --production          read-only checks before switching from DMS to Bifrost
+    bifrostctl import-dms [--apply] [--appearance] [--themes]
+                                            translate DMS settings (read-only) into Bifrost
+
+Add --json to list/import commands for machine-readable output (used by Settings).
+
+Mirrors shell/Core/ConfigLogic.js and Config.qml: same schema, same sparse
+config.json. A running shell picks up changes through its file watcher.
+Standard library only.
+"""
+
+from __future__ import annotations
+
+import argparse
+import copy
+import math
+import json
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+FORMAT_VERSION = 5
+NULLABLE_TYPES = {"bool", "int", "real", "color", "string", "font", "icon", "path"}
+APPLY_MODES = {"live", "reload", "restart"}
+SCOPES = {"shell", "hyprland", "system"}
+
+
+# ── paths ─────────────────────────────────────────────────────────────────
+def config_dir() -> Path:
+    if os.environ.get("BIFROST_CONFIG_DIR"):
+        return Path(os.environ["BIFROST_CONFIG_DIR"])
+    base = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+    return Path(base) / "bifrost"
+
+
+def config_file() -> Path:
+    return config_dir() / "config.json"
+
+
+# ── dotted-key helpers (same semantics as ConfigLogic.js) ────────────────
+def deep_get(obj, key):
+    cur = obj
+    for part in key.split("."):
+        if not isinstance(cur, dict) or part not in cur:
+            return None, False
+        cur = cur[part]
+    return cur, True
+
+
+def deep_set(obj, key, value):
+    parts = key.split(".")
+    cur = obj
+    for part in parts[:-1]:
+        if not isinstance(cur.get(part), dict):
+            cur[part] = {}
+        cur = cur[part]
+    cur[parts[-1]] = value
+
+
+def deep_delete(obj, key) -> bool:
+    parts = key.split(".")
+    trail, cur = [], obj
+    for part in parts[:-1]:
+        if not isinstance(cur.get(part), dict):
+            return False
+        trail.append((cur, part))
+        cur = cur[part]
+    if parts[-1] not in cur:
+        return False
+    del cur[parts[-1]]
+    for parent, name in reversed(trail):
+        if parent[name]:
+            break
+        del parent[name]
+    return True
+
+
+def merge(bottom, top, leaf_keys, prefix=""):
+    out = copy.deepcopy(bottom) if isinstance(bottom, dict) else {}
+    if not isinstance(top, dict):
+        return out
+    for name, tv in top.items():
+        path = f"{prefix}.{name}" if prefix else name
+        if isinstance(tv, dict) and isinstance(out.get(name), dict) and path not in leaf_keys:
+            out[name] = merge(out[name], tv, leaf_keys, path)
+        else:
+            out[name] = copy.deepcopy(tv)
+    return out
+
+
+def norm(v):
+    """JSON-normalises like JS: integral floats become ints (1.0 -> 1)."""
+    if isinstance(v, float) and v.is_integer():
+        return int(v)
+    if isinstance(v, list):
+        return [norm(x) for x in v]
+    if isinstance(v, dict):
+        return {k: norm(x) for k, x in v.items()}
+    return v
+
+
+def same(a, b) -> bool:
+    return json.dumps(norm(a), sort_keys=True) == json.dumps(norm(b), sort_keys=True)
+
+
+def coerce(d, raw):
+    """Returns (ok, value, error) exactly like ConfigLogic.coerce."""
+    key, typ = d["key"], d["type"]
+
+    def fail(msg):
+        return False, None, f"{key}: {msg}"
+
+    v = raw
+    if v is None:
+        return (True, None, "") if d.get("nullable") else fail("null not allowed")
+    if typ == "bool":
+        if v in ("true", "false"):
+            v = v == "true"
+        return (True, v, "") if isinstance(v, bool) else fail("expected bool")
+    if typ in ("int", "real"):
+        if isinstance(v, str) and v.strip():
+            try:
+                v = float(v)
+            except ValueError:
+                return fail("expected number")
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or v != v or v in (float("inf"), float("-inf")):
+            return fail("expected number")
+        if typ == "int":
+            v = int(round(v))
+        if "min" in d and v < d["min"]:
+            v = d["min"]
+        if "max" in d and v > d["max"]:
+            v = d["max"]
+        return True, norm(v), ""
+    if typ == "enum":
+        return (True, v, "") if v in d.get("options", []) else fail(f"expected one of {d.get('options')}")
+    if typ == "color":
+        if isinstance(v, str) and (v == "" or re.fullmatch(r"#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})", v)):
+            return True, v, ""
+        return fail('expected #RRGGBB, #AARRGGBB or ""')
+    if typ in ("string", "font", "icon", "path"):
+        if not isinstance(v, str):
+            return fail("expected string")
+        if d.get("pattern") and not re.fullmatch(d["pattern"], v):
+            return fail("invalid format")
+        return True, v, ""
+    if typ == "list":
+        return (True, copy.deepcopy(v), "") if isinstance(v, list) else fail("expected list")
+    if typ in ("object", "widgetLayout"):
+        if not isinstance(v, dict):
+            return fail("expected object")
+        if d.get("deviceFields"):
+            result = {}
+            defs = {f["key"]: f for f in d["deviceFields"]}
+            for name, entry in v.items():
+                if not name or len(name) > 256 or any(ord(c) < 32 for c in name) or name in ("__proto__", "constructor", "prototype"):
+                    return fail("invalid device name")
+                if not isinstance(entry, dict) or entry.get("kind") not in ("keyboard", "mouse", "trackpad") or set(entry) - {"kind", "values", "original"}:
+                    return fail("invalid device record")
+                result[name] = {"kind": entry["kind"]}
+                for group in ("values", "original"):
+                    vals = entry.get(group, {})
+                    if not isinstance(vals, dict): return fail("invalid device values")
+                    result[name][group] = {}
+                    for prop, value in vals.items():
+                        fd = defs.get(prop)
+                        if not fd or entry["kind"] not in fd["kinds"]: return fail("unsupported device field")
+                        ok, val, err = (True, "", "") if group == "original" and value == "" and fd["type"] in ("string", "enum") else coerce(fd, value)
+                        if not ok: return fail(err)
+                        result[name][group][prop] = val
+            return True, result, ""
+        if d.get("valueOptions"):
+            if any(not re.fullmatch(d["mapKeyPattern"], k) or value not in d["valueOptions"] for k, value in v.items()):
+                return fail("invalid map entry")
+        return True, copy.deepcopy(v), ""
+    return fail(f"unknown schema type '{typ}'")
+
+
+def unknown_keys(tree, entries, prefix=""):
+    out = []
+    if not isinstance(tree, dict):
+        return out
+    for name, v in tree.items():
+        path = f"{prefix}.{name}" if prefix else name
+        if path in entries:
+            continue
+        if isinstance(v, dict):
+            out += unknown_keys(v, entries, path)
+        else:
+            out.append(path)
+    return out
+
+
+# ── schema ────────────────────────────────────────────────────────────────
+def expand_template(t):
+    """Same as Schema.qml expandTemplate: one setting per instance and
+    property. The first instance is the global one (its own defaults); the
+    others default to null = inherit the global value (inheritKey)."""
+    if not t:
+        return []
+    out = []
+    first = t["instances"][0]["id"]
+    for inst in t["instances"]:
+        for prop in t["settings"]:
+            d = {k: v for k, v in prop.items() if k not in ("key", "globalDefault")}
+            d["key"] = f"{t['prefix']}.{inst['id']}.{prop['key']}"
+            d["instance"] = inst["id"]
+            d["prop"] = prop["key"]
+            d["group"] = inst["id"]
+            if inst["id"] == first:
+                d["default"] = prop.get("globalDefault")
+                d["nullable"] = prop.get("globalDefault") is None or prop.get("nullable", False)
+            else:
+                d["default"] = None
+                d["nullable"] = True
+                d["inheritKey"] = f"{t['prefix']}.{first}.{prop['key']}"
+            out.append(d)
+    return out
+
+
+class Schema:
+    def __init__(self, schema_dir: Path = REPO / "schema"):
+        self.errors: list[str] = []
+        self.sections: list[dict] = []
+        self.entries: dict[str, dict] = {}
+        self.keys: list[str] = []
+        self.leaf_keys: set[str] = set()
+        self.defaults: dict = {}
+        index = json.loads((schema_dir / "index.json").read_text())
+        for ref in index.get("sections", []):
+            try:
+                sec = json.loads((schema_dir / ref["file"]).read_text())
+            except (OSError, json.JSONDecodeError) as e:
+                self.errors.append(f"{ref['file']}: {e}")
+                continue
+            settings = []
+            for raw in sec.get("settings", []) + expand_template(sec.get("template")):
+                d = {"scope": "shell", "apply": "live", "advanced": False, "nullable": False, **raw}
+                d["section"] = sec["section"]
+                if "requires" not in d and "requires" in sec:
+                    d["requires"] = sec["requires"]
+                problem = self._validate(d)
+                if problem:
+                    self.errors.append(problem)
+                    continue
+                self.entries[d["key"]] = d
+                self.keys.append(d["key"])
+                settings.append(d)
+                if d["type"] in ("object", "widgetLayout"):
+                    self.leaf_keys.add(d["key"])
+                deep_set(self.defaults, d["key"], norm(d["default"]))
+            self.sections.append({**{k: v for k, v in sec.items() if k != "settings"}, "category": ref.get("category"), "settings": settings})
+
+    def _validate(self, d):
+        key = d.get("key")
+        if not key:
+            return f"setting without key in section {d['section']}"
+        if key in self.entries:
+            return f"{key}: duplicate key"
+        for other in self.entries:
+            if other.startswith(key + ".") or key.startswith(other + "."):
+                return f"{key}: overlaps with {other}"
+        if d["apply"] not in APPLY_MODES:
+            return f"{key}: invalid apply '{d['apply']}'"
+        if d["scope"] not in SCOPES:
+            return f"{key}: invalid scope '{d['scope']}'"
+        if d["nullable"] and d["type"] not in NULLABLE_TYPES:
+            return f"{key}: type {d['type']} cannot be nullable"
+        if d.get("default") is None:
+            return "" if d["nullable"] else f"{key}: null default on non-nullable setting"
+        ok, value, err = coerce(d, d["default"])
+        if not ok:
+            return f"default invalid: {err}"
+        if not same(value, d["default"]):
+            return f"{key}: default {json.dumps(d['default'])} is outside its bounds"
+        return ""
+
+    def section_keys(self, section_id):
+        return [d["key"] for s in self.sections if s["section"] == section_id for d in s["settings"]]
+
+
+
+# ── light/dark, icon themes and system appearance ─────────────────────────
+def runtime_dir() -> Path:
+    return Path(os.environ.get("XDG_RUNTIME_DIR") or "/tmp") / ("bifrost-test" if os.environ.get("BIFROST_CONFIG_DIR") else "bifrost")
+
+
+def gsettings_get(schema, key):
+    if not shutil.which("gsettings"):
+        return None
+    code, out = run(["gsettings", "get", schema, key])
+    return out.strip().strip("'") if code == 0 else None
+
+
+def effective_variant(cfg) -> str:
+    """dark|light as the shell currently shows it (ThemeMode in QML)."""
+    mode = deep_get(cfg.values, "appearance.mode")[0]
+    if mode in ("light", "dark"):
+        return mode
+    try:
+        v = json.loads((runtime_dir() / "appearance.json").read_text()).get("variant")
+        if v in ("light", "dark"):
+            return v
+    except (OSError, ValueError):
+        pass
+    scheme = gsettings_get("org.gnome.desktop.interface", "color-scheme")
+    return "light" if scheme in ("prefer-light", "default") else "dark"
+
+
+def icon_base_dirs():
+    home = Path(os.path.expanduser("~"))
+    data_home = Path(os.environ.get("XDG_DATA_HOME") or home / ".local/share")
+    dirs = [data_home / "icons", home / ".icons"]
+    for d in (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":"):
+        if d:
+            dirs.append(Path(d) / "icons")
+    out = []
+    for d in dirs:
+        if d not in out:
+            out.append(d)
+    return out
+
+
+def read_index_theme(theme):
+    """Parsed index.theme of `theme`: {name, inherits, dirs: {dir: {size, type, min, max, scale}}, roots}."""
+    roots = [b / theme for b in icon_base_dirs() if (b / theme).is_dir()]
+    idx = next((r / "index.theme" for r in roots if (r / "index.theme").exists()), None)
+    if not idx:
+        return None
+    sections, cur = {}, None
+    for line in idx.read_text(errors="replace").splitlines():
+        line = line.strip()
+        if line.startswith("[") and line.endswith("]"):
+            cur = sections.setdefault(line[1:-1], {})
+        elif "=" in line and cur is not None and not line.startswith("#"):
+            k, _, v = line.partition("=")
+            cur[k.strip()] = v.strip()
+    head = sections.get("Icon Theme", {})
+    dirs = {}
+    for dname in [x for x in (head.get("Directories", "") + "," + head.get("ScaledDirectories", "")).split(",") if x]:
+        sec = sections.get(dname, {})
+        try:
+            size = int(sec.get("Size", "0"))
+        except ValueError:
+            size = 0
+        dirs[dname] = {"size": size, "type": sec.get("Type", "Threshold"), "scale": int(sec.get("Scale", "1") or 1)}
+    return {"name": head.get("Name", theme), "inherits": [x for x in head.get("Inherits", "").split(",") if x],
+            "hidden": head.get("Hidden", "false").lower() == "true", "dirs": dirs, "roots": roots,
+            "dark": "dark" in theme.lower() or "dark" in head.get("Name", "").lower()}
+
+
+def installed_icon_themes():
+    seen = {}
+    for b in icon_base_dirs():
+        if not b.is_dir():
+            continue
+        for t in sorted(b.iterdir()):
+            if t.name in seen or t.name in ("default", "hicolor", "locolor") or not (t / "index.theme").exists():
+                continue
+            info = read_index_theme(t.name)
+            if info and not info["hidden"] and info["dirs"]:
+                seen[t.name] = {"id": t.name, "name": info["name"], "dark": info["dark"]}
+    return sorted(seen.values(), key=lambda x: x["id"].lower())
+
+
+def icon_theme_exists(theme):
+    return bool(theme) and read_index_theme(theme) is not None
+
+
+def system_icon_theme():
+    """The icon theme the desktop uses when Bifrost doesn't choose one."""
+    t = gsettings_get("org.gnome.desktop.interface", "icon-theme")
+    if icon_theme_exists(t):
+        return t
+    for f in (Path(os.path.expanduser("~/.config/gtk-3.0/settings.ini")),):
+        if f.exists():
+            m = re.search(r"^gtk-icon-theme-name\s*=\s*(.+)$", f.read_text(), re.M)
+            if m and icon_theme_exists(m.group(1).strip()):
+                return m.group(1).strip()
+    return "hicolor"
+
+
+def effective_icon_theme(cfg, variant=None):
+    """Resolve the shared FullBlue default, explicit system/custom choice and fallback."""
+    choice = deep_get(cfg.values, "appearance.icons.theme")[0]
+    variant = variant or effective_variant(cfg)
+    if choice == "system":
+        return system_icon_theme(), "system"
+    if choice:
+        return (choice, "custom") if icon_theme_exists(choice) else (system_icon_theme(), "missing")
+    default = "Gruvbox-Plus-Dark-IceBlue-FullBlue"
+    return (default, "default") if icon_theme_exists(default) else (system_icon_theme(), "default-missing")
+
+
+def icon_theme_chain(theme):
+    chain, todo = [], [theme]
+    while todo:
+        t = todo.pop(0)
+        if t in chain:
+            continue
+        info = read_index_theme(t)
+        if not info:
+            continue
+        chain.append(t)
+        todo = info["inherits"] + todo
+    if "hicolor" not in chain and read_index_theme("hicolor"):
+        chain.append("hicolor")
+    return chain
+
+
+def build_icon_index(theme, target=64):
+    """{name: path} for every icon in the theme chain: the first theme in the
+    chain that has a name wins; within it scalable, then the size nearest
+    `target` (larger preferred)."""
+    icons = {}
+    for t in icon_theme_chain(theme):
+        info = read_index_theme(t)
+        best = {}
+        for dname, d in info["dirs"].items():
+            if d["scale"] != 1:
+                continue
+            score = 0 if d["type"] == "Scalable" else abs(d["size"] - target) + (0.5 if d["size"] < target else 0)
+            for root in info["roots"]:
+                folder = root / dname
+                if not folder.is_dir():
+                    continue
+                for f in folder.iterdir():
+                    stem, ext = os.path.splitext(f.name)
+                    if ext not in (".svg", ".png", ".xpm") or stem in icons:
+                        continue
+                    if stem not in best or score < best[stem][0]:
+                        best[stem] = (score, str(f))
+        for stem, (_, path) in best.items():
+            icons.setdefault(stem, path)
+    pix = Path("/usr/share/pixmaps")
+    if pix.is_dir():
+        for f in pix.iterdir():
+            stem, ext = os.path.splitext(f.name)
+            if ext in (".svg", ".png", ".xpm"):
+                icons.setdefault(stem, str(f))
+    return icons
+
+
+def icon_index_file(theme) -> Path:
+    """Cached index for `theme`, rebuilt when a theme dir in the chain changes."""
+    cache = Path(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")) / "bifrost" / "icons"
+    cache.mkdir(parents=True, exist_ok=True)
+    f = cache / f"{theme}.json"
+    stamp = 0.0
+    for t in icon_theme_chain(theme):
+        for r in read_index_theme(t)["roots"]:
+            stamp = max(stamp, r.stat().st_mtime, (r / "index.theme").stat().st_mtime if (r / "index.theme").exists() else 0)
+    if f.exists():
+        try:
+            if json.loads(f.read_text()).get("stamp") == stamp:
+                return f
+        except ValueError:
+            pass
+    write_json_atomic(f, {"theme": theme, "chain": icon_theme_chain(theme), "stamp": stamp, "icons": build_icon_index(theme)})
+    return f
+
+
+def gtk_theme_variant(name, variant):
+    """MacTahoe-Dark ↔ MacTahoe-Light, Adwaita ↔ Adwaita-dark: the installed
+    counterpart of a GTK theme for `variant`, or None."""
+    if not name:
+        return None
+    bases = [Path(os.path.expanduser("~/.themes")), Path(os.path.expanduser("~/.local/share/themes")), Path("/usr/share/themes")]
+    exists = lambda n: any((b / n).is_dir() for b in bases)
+    stem = re.sub(r"[-_](dark|light)$", "", name, flags=re.I)
+    m = re.search(r"[-_](dark|light)$", name, re.I)
+    sep = name[len(stem)] if m else "-"
+    cap = (m.group(1)[0].isupper()) if m else True
+    word = lambda w: w.capitalize() if cap else w
+    cands = [stem + sep + word("dark"), stem + "-dark"] if variant == "dark" else [stem + sep + word("light"), stem]
+    for c in cands:
+        if exists(c):
+            return c
+    return None
+
+
+def backup_once(path: Path):
+    """First time Bifrost edits a file it doesn't own, keep the original."""
+    if not path.exists():
+        return
+    dest = config_dir() / "backups" / "system" / (path.parent.name + "__" + path.name + ".orig")
+    if not dest.exists():
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, dest)
+
+
+def ini_set(path: Path, section, key, value):
+    """Sets one key in an INI file, keeping everything else as it is."""
+    if ini_get(path, section, key) == value:
+        return
+    backup_once(path)
+    lines = path.read_text().splitlines() if path.exists() else []
+    out, in_sec, done = [], False, False
+    for line in lines:
+        st = line.strip()
+        if st.startswith("[") and st.endswith("]"):
+            if in_sec and not done:
+                out.append(f"{key}={value}")
+                done = True
+            in_sec = st[1:-1] == section
+        elif in_sec and re.match(rf"^{re.escape(key)}\s*=", st):
+            if not done:
+                out.append(f"{key}={value}")
+                done = True
+            continue
+        out.append(line)
+    if not done:
+        if not in_sec:
+            out.append(f"[{section}]")
+        out.append(f"{key}={value}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".bifrost-tmp")
+    tmp.write_text("\n".join(out) + "\n")
+    os.replace(tmp, path)
+
+
+def ini_get(path: Path, section, key):
+    if not path.exists():
+        return None
+    in_sec = False
+    for line in path.read_text().splitlines():
+        st = line.strip()
+        if st.startswith("[") and st.endswith("]"):
+            in_sec = st[1:-1] == section
+        elif in_sec and "=" in st and st.split("=", 1)[0].strip() == key:
+            return st.split("=", 1)[1].strip()
+    return None
+
+
+def appearance_apply(cfg, variant, dry=False):
+    """Pushes light/dark and the icon theme to the rest of the desktop.
+    Returns [{target, status, detail}] with status ok|skipped|unsupported|error."""
+    rows = []
+    add = lambda t, st, d: rows.append({"target": t, "status": st, "detail": d})
+    icons, source = effective_icon_theme(cfg, variant)
+    manage_icons = source in ("default", "custom")
+    gs = shutil.which("gsettings")
+    iface = "org.gnome.desktop.interface"
+
+    def gset(key, value):
+        if dry:
+            return True
+        return run(["gsettings", "set", iface, key, value])[0] == 0
+
+    if gs and gsettings_get(iface, "color-scheme") is not None:
+        scheme = "prefer-dark" if variant == "dark" else "prefer-light"
+        add("portal", "ok" if gset("color-scheme", scheme) else "error", f"color-scheme = {scheme} (browsers, GTK4/libadwaita, Qt via the portal)")
+        cur = gsettings_get(iface, "gtk-theme")
+        other = gtk_theme_variant(cur, variant)
+        if other and other != cur:
+            add("gtk", "ok" if gset("gtk-theme", other) else "error", f"gtk-theme {cur} → {other}")
+        elif other:
+            add("gtk", "ok", f"gtk-theme {cur}")
+        else:
+            add("gtk", "unsupported", f"no {variant} variant of the GTK theme {cur} is installed")
+        if manage_icons:
+            add("icons", "ok" if gset("icon-theme", icons) else "error", f"icon-theme = {icons}")
+    else:
+        add("portal", "unsupported", "gsettings / org.gnome.desktop.interface not available")
+    for gtk in ("gtk-3.0", "gtk-4.0"):
+        f = Path(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")) / gtk / "settings.ini"
+        if f.exists():
+            if not dry:
+                ini_set(f, "Settings", "gtk-application-prefer-dark-theme", "1" if variant == "dark" else "0")
+                if manage_icons:
+                    ini_set(f, "Settings", "gtk-icon-theme-name", icons)
+            add(gtk, "ok", f"{f.name}: prefer-dark = {variant == 'dark'}")
+    platform = os.environ.get("QT_QPA_PLATFORMTHEME", "")
+    for qt in ("qt6ct", "qt5ct"):
+        f = Path(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")) / qt / f"{qt}.conf"
+        if not f.exists():
+            continue
+        details = []
+        if manage_icons and not dry:
+            ini_set(f, "Appearance", "icon_theme", icons)
+            details.append(f"icon_theme = {icons}")
+        style = ini_get(f, "Appearance", "style") or ""
+        m = re.match(r"^(kvantum)(-dark)?$", style, re.I)
+        if m:
+            want = "kvantum-dark" if variant == "dark" else "kvantum"
+            if want != style and not dry:
+                ini_set(f, "Appearance", "style", want)
+            details.append(f"style = {want}")
+        if (ini_get(f, "Appearance", "custom_palette") or "").lower() == "true":
+            details.append("custom colour palette left as it is")
+        add(qt, "ok", ", ".join(details) or "nothing to change")
+    if platform and platform not in ("qt6ct", "qt5ct", "xdgdesktopportal", "gtk3", "gnome", "kde"):
+        add("qt", "unsupported", f"QT_QPA_PLATFORMTHEME={platform} is not managed")
+    if not dry:
+        runtime_dir().mkdir(parents=True, exist_ok=True)
+    return rows
+
+# ── config document ───────────────────────────────────────────────────────
+def migrate(doc):
+    """Same steps as shell/Core/Migrations.js."""
+    v = doc.get("version", 1)
+    if v == 1:
+        a = doc.get("values", {}).get("appearance")
+        if isinstance(a, dict) and "variant" in a:
+            a.setdefault("mode", a["variant"])
+            del a["variant"]
+        doc.pop("appearance", None)
+        v = 2
+    if v == 2:
+        vals = doc.setdefault("values", {})
+        a = vals.get("appearance", {})
+        m = vals.get("materials", {})
+
+        def put(surface, prop, value):
+            if value is None:
+                return
+            m.setdefault(surface, {}).setdefault(prop, value)
+        tr = a.get("transparency", {})
+        put("bar", "transparency", tr.get("bar"))
+        put("dock", "transparency", tr.get("dock"))
+        for s_ in ("menus", "launcher", "controlCenter", "notifications", "settings", "osd"):
+            put(s_, "transparency", tr.get("windows"))
+        g = a.get("glass", {})
+        put("all", "grain", g.get("grain"))
+        if g.get("blur") is False:
+            put("all", "blur", False)
+        b = a.get("borders", {})
+        if b.get("enabled") is False:
+            put("all", "border", False)
+        if isinstance(b.get("opacityScale"), (int, float)):
+            put("all", "borderOpacity", round(16 * b["opacityScale"]))
+        if a.get("shadows", {}).get("enabled") is False:
+            put("all", "shadow", 0)
+        if isinstance(vals.get("bar", {}).get("radius"), (int, float)):
+            put("bar", "radius", vals["bar"]["radius"])
+        hb = vals.get("hyprland", {}).get("blur", {})
+        if isinstance(hb.get("size"), (int, float)):
+            m["blurStrength"] = max(1, min(100, round((hb["size"] - 1) / 0.39)))
+        for k in ("transparency", "glass", "borders", "shadows"):
+            a.pop(k, None)
+        vals.get("bar", {}).pop("radius", None)
+        vals.get("hyprland", {}).pop("blur", None)
+        if m:
+            vals["materials"] = m
+        v = 3
+    if v == 3:
+        bar = doc.get("values", {}).get("bar")
+        if isinstance(bar, dict):
+            if bar.get("style") == "islands":
+                bar["style"] = "floating"
+                bar.setdefault("background", "none")
+                bar.setdefault("widgetStyle", "grouped")
+            ss = bar.get("systemStatus")
+            if isinstance(ss, dict) and "appearance" in ss:
+                if ss["appearance"] == "boxed":
+                    bar.setdefault("widgetStyle", "boxed")
+                del ss["appearance"]
+        v = 4
+    if v == 4:
+        m = doc.get("values", {}).get("materials")
+        if isinstance(m, dict):
+            strength = m.get("blurStrength") if isinstance(m.get("blurStrength"), (int, float)) and not isinstance(m.get("blurStrength"), bool) else None
+            for s_ in m.values():
+                if not isinstance(s_, dict) or "blur" not in s_:
+                    continue
+                if s_["blur"] is False:
+                    s_["blur"] = 0
+                elif s_["blur"] is True:
+                    s_["blur"] = strength if strength is not None else 20
+            if strength is not None:
+                m.setdefault("all", {}).setdefault("blur", strength)
+            m.pop("blurStrength", None)
+        v = 5
+    doc["version"] = v
+    return doc
+
+
+
+class Config:
+    def __init__(self, schema: Schema):
+        self.schema = schema
+        self.path = config_file()
+        self.issues: list[str] = []
+        self.doc = {"version": FORMAT_VERSION, "values": {}}
+        if self.path.exists():
+            text = self.path.read_text()
+            if text.strip():
+                self.doc = json.loads(text)  # let JSONDecodeError surface to the caller
+            if not isinstance(self.doc.get("values"), dict):
+                self.doc["values"] = {}
+        version = self.doc.get("version", 1)
+        if version < FORMAT_VERSION:
+            self.doc = migrate(self.doc)
+        if version > FORMAT_VERSION:
+            raise SystemExit(f"config.json is version {version}, newer than this bifrostctl ({FORMAT_VERSION})")
+        self.preset = os.environ.get("BIFROST_PRESET") or self.doc.get("preset") or "default"
+        self.preset_values = self._validated(self._load_preset(self.preset), f"preset {self.preset}")
+        self.overrides = self._validated(self.doc["values"], "config.json")
+        self.base = merge(schema.defaults, self.preset_values, schema.leaf_keys)
+        self.values = merge(self.base, self.overrides, schema.leaf_keys)
+
+    def _load_preset(self, pid):
+        if pid == "default":
+            return {}
+        for d in (config_dir() / "presets", REPO / "presets"):
+            f = d / f"{pid}.json"
+            if f.exists():
+                return json.loads(f.read_text()).get("values", {})
+        self.issues.append(f"preset '{pid}' not found")
+        return {}
+
+    def _validated(self, tree, kind):
+        out = {}
+        for key in self.schema.keys:
+            raw, found = deep_get(tree, key)
+            if not found:
+                continue
+            ok, value, err = coerce(self.schema.entries[key], raw)
+            if ok:
+                deep_set(out, key, value)
+            else:
+                self.issues.append(f"{kind}: {err}")
+        for key in unknown_keys(tree, self.schema.entries):
+            self.issues.append(f"{kind}: unknown setting '{key}' (kept in file)")
+        return out
+
+    def set(self, key, value):
+        d = self.schema.entries.get(key)
+        if not d:
+            raise SystemExit(f"unknown setting '{key}'")
+        ok, v, err = coerce(d, value)
+        if not ok:
+            raise SystemExit(err)
+        base, _ = deep_get(self.base, key)
+        if same(v, base):
+            deep_delete(self.doc["values"], key)
+        else:
+            deep_set(self.doc["values"], key, v)
+        return v
+
+    def save(self):
+        out = {"version": FORMAT_VERSION}
+        if self.doc.get("preset"):
+            out["preset"] = self.doc["preset"]
+        out["values"] = norm(self.doc.get("values", {}))
+        for k, v in self.doc.items():
+            out.setdefault(k, v)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=self.path.parent, prefix=".config.", suffix=".tmp")
+        with os.fdopen(fd, "w") as f:
+            f.write(json.dumps(out, indent=2, ensure_ascii=False) + "\n")
+        os.replace(tmp, self.path)
+
+
+def parse_value(text):
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return text
+
+
+# ── doctor ────────────────────────────────────────────────────────────────
+from dependencies import (version_tuple, run, qml_import_paths, check_dependency,
+                          distro_info, install_hint)
+
+
+def doctor(_args):
+    colours = {"ok": "\033[32m✓\033[0m", "warn": "\033[33m!\033[0m", "fail": "\033[31m✗\033[0m"} if sys.stdout.isatty() else {"ok": "ok  ", "warn": "WARN", "fail": "FAIL"}
+    worst = "ok"
+    rank = {"ok": 0, "warn": 1, "fail": 2}
+
+    def report(status, name, detail, hint=""):
+        nonlocal worst
+        worst = max(worst, status, key=rank.get)
+        print(f" {colours[status]} {name:<22} {detail}" + (f"\n     → {hint}" if hint and status != "ok" else ""))
+
+    manifest = json.loads((REPO / "dependencies.json").read_text())
+    print("Dependencies (dependencies.json)")
+    for dep in manifest["dependencies"]:
+        status, detail = check_dependency(dep)
+        hint = install_hint(dep, distro_info()[0])
+        report(status, dep["id"], f"[{dep.get('level')}] {detail}", hint)
+
+    print("\nSession")
+    comp = "hyprland" if os.environ.get("HYPRLAND_INSTANCE_SIGNATURE") else "niri" if os.environ.get("NIRI_SOCKET") else "none"
+    report("ok" if comp == "hyprland" else "warn", "compositor", comp, "Hyprland is the supported compositor for now; Niri is planned")
+    if comp == "hyprland":
+        code, out = run(["hyprctl", "eval", "return 1"])
+        report("ok" if code == 0 else "warn", "hyprland lua/eval", "available" if code == 0 else out.strip()[:100],
+               "Surface blur needs Hyprland >= 0.55 with a Lua config")
+    shell_running = run(["pgrep", "-f", f"qs .*-p {REPO / 'shell'}/?( |$)"])[0] == 0
+    report("ok", "bifrost shell", "running" if shell_running else "not running")
+
+    print("\nConfiguration")
+    schema = Schema()
+    report("fail" if schema.errors else "ok", "schema", f"{len(schema.keys)} settings" if not schema.errors else "; ".join(schema.errors))
+    try:
+        cfg = Config(schema)
+        detail = f"{config_file()} ({len(cfg.issues)} issues)" if config_file().exists() else f"{config_file()} (not created yet — all defaults)"
+        report("warn" if cfg.issues else "ok", "config.json", detail, "; ".join(cfg.issues))
+    except json.JSONDecodeError as e:
+        report("fail", "config.json", f"invalid JSON: {e}", "fix the file; Bifrost refuses to overwrite it")
+
+    print()
+    return {"ok": 0, "warn": 0, "fail": 1}[worst]
+
+
+
+
+# ── data operations (profiles, bundles, DMS import) ─────────────────────────
+# Settings calls these through bifrostctl so the logic exists only once.
+BUNDLE_FORMAT = "bifrost-bundle"
+
+
+def now_iso():
+    import datetime
+    return datetime.datetime.now().replace(microsecond=0).isoformat()
+
+
+def write_json_atomic(path: Path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix="." + path.name + ".", suffix=".tmp")
+    with os.fdopen(fd, "w") as f:
+        f.write(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+    os.replace(tmp, path)
+
+
+def backup_config(reason: str) -> Path | None:
+    src = config_file()
+    if not src.exists():
+        return None
+    stamp = now_iso().replace(":", "")
+    dst = config_dir() / "backups" / f"config.{reason}.{stamp}.json"
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_text(src.read_text())
+    return dst
+
+
+def flatten(tree, prefix=""):
+    out = {}
+    if isinstance(tree, dict):
+        for k, v in tree.items():
+            path = f"{prefix}.{k}" if prefix else k
+            if isinstance(v, dict) and not path_is_leaf(path):
+                out.update(flatten(v, path))
+            else:
+                out[path] = v
+    return out
+
+
+_LEAF_KEYS: set[str] = set()
+
+
+def path_is_leaf(path):
+    return path in _LEAF_KEYS
+
+
+def diff_values(schema, current: dict, incoming: dict):
+    """Changes as [(key, old, new)] for keys the incoming tree sets."""
+    global _LEAF_KEYS
+    _LEAF_KEYS = set(schema.entries)
+    changes = []
+    for key, new in flatten(incoming).items():
+        old, _ = deep_get(current, key)
+        if not same(old, new):
+            changes.append((key, old, new))
+    return changes
+
+
+def apply_values(cfg, values: dict, preset=None, replace=True):
+    """Validates and writes values into config.json (replacing or merging)."""
+    doc = cfg.doc
+    if replace:
+        doc["values"] = {}
+    problems = []
+    global _LEAF_KEYS
+    _LEAF_KEYS = set(cfg.schema.entries)
+    for key, raw in flatten(values).items():
+        d = cfg.schema.entries.get(key)
+        if not d:
+            deep_set(doc["values"], key, raw)       # keep unknown keys, like the shell does
+            problems.append(f"{key}: unknown (kept)")
+            continue
+        ok, v, err = coerce(d, raw)
+        if ok:
+            deep_set(doc["values"], key, v)
+        else:
+            problems.append(err)
+    if preset is not None:
+        if preset and preset != "default":
+            doc["preset"] = preset
+        else:
+            doc.pop("preset", None)
+    cfg.save()
+    return problems
+
+
+# profiles
+def profiles_dir() -> Path:
+    return config_dir() / "profiles"
+
+
+def profile_path(name: str) -> Path:
+    safe = re.sub(r"[^A-Za-z0-9._ -]", "", name).strip()
+    if not safe:
+        raise SystemExit("invalid profile name")
+    return profiles_dir() / f"{safe}.json"
+
+
+def list_profiles():
+    out = []
+    for f in sorted(profiles_dir().glob("*.json")):
+        try:
+            d = json.loads(f.read_text())
+        except json.JSONDecodeError:
+            continue
+        out.append({"name": d.get("name", f.stem), "file": str(f), "created": d.get("created", ""),
+                    "preset": d.get("preset", "default"), "count": len(flatten(d.get("values", {})))})
+    return out
+
+
+# presets
+def list_presets():
+    seen, out = set(), []
+    for d in (config_dir() / "presets", REPO / "presets"):
+        for f in sorted(d.glob("*.json")):
+            if f.stem in seen:
+                continue
+            seen.add(f.stem)
+            data = json.loads(f.read_text())
+            out.append({"id": f.stem, "name": data.get("name", f.stem), "description": data.get("description", ""),
+                        "user": d != REPO / "presets"})
+    return [{"id": "default", "name": "Standard", "description": "Inga preset-värden", "user": False}] + out
+
+
+# bundles
+def export_bundle(cfg, path: Path | None):
+    theme_id, _ = deep_get(cfg.values, "appearance.theme")
+    bundle = {"format": BUNDLE_FORMAT, "version": 1, "created": now_iso(),
+              "preset": cfg.doc.get("preset", "default"), "values": cfg.doc.get("values", {}), "themes": {}}
+    user_theme = config_dir() / "themes" / f"{theme_id}.json"
+    if user_theme.exists():
+        bundle["themes"][theme_id] = json.loads(user_theme.read_text())
+    if path is None:
+        path = config_dir() / "exports" / f"bifrost-{now_iso().replace(':', '')}.bifrost.json"
+    write_json_atomic(path, bundle)
+    return path
+
+
+def read_bundle(path: Path):
+    data = json.loads(path.read_text())
+    if data.get("format") != BUNDLE_FORMAT:
+        raise SystemExit(f"{path}: not a Bifrost bundle")
+    if data.get("version", 1) > 1:
+        raise SystemExit(f"{path}: bundle version {data['version']} is newer than this bifrostctl")
+    return data
+
+
+# DMS import (read-only)
+DMS_WIDGETS = {
+    "launcherButton": "launcher", "workspaceSwitcher": "workspaces", "focusedWindow": "activeWindow",
+    "clock": "clock", "cpuUsage": "systemStats", "memUsage": "systemStats", "cpuTemp": "gpu", "gpuTemp": "gpu",
+    "systemTray": "tray", "controlCenterButton": "controlCenter", "notificationButton": "notifications",
+    "powerMenuButton": "power", "spacer": "spacer", "media": "media", "battery": "battery",
+}
+
+
+def dms_paths():
+    home = Path(os.path.expanduser("~"))
+    cfg = Path(os.environ.get("BIFROST_DMS_CONFIG", home / ".config/DankMaterialShell"))
+    state = Path(os.environ.get("BIFROST_DMS_STATE", home / ".local/state/DankMaterialShell"))
+    return cfg, state
+
+
+def hex_mix(a, b, t):
+    ca = [int(a[i:i + 2], 16) for i in (1, 3, 5)]
+    cb = [int(b[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#" + "".join(f"{round(x + (y - x) * t):02X}" for x, y in zip(ca, cb))
+
+
+def dms_theme_to_bifrost(theme_id, data):
+    def variant(p, dark):
+        base = p.get("background", "#101010" if dark else "#EEEEEE")
+        text = p.get("surfaceText", "#EEEEEE" if dark else "#111111")
+        accent = p.get("primary", "#8899AA")
+        return {"palette": {
+            "void": hex_mix(base, "#000000" if dark else "#FFFFFF", 0.35),
+            "base": base,
+            "surface": p.get("surface", base),
+            "surfaceRaised": p.get("surfaceContainer", p.get("surface", base)),
+            "surfaceHover": p.get("surfaceContainerHigh", p.get("surfaceVariant", base)),
+            "text": text,
+            "textMuted": hex_mix(text, base, 0.35),
+            "textFaint": hex_mix(text, base, 0.6),
+            "silver": p.get("outline", hex_mix(text, base, 0.2)),
+            "silverBright": hex_mix(text, "#FFFFFF", 0.3) if dark else "#FFFFFF",
+            "accent": accent,
+            "accentDeep": hex_mix(accent, base, 0.35),
+            "accentText": p.get("primaryText", base),
+            "success": p.get("success", "#7FB89A"),
+            "warning": p.get("warning", "#D6A76A"),
+            "danger": p.get("error", "#D0707A"),
+            "aurora": [accent, p.get("secondary", accent), p.get("info", accent)],
+        }}
+    out = {"id": f"dms-{theme_id}", "name": f"{data.get('name', theme_id)} (från DMS)", "version": 1,
+           "extends": "_base", "description": f"Converted from DMS theme '{theme_id}' by bifrostctl import-dms", "variants": {}}
+    for mode in ("dark", "light"):
+        if isinstance(data.get(mode), dict):
+            out["variants"][mode] = variant(data[mode], mode == "dark")
+    return out
+
+
+def dms_translate(include_appearance=False):
+    """Returns (values, notes, themes) translated from DMS files. Reads only."""
+    cfg_dir, state_dir = dms_paths()
+    values, notes = {}, []
+    settings = json.loads((cfg_dir / "settings.json").read_text()) if (cfg_dir / "settings.json").exists() else {}
+    session = json.loads((state_dir / "session.json").read_text()) if (state_dir / "session.json").exists() else {}
+    if not settings and not session:
+        raise SystemExit(f"no DMS files found under {cfg_dir} / {state_dir}")
+
+    def put(key, value, why):
+        deep_set(values, key, value)
+        notes.append({"key": key, "value": value, "from": why})
+
+    if session.get("wallpaperPath"):
+        put("wallpaper.path", session["wallpaperPath"], "session.wallpaperPath")
+    if session.get("pinnedApps"):
+        put("dock.pinned", session["pinnedApps"], "session.pinnedApps")
+    if session.get("hiddenApps"):
+        put("launcher.hidden", session["hiddenApps"], "session.hiddenApps")
+    if "dockSmartAutoHide" in settings or "dockAutoHide" in settings:
+        smart = bool(settings.get("dockSmartAutoHide"))
+        put("dock.autohide", smart or bool(settings.get("dockAutoHide")), "settings.dockSmartAutoHide/dockAutoHide")
+        put("dock.smartHide", smart, "settings.dockSmartAutoHide")
+    if "showDock" in settings:
+        put("dock.enabled", bool(settings["showDock"]), "settings.showDock")
+    if "dockIconSize" in settings:
+        put("dock.iconSize", max(28, min(72, int(settings["dockIconSize"]))), "settings.dockIconSize")
+    if "showWeekNumber" in settings:
+        put("clock.weekNumber", bool(settings["showWeekNumber"]), "settings.showWeekNumber")
+    if settings.get("iconThemeDark"):
+        put("appearance.icons.theme", settings["iconThemeDark"], "settings.iconThemeDark")
+
+    bar = (settings.get("barConfigs") or [{}])[0]
+    if bar:
+        if "position" in bar:
+            put("bar.position", "bottom" if bar["position"] == 1 else "top", "barConfigs[0].position")
+        if "autoHide" in bar:
+            put("bar.autohide.enabled", bool(bar["autoHide"]), "barConfigs[0].autoHide")
+        if "autoHideDelay" in bar:
+            put("bar.autohide.delayMs", max(0, min(3000, int(bar["autoHideDelay"]))), "barConfigs[0].autoHideDelay")
+        if "autoHideStrict" in bar:
+            put("bar.autohide.pinWhilePopupOpen", not bar["autoHideStrict"], "barConfigs[0].autoHideStrict (inverted)")
+        widgets, skipped = {}, []
+        for zone, dms_zone in (("left", "leftWidgets"), ("center", "centerWidgets"), ("right", "rightWidgets")):
+            out = []
+            for w in bar.get(dms_zone, []):
+                if not w.get("enabled", True):
+                    continue
+                wid = DMS_WIDGETS.get(w.get("id"))
+                if not wid:
+                    skipped.append(w.get("id"))
+                    continue
+                if any(x["id"] == wid for z in list(widgets.values()) + [out] for x in z) and wid != "spacer":
+                    continue
+                out.append({"id": wid})   # DMS spacer sizes are pixels; Bifrost uses spacing steps
+            widgets[zone] = out
+        if not any(x["id"] == "settings" for z in widgets.values() for x in z):
+            widgets.setdefault("right", []).append({"id": "settings"})
+            notes.append({"key": "bar.widgets", "value": "settings", "from": "added: Bifrost Settings button"})
+        put("bar.widgets", widgets, "barConfigs[0].*Widgets")
+        for s_ in skipped:
+            notes.append({"key": None, "value": s_, "from": "DMS widget without Bifrost equivalent (skipped)"})
+        if include_appearance:
+            if "spacing" in bar:
+                put("bar.spacing", max(0, min(24, int(bar["spacing"]))), "barConfigs[0].spacing")
+
+    if include_appearance and "cornerRadius" in settings:
+        put("appearance.radiusScale", round(max(0.0, min(2.0, settings["cornerRadius"] / 12.0 * 0.65)), 2), "settings.cornerRadius")
+    if session.get("weatherLocation"):
+        notes.append({"key": None, "value": session["weatherLocation"], "from": "weather location (no weather widget yet)"})
+
+    themes = {}
+    for f in sorted((cfg_dir / "themes").glob("*/theme.json")):
+        try:
+            themes[f.parent.name] = dms_theme_to_bifrost(f.parent.name, json.loads(f.read_text()))
+        except (json.JSONDecodeError, OSError, ValueError, IndexError):
+            notes.append({"key": None, "value": f.parent.name, "from": "DMS theme could not be converted"})
+    return values, notes, themes
+
+
+# ── Hyprland integration (generated file; never the user's own config) ──────
+def hypr_file() -> Path:
+    return config_dir() / "hypr" / "bifrost.lua"
+
+
+def theme_palette(cfg):
+    """Resolved palette of the active theme/variant (for border colours)."""
+    theme_id = deep_get(cfg.values, "appearance.theme")[0] or "bifrost-graphite"
+    variant = effective_variant(cfg)
+    for d in (config_dir() / "themes", REPO / "themes"):
+        f = d / f"{theme_id}.json"
+        if f.exists():
+            t = json.loads(f.read_text())
+            return t.get("variants", {}).get(variant, {}).get("palette", {})
+    return {}
+
+
+def lua_str(s):
+    return json.dumps(s)
+
+
+def install_bin_lua() -> str:
+    """Lua expression for Bifrost's bin/ dir, relative to $HOME when possible
+    so the generated file never carries a personal path."""
+    home = Path(os.path.expanduser("~"))
+    data_home = Path(os.environ.get("XDG_DATA_HOME") or home / ".local/share")
+    # Prefer the standard install path when it is this checkout (a --link
+    # install), so the file stays valid if it is later replaced by a copy.
+    installed = data_home / "bifrost-shell"
+    bin_dir = installed / "bin" if installed.exists() and installed.resolve() == REPO else REPO / "bin"
+    try:
+        rel = bin_dir.relative_to(home)
+        return f'os.getenv("HOME") .. {lua_str("/" + str(rel) + "/")}'
+    except ValueError:
+        return lua_str(str(bin_dir) + "/")
+
+
+def keybind_defaults():
+    return json.loads((REPO / "hypr" / "keybinds.json").read_text())
+
+
+def parse_custom_bind(line: str):
+    """'SUPER + X: ipc controlcenter toggle' | '…: run cmd' | '…: dispatch hl.dsp…'."""
+    keys, _, action = line.partition(":")
+    kind, _, arg = action.strip().partition(" ")
+    if not keys.strip() or kind not in ("ipc", "run", "dispatch") or not arg.strip():
+        return None
+    return {"keys": keys.strip(), kind: arg.strip(), "description": "custom"}
+
+
+# Key combinations. Canonical form: modifiers in a fixed order, then the key
+# ("SUPER + SHIFT + Q"); keys_id() is what two combinations are compared by
+# (case-insensitive, digit-row keycodes = the digit).
+KEY_MODS = ["SUPER", "CTRL", "ALT", "SHIFT"]
+MOD_ALIASES = {"SUPER": "SUPER", "WIN": "SUPER", "LOGO": "SUPER", "MOD4": "SUPER", "META": "SUPER",
+               "CTRL": "CTRL", "CONTROL": "CTRL", "ALT": "ALT", "MOD1": "ALT", "SHIFT": "SHIFT"}
+MODMASK_BITS = {"SHIFT": 1, "CTRL": 4, "ALT": 8, "SUPER": 64}
+DIGIT_CODES = {f"code:{9 + i}": str(i % 10) for i in range(1, 11)}   # code:10 = 1 … code:19 = 0
+
+
+def canon_keys(keys):
+    """'shift + super + q' → 'SUPER + SHIFT + Q'; None when it is not one key with modifiers."""
+    if not isinstance(keys, str):
+        return None
+    parts = [x.strip() for x in keys.split("+") if x.strip()]
+    mods, key = set(), None
+    for part in parts:
+        mod = MOD_ALIASES.get(part.upper())
+        if mod:
+            mods.add(mod)
+        elif key is None and re.fullmatch(r"[A-Za-z0-9_:.\-]+", part):
+            key = part.upper() if len(part) == 1 else part
+        else:
+            return None
+    return " + ".join([m for m in KEY_MODS if m in mods] + [key]) if key else None
+
+
+def keys_id(keys) -> str:
+    c = canon_keys(keys) or re.sub(r"\s+", "", str(keys))
+    *mods, key = c.split(" + ")
+    return " + ".join(mods + [DIGIT_CODES.get(key.lower(), key)]).lower()
+
+
+def default_keybinds(cfg):
+    """Every default bind of the current workspace style, with ids, groups on or off."""
+    v = lambda k: deep_get(cfg.values, k)[0]
+    binds = [dict(b) for b in keybind_defaults()["binds"]]
+    follow = v("keybinds.workspaceStyle") == "moveFollow"
+    for i in range(1, 10):
+        key = f"code:{9 + i}"   # digit row by keycode, layout independent
+        n = str(i)
+        if follow:
+            binds.append({"id": f"move-follow-{i}", "group": "workspaces", "keys": f"SUPER + {key}", "dispatch": f'hl.dsp.window.move({{ workspace = "{i}", follow = true }})', "description": f"Move window to workspace {i} and follow", "label": "Move window to workspace %1 and follow", "arg": n})
+            binds.append({"id": f"workspace-{i}", "group": "workspaces", "keys": f"SUPER + ALT + {key}", "dispatch": f'hl.dsp.focus({{ workspace = "{i}" }})', "description": f"Workspace {i}", "label": "Workspace %1", "arg": n})
+        else:
+            binds.append({"id": f"workspace-{i}", "group": "workspaces", "keys": f"SUPER + {key}", "dispatch": f'hl.dsp.focus({{ workspace = "{i}" }})', "description": f"Workspace {i}", "label": "Workspace %1", "arg": n})
+        binds.append({"id": f"move-to-{i}", "group": "workspaces", "keys": f"SUPER + SHIFT + {key}", "dispatch": f'hl.dsp.window.move({{ workspace = "{i}", follow = false }})', "description": f"Move window to workspace {i}", "label": "Move window to workspace %1", "arg": n})
+    return binds
+
+
+def action_text(b) -> str:
+    return next((f"{k} {b[k]}" for k in ("ipc", "run", "dispatch") if k in b), "")
+
+
+def live_keybinds():
+    """The compositor's current binds as [(keys, description)]; [] without Hyprland."""
+    code, out = run(["hyprctl", "binds", "-j"], timeout=3)
+    try:
+        rows = json.loads(out) if code == 0 else []
+    except json.JSONDecodeError:
+        return []
+    live = []
+    for r in rows if isinstance(rows, list) else []:
+        if not r.get("key") or r.get("submap"):
+            continue
+        mods = [m for m in KEY_MODS if int(r.get("modmask", 0)) & MODMASK_BITS[m]]
+        live.append((" + ".join(mods + [r["key"]]), r.get("description") or f"{r.get('dispatcher', '')} {r.get('arg', '')}".strip()))
+    return live
+
+
+def keybind_entries(cfg, live=None):
+    """Everything the keybinding editor shows, in generation order: Bifrost's
+    defaults, the user's own binds (keybinds.custom) and, read-only, binds from
+    the compositor's own config (live, [(keys, description)]). Each entry:
+    id, source (default|custom|external), group, label/arg/description,
+    action, keys, defaultKeys, state (default|changed|off|groupOff|replaced|
+    disabled|custom|external), active, conflicts (ids of other active entries
+    on the same keys). effective_keybinds() generates exactly the active
+    default and custom entries."""
+    v = lambda k: deep_get(cfg.values, k)[0]
+    enabled = v("keybinds.enabled") is not False
+    overrides = v("keybinds.overrides") or {}
+    disabled = {keys_id(k) for k in (v("keybinds.disabled") or [])}
+    customs = []
+    for i, line in enumerate(v("keybinds.custom") or []):
+        c = parse_custom_bind(line)
+        if c:
+            customs.append({**c, "id": f"custom:{i}", "index": i})
+    custom_keys = {keys_id(c["keys"]) for c in customs}
+    defaults = default_keybinds(cfg)
+    known = {action_text(b): b for b in keybind_defaults().get("actions", []) + defaults}
+    entries = []
+    for b in defaults:
+        keys = overrides.get(b["id"], b["keys"])
+        state = ("off" if not enabled else "groupOff" if v(f"keybinds.groups.{b['group']}") is False
+                 else "off" if keys == "" else "disabled" if keys_id(keys) in disabled
+                 else "replaced" if keys_id(keys) in custom_keys
+                 else "changed" if b["id"] in overrides and keys_id(keys) != keys_id(b["keys"]) else "default")
+        entries.append({**b, "source": "default", "label": b.get("label", b["description"]), "arg": b.get("arg", ""),
+                        "action": action_text(b), "keys": keys, "defaultKeys": b["keys"], "state": state,
+                        "active": state in ("default", "changed")})
+    for c in customs:
+        state = "off" if not enabled else "disabled" if keys_id(c["keys"]) in disabled else "custom"
+        same = known.get(action_text(c), {})
+        entries.append({**c, "source": "custom", "group": "custom", "label": same.get("label", same.get("description", action_text(c))), "arg": same.get("arg", ""),
+                        "action": action_text(c), "defaultKeys": "", "state": state, "active": state == "custom"})
+    # Binds Bifrost itself made (maybe from an older state) are not external.
+    ours = {keys_id(e["keys"]) for e in entries if e["active"]}
+    own_descriptions = {b["description"] for b in defaults} | {"custom"}
+    for i, (keys, desc) in enumerate(live or []):
+        if keys_id(keys) not in ours and desc not in own_descriptions:
+            entries.append({"id": f"external:{i}", "source": "external", "group": "external", "label": desc, "arg": "",
+                            "description": desc, "action": "", "keys": keys, "defaultKeys": "", "state": "external", "active": True})
+    by_keys = {}
+    for e in entries:
+        if e["active"] and e["keys"]:
+            by_keys.setdefault(keys_id(e["keys"]), []).append(e["id"])
+    for e in entries:
+        e["conflicts"] = [x for x in by_keys.get(keys_id(e["keys"]), []) if x != e["id"]] if e["active"] and e["keys"] else []
+    return entries
+
+
+def effective_keybinds(cfg):
+    """The binds Bifrost installs, in order, after groups, digits, overrides, custom and disabled."""
+    fields = ("id", "group", "keys", "ipc", "run", "dispatch", "locked", "repeating", "mouse", "description")
+    return [{k: e[k] for k in fields if k in e} for e in keybind_entries(cfg) if e["active"] and e["source"] != "external"]
+
+
+def keybind_conflicts(cfg, bind_id, keys, live=None):
+    """Active entries other than bind_id that already use keys."""
+    k = keys_id(keys)
+    return [e for e in keybind_entries(cfg, live) if e["active"] and e["id"] != bind_id and e["keys"] and keys_id(e["keys"]) == k]
+
+
+def keybind_edit(cfg, op, bind_id=None, keys=None, action=None, force=False, live=None):
+    """Changes keybinds.overrides / custom / disabled for the editor.
+    op: set (bind_id, keys) | off (bind_id) | reset (bind_id, or all) | add (keys, action).
+    Unless force, a combination another active bind uses is refused with its
+    conflicts; with force Bifrost's own conflicting binds are turned off (a
+    default) or removed (your own), and one from the compositor's config is
+    replaced (Bifrost unbinds a key before binding it). Returns a dict: ok,
+    error, conflicts, keys."""
+    v = lambda k: deep_get(cfg.values, k)[0]
+    overrides = dict(v("keybinds.overrides") or {})
+    custom = list(v("keybinds.custom") or [])
+    disabled = list(v("keybinds.disabled") or [])
+    entries = {e["id"]: e for e in keybind_entries(cfg, live)}
+    if op in ("set", "off") and bind_id not in entries or bind_id and entries.get(bind_id, {}).get("source") == "external":
+        return {"ok": False, "error": f"unknown or read-only binding '{bind_id}'"}
+    canon = None
+    if op in ("set", "add"):
+        canon = canon_keys(keys)
+        if not canon:
+            return {"ok": False, "error": f"not a key combination: '{keys}'"}
+        if op == "add":
+            kind, _, arg = (action or "").strip().partition(" ")
+            if kind not in ("ipc", "run", "dispatch") or not arg.strip():
+                return {"ok": False, "error": "action must be 'ipc …', 'run …' or 'dispatch …'"}
+        conflicts = keybind_conflicts(cfg, bind_id if op == "set" else None, canon, live)
+        if conflicts and not force:
+            return {"ok": False, "error": "conflict", "keys": canon, "conflicts": conflicts}
+        removed = set()
+        for c in conflicts:
+            if c["source"] == "default":
+                overrides[c["id"]] = ""
+            elif c["source"] == "custom":
+                removed.add(c["index"])
+        custom = [x for i, x in enumerate(custom) if i not in removed]
+        disabled = [d for d in disabled if keys_id(d) != keys_id(canon)]
+        if op == "add":
+            custom.append(f"{canon}: {action.strip()}")
+        elif entries[bind_id]["source"] == "custom":
+            idx = entries[bind_id]["index"]
+            idx -= sum(1 for i in removed if i < idx)
+            line = custom[idx]
+            custom[idx] = canon + ":" + line.partition(":")[2]
+        elif keys_id(canon) == keys_id(entries[bind_id]["defaultKeys"]):
+            overrides.pop(bind_id, None)
+        else:
+            overrides[bind_id] = canon
+    elif op == "off":
+        e = entries[bind_id]
+        if e["source"] == "custom":
+            custom.pop(e["index"])
+        else:
+            overrides[bind_id] = ""
+    elif op == "reset":
+        targets = [e for e in entries.values() if e["source"] == "default" and (bind_id is None or e["id"] == bind_id)]
+        if bind_id and not targets:
+            return {"ok": False, "error": f"'{bind_id}' has no default"}
+        for e in targets:
+            overrides.pop(e["id"], None)
+            disabled = [d for d in disabled if keys_id(d) != keys_id(e["defaultKeys"])]
+    else:
+        return {"ok": False, "error": f"unknown operation '{op}'"}
+    cfg.set("keybinds.overrides", overrides)
+    cfg.set("keybinds.custom", custom)
+    cfg.set("keybinds.disabled", disabled)
+    cfg.save()
+    return {"ok": True, "keys": canon}
+
+
+def keybind_lua(b) -> str:
+    if "ipc" in b:
+        action = f'hl.dsp.exec_cmd(bin .. {lua_str("bifrost-ipc " + b["ipc"])})'
+    elif "run" in b:
+        cmd = b["run"]
+        action = f"hl.dsp.exec_cmd(bin .. {lua_str(cmd)})" if cmd.startswith("bifrost-") else f"hl.dsp.exec_cmd({lua_str(cmd)})"
+    else:
+        action = b["dispatch"]
+    opts = [f"{k} = true" for k in ("locked", "repeating", "mouse") if b.get(k)]
+    if b.get("description"):
+        opts.append(f"description = {lua_str(b['description'])}")
+    return f"bind({lua_str(b['keys'])}, {action}" + (f", {{ {', '.join(opts)} }})" if opts else ")")
+
+
+# ── login screen (greetd greeter) ─────────────────────────────────────────
+# The greeter runs as the "greeter" user, which cannot read ~/.config. `greeter
+# sync` copies what it shows into its cache (created by
+# greeter/install-greeter.sh, group greeter, setgid): a config.json with the
+# look (Bifrost's own Config/Theme read it there), the wallpaper, your picture,
+# the keyboard layout and the displays. No links into the home directory.
+GREETER_SECTIONS = ("appearance", "materials", "motion", "clock", "lock", "wallpaper")
+
+
+def greeter_cache() -> Path:
+    return Path(os.environ.get("BIFROST_GREETER_CACHE") or "/var/cache/bifrost-greeter")
+
+
+def greeter_keyboard():
+    """The main keyboard's layout(s) as Hyprland has them now."""
+    code, out = run(["hyprctl", "devices", "-j"], timeout=3)
+    try:
+        kbs = json.loads(out).get("keyboards", []) if code == 0 else []
+    except (json.JSONDecodeError, AttributeError):
+        kbs = []
+    main = next((k for k in kbs if k.get("main")), kbs[0] if kbs else None)
+    if not main:
+        return {"layout": "us", "variant": "", "options": ""}
+    return {"layout": main.get("layout") or "us", "variant": main.get("variant") or "", "options": main.get("options") or ""}
+
+
+def write_file(path: Path, text: str):
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text)
+    tmp.chmod(0o644)
+    tmp.replace(path)
+
+
+def greeter_sync(cfg, cache=None, keyboard=None):
+    import getpass
+    import pwd
+    import time
+    cache = cache or greeter_cache()
+    if not cache.is_dir() or not os.access(cache, os.W_OK):
+        return {"ok": False, "error": f"{cache} is missing or not writable (run: sudo greeter/install-greeter.sh)"}
+    v = lambda k: deep_get(cfg.values, k)[0]
+    stored = cfg.doc.get("values", {})
+    values = {k: copy.deepcopy(stored[k]) for k in GREETER_SECTIONS if k in stored}
+    # Icon themes live in the home directory; the greeter uses Bifrost's own icons.
+    values.get("appearance", {}).pop("icons", None)
+    # Light or dark as it is now: the greeter has no system setting or location.
+    if v("appearance.mode") not in ("light", "dark"):
+        try:
+            variant = json.loads((runtime_dir() / "appearance.json").read_text()).get("variant")
+        except (OSError, json.JSONDecodeError):
+            variant = None
+        values.setdefault("appearance", {})["mode"] = variant if variant in ("light", "dark") else "dark"
+    wallpaper = values.setdefault("wallpaper", {})
+    wallpaper.pop("directory", None)
+    for old in cache.glob("wallpaper.*"):
+        old.unlink()
+    src = Path(os.path.expanduser(v("wallpaper.path") or ""))
+    if src.is_file():
+        dst = cache / ("wallpaper" + src.suffix.lower())
+        shutil.copyfile(src, dst)
+        dst.chmod(0o644)
+        wallpaper["path"] = str(dst)
+    else:
+        wallpaper["path"] = ""
+    (cache / "config").mkdir(exist_ok=True)
+    themes = cache / "config" / "themes"
+    shutil.rmtree(themes, ignore_errors=True)
+    user_themes = sorted((config_dir() / "themes").glob("*.json"))
+    if user_themes:
+        themes.mkdir()
+        for t in user_themes:
+            shutil.copyfile(t, themes / t.name)
+            (themes / t.name).chmod(0o644)
+    user = getpass.getuser()
+    avatars = cache / "avatars"
+    avatars.mkdir(exist_ok=True)
+    for old in avatars.glob(f"{user}.*"):
+        old.unlink()
+    avatar = ""
+    pic = Path(os.path.expanduser(v("greeter.avatar") or "~/.face"))
+    if pic.is_file() and pic.stat().st_size <= 10 * 1024 * 1024:
+        dst = avatars / f"{user}{pic.suffix.lower() or '.png'}"
+        shutil.copyfile(pic, dst)
+        dst.chmod(0o644)
+        avatar = str(dst)
+    write_file(cache / "config" / "config.json", json.dumps({"version": FORMAT_VERSION, "values": values}, indent=2) + "\n")
+    try:
+        meta = json.loads((cache / "greeter.json").read_text())
+    except (OSError, json.JSONDecodeError):
+        meta = {}
+    try:
+        real = pwd.getpwnam(user).pw_gecos.split(",")[0]
+    except KeyError:
+        real = ""
+    users = [u for u in meta.get("users", []) if u.get("name") != user] + [{"name": user, "realName": real, "avatar": avatar}]
+    kb = keyboard or greeter_keyboard()
+    lang = os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or ""
+    meta = {"version": 1, "syncedAt": int(time.time()), "users": users, "keyboard": kb, "language": lang}
+    write_file(cache / "greeter.json", json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
+    (cache / "hypr").mkdir(exist_ok=True)
+    lines = ["-- Written by bifrostctl greeter sync: the login screen's keyboard and displays.",
+             f'hl.config({{ input = {{ kb_layout = {lua_str(kb["layout"])}, kb_variant = {lua_str(kb["variant"])}, kb_options = {lua_str(kb["options"])} }} }})']
+    for name, o in (v("displays.outputs") or {}).items():
+        lines.append(f'hl.monitor({{ output = {lua_str(name)}, mode = "{output_mode(o)}", position = "{o["x"]}x{o["y"]}", scale = {o["scale"]} }})')
+    write_file(cache / "hypr" / "local.lua", "\n".join(lines) + "\n")
+    return {"ok": True, "cache": str(cache), "user": user, "wallpaper": wallpaper["path"] != "", "avatar": avatar != "",
+            "theme": v("appearance.theme"), "keyboard": kb, "outputs": sorted((v("displays.outputs") or {}).keys())}
+
+
+def output_mode(output):
+    # Hyprland 0.56 omits VRR from monitor-rule comparison. A tiny selector
+    # bias forces reapplication when VRR changes, while selecting the same
+    # advertised physical mode (Hyprland's matching tolerance is 1 Hz).
+    refresh = float(output["refresh"]) + (0.01 if output.get("vrr") else -0.01)
+    return f'{output["width"]}x{output["height"]}@{refresh:.5f}'
+
+
+def material_value(cfg, surface, prop, default=None):
+    """A surface's material setting as it applies (ThemeLogic.materialValue):
+    its own value, else All surfaces'; materials.link = All surfaces only."""
+    link = deep_get(cfg.values, "materials.link")[0] is True
+    for x in ((None if link else deep_get(cfg.values, f"materials.{surface}.{prop}")[0]),
+              deep_get(cfg.values, f"materials.all.{prop}")[0]):
+        if x is not None:
+            return x
+    return default
+
+
+def blur_amount(x) -> float:
+    """Background blur 0–100 (0 = off); tolerates the pre-v5 booleans."""
+    if x is True or x is None:
+        return 20
+    if x is False:
+        return 0
+    return max(0, min(100, x))
+
+
+def blur_mask(cfg, surface, glass) -> float:
+    """ignore_alpha for a blurred surface (ThemeLogic.blurMaskFor); 0 = not blurred."""
+    if blur_amount(material_value(cfg, surface, "blur")) <= 0:
+        return 0
+    shadow = material_value(cfg, surface, "shadow", 1)
+    glow = material_value(cfg, surface, "glow", 0)
+    return min(0.45, glass.get("blurMaskShadowed", 0.12) * max(0.25, shadow or 0, 1 if (glow or 0) > 0 else 0)) if (shadow or 0) > 0 or (glow or 0) > 0 else glass.get("blurMask", 0.01)
+
+
+def theme_chain(cfg):
+    """Theme files from _base to the active theme (following "extends")."""
+    theme_id = deep_get(cfg.values, "appearance.theme")[0] or "bifrost-graphite"
+    chain, seen = [], set()
+    while theme_id and theme_id not in seen:
+        seen.add(theme_id)
+        f = next((d / f"{theme_id}.json" for d in (config_dir() / "themes", REPO / "themes") if (d / f"{theme_id}.json").exists()), None)
+        if not f:
+            break
+        t = json.loads(f.read_text())
+        chain.insert(0, t)
+        theme_id = t.get("extends")
+    return chain
+
+
+def window_radius(cfg):
+    """Same explicit-or-theme rounding as Theme.windowRadius (not bar material)."""
+    own = deep_get(cfg.values, "hyprland.rounding")[0]
+    if own is not None:
+        return max(0, int(own))
+    radius = 0
+    variant = effective_variant(cfg)
+    for theme in theme_chain(cfg):
+        for layer in (theme, theme.get("variants", {}).get(variant, {})):
+            radius = layer.get("radius", {}).get("lg", radius)
+    scale = deep_get(cfg.values, "appearance.radiusScale")[0]
+    return max(0, math.floor(radius * (scale if scale is not None else 1) + 0.5))
+
+
+def material_radius(cfg, surface, material) -> float:
+    """Corner radius of a surface's glass as ThemeLogic resolves it: the
+    user's value, else the theme material's radius token × radiusScale."""
+    own = material_value(cfg, surface, "radius")
+    if isinstance(own, (int, float)) and not isinstance(own, bool):
+        return max(0, min(40, own))
+    variant = effective_variant(cfg)
+    radius, mats = {}, {}
+    for t in theme_chain(cfg):
+        for layer in (t, t.get("variants", {}).get(variant, {})):
+            radius.update(layer.get("radius", {}))
+            for k, m in layer.get("materials", {}).items():
+                mats.setdefault(k, {}).update(m)
+    m = mats.get(material) or mats.get("panel") or {}
+    r = m.get("radius", "@radius.xl")
+    if isinstance(r, str) and r.startswith("@radius."):
+        r = radius.get(r.split(".", 1)[1], 0)
+    scale = deep_get(cfg.values, "appearance.radiusScale")[0]
+    if isinstance(scale, (int, float)) and not isinstance(scale, bool):
+        r = round(r * scale * 100) / 100
+    return r
+
+
+def generate_hypr(cfg) -> str:
+    v = lambda k: deep_get(cfg.values, k)[0]
+    lines = [
+        "-- Generated by Bifrost (bifrostctl hypr generate). Do not edit: change",
+        "-- Bifrost Settings (Keybindings, Hyprland, Displays) instead.",
+        "-- Loaded from hyprland.lua by the installer's hook:",
+        '--   dofile((os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")) .. "/bifrost/hypr/bifrost.lua")',
+        "-- Safe to run again at runtime (hyprctl eval dofile): binds are unbound",
+        "-- before binding and rules replace their previous versions.",
+        "",
+        f"local bin = {install_bin_lua()}",
+        "_G.__bifrost = _G.__bifrost or { binds = {}, rules = {} }",
+        "local state = _G.__bifrost",
+        "",
+        "-- Keys bound by the previous run of this file are released first, so",
+        "-- switching a bind off takes effect without a Hyprland reload.",
+        "for _, keys in ipairs(state.binds) do pcall(hl.unbind, keys) end",
+        "state.binds = {}",
+        "local function bind(keys, action, opts)",
+        "\tpcall(hl.unbind, keys)",
+        "\thl.bind(keys, action, opts)",
+        "\ttable.insert(state.binds, keys)",
+        "end",
+        "",
+        "local function replace_rule(name, make, rule)",
+        "\tlocal old = state.rules[name]",
+        "\tif old then pcall(function() old:set_enabled(false) end) end",
+        "\tstate.rules[name] = make(rule)",
+        "end",
+        "local function layer_rule(name, rule) replace_rule(name, hl.layer_rule, rule) end",
+        "local function window_rule(name, rule) replace_rule(name, hl.window_rule, rule) end",
+        "",
+        "-- Start the shell with every Hyprland. The session target can outlive a",
+        "-- Hyprland that crashed on logout, and the shell's restarts without a",
+        "-- compositor leave it failed, so the next login would not start it.",
+        "if not state.startHook then",
+        "\tstate.startHook = true",
+        '\thl.on("hyprland.start", function()',
+        '\t\thl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP; "',
+        '\t\t\t.. "systemctl --user reset-failed bifrost.service; "',
+        '\t\t\t.. "(systemctl --user is-active --quiet graphical-session.target || systemctl --user start bifrost-session.target) && systemctl --user start bifrost.service")',
+        "\tend)",
+        "end",
+        "",
+    ]
+    mat = lambda inst, prop, default=None: material_value(cfg, inst, prop, default)
+    materials = next((sec for sec in Schema().sections if sec.get("section") == "materials"), {}).get("template", {})
+    instances = materials.get("instances", [])
+    glass_tokens = json.loads((REPO / "themes/_base.json").read_text())["glass"]
+    # One compositor blur strength: the strongest surface with blur on.
+    strength = max([blur_amount(mat(i["id"], "blur")) for i in instances] or [0])
+    blur_size = max(1, round(1 + strength * 0.39))
+    blur_passes = 2 if strength < 10 else min(6, 2 + round((strength - 10) / 22.5))
+    if v("hyprland.manage"):
+        base = json.loads((REPO / "themes/_base.json").read_text())
+        rounding = window_radius(cfg)
+        pal = theme_palette(cfg)
+        active = (pal.get("accent") or "#8FA8C8").lstrip("#").lower()
+        inactive = (pal.get("surfaceRaised") or "#1E2126").lstrip("#").lower()
+        if v("appearance.accent"):
+            active = v("appearance.accent").lstrip("#").lower()
+        if v("hyprland.activeBorderColor"):
+            active = v("hyprland.activeBorderColor").lstrip("#").lower()
+        if v("hyprland.inactiveBorderColor"):
+            inactive = v("hyprland.inactiveBorderColor").lstrip("#").lower()
+        window_shadow = mat("all", "shadow", 1)
+        shadow_base = base["elevation"]["mid"]
+        shadow_range = max(1, round(shadow_base["blur"] * window_shadow))
+        shadow_rgb = (pal.get("void") or "#000000").lstrip("#")
+        shadow_alpha = round(min(1, shadow_base["opacity"] * window_shadow) * 255)
+        shadow_colour = f"rgba({shadow_rgb}{shadow_alpha:02x})"
+        opacity = lambda k: round(1 - (v(k) or 0) / 100, 3)
+        lines += [
+            "-- Appearance (hyprland.manage)",
+            "hl.config({",
+            f"\tgeneral = {{ gaps_in = {v('hyprland.gapsIn')}, gaps_out = {v('hyprland.gapsOut')}, border_size = {v('hyprland.borderSize')},",
+            f'\t\tcol = {{ active_border = "rgb({active})", inactive_border = "rgb({inactive})" }} }},',
+            f"\tdecoration = {{ rounding = {rounding}, active_opacity = {opacity('hyprland.windows.activeTransparency')}, inactive_opacity = {opacity('hyprland.windows.inactiveTransparency')},",
+            f"\t\tshadow = {{ enabled = {str(window_shadow > 0).lower()}, range = {shadow_range}, render_power = 3, color = \"{shadow_colour}\", color_inactive = \"{shadow_colour}\" }},",
+            f"\t\tblur = {{ enabled = {'true' if strength > 0 else 'false'}, size = {blur_size}, passes = {blur_passes} }} }},",
+            "})",
+            "",
+        ]
+    # Unnamed floating XWayland menus include transparent shadow margins.
+    # Blurring those margins produces a large rounded rectangle around the menu.
+    lines += [
+        'local popup_rule = state.rules["bifrost-xwayland-menu-blur"]',
+        'if popup_rule then popup_rule:set_enabled(false); state.rules["bifrost-xwayland-menu-blur"] = nil end',
+    ]
+    if v("hyprland.manage"):
+        lines.append('window_rule("bifrost-xwayland-menu-blur", { match = { class = "^$", title = "^$", xwayland = true, float = true }, no_blur = true })')
+    # Screen timeout (Settings → Power): input wakes the displays in the
+    # compositor itself, so screens Bifrost turned off come back even if the
+    # shell is not running.
+    if (v("power.idle.screenOffMinutes") or 0) > 0:
+        lines += ["-- Screen timeout (Settings → Power): any input turns the screens back on",
+                  "hl.config({ misc = { key_press_enables_dpms = true, mouse_move_enables_dpms = true } })", ""]
+    outputs = v("displays.outputs") or {}
+    if outputs:
+        lines.append("local apply_output = (function()\n" + (REPO / "shell/Compat/MonitorApply.lua").read_text() + "\nend)()")
+        lines.append("-- Displays (Settings → System → Displays)")
+        for name, o in outputs.items():
+            lines.append(f'apply_output({{ output = {lua_str(name)}, mode = "{output_mode(o)}", position = "{o["x"]}x{o["y"]}", scale = {o["scale"]}, vrr = {1 if o.get("vrr") else 0}, bitdepth = {o.get("bitdepth", 8)}' + (f', cm = {lua_str(o["cm"])}' if o.get("cm") else "") + ' })')
+        lines.append("")
+    if v("hyprland.layerRules"):
+        menus_blur = blur_amount(mat("menus", "blur")) > 0
+        lines += [
+            "-- Bifrost surfaces: the shell animates them itself; background blur per",
+            "-- surface from Settings → Glass & materials (menus follow 'Popup menus').",
+            "for _, n in ipairs({ \"bifrost-blur\" }) do",
+            "\tlocal r = state.rules[n]",
+            "\tif r then pcall(function() r:set_enabled(false) end); state.rules[n] = nil end",
+            "end",
+            'layer_rule("bifrost-noanim", { match = { namespace = "^bifrost:.*" }, no_anim = true })',
+        ]
+        for inst in instances:
+            blur = blur_amount(mat(inst["id"], "blur")) > 0
+            mask = blur_mask(cfg, inst["id"], glass_tokens) or glass_tokens.get("blurMask", 0.01)
+            for ns in inst.get("namespaces", []):
+                lines.append(f'layer_rule("bifrost-blur-{ns}", {{ match = {{ namespace = "^bifrost:{ns}$" }}, blur = {str(blur).lower()}, ignore_alpha = {mask:g}, blur_popups = {str(blur and menus_blur).lower()} }})')
+        lines.append("")
+    layout = json.loads((REPO / "themes/_base.json").read_text())["layout"]
+    w, h = layout["settingsWidth"], layout["settingsHeight"]
+    # The window is its glass: Hyprland clips it (and the blur behind it) to
+    # the glass's corner radius.
+    settings_rounding = round(min(material_radius(cfg, "settings", "settings"), glass_tokens.get("windowRadiusMax", 20)))
+    lines += [
+        "-- Bifrost's own app windows float, centred, like a settings dialog",
+        f'window_rule("bifrost-settings", {{ match = {{ class = "^bifrost\\\\.settings$" }}, float = true, center = true, size = {{ "min({w}, monitor_w*0.9)", "min({h}, monitor_h*0.9)" }},'
+        f' border_size = 0, no_shadow = true, rounding = {settings_rounding}, rounding_power = 2, no_blur = {str(max(blur_amount(mat("settings", "blur")), blur_amount(mat("settingsGroups", "blur")) if v("settingsUI.layout") == "grouped" and v("settingsUI.grouped.background") else 0) <= 0).lower()} }})',
+        "",
+    ]
+    import input_backend
+    # Native compositor motion drives both keyboard transitions and 1:1 swipes.
+    # Set both children too: existing per-leaf fade styles must not override slide.
+    lines.append('hl.curve("bifrost_workspace", {type="bezier", points={{0.42,0},{0.58,1}}})')
+    for leaf in ("workspaces", "workspacesIn", "workspacesOut"):
+        lines.append('hl.animation({leaf='+lua_str(leaf)+', enabled=true, speed='+str(v("workspaces.transitionSpeed") or 4)+', bezier="bifrost_workspace", style="slide"})')
+    lines.append(input_backend.generate(v("input.devices") or {}, v("input.gestures") or {}, v("input.activeLayouts") or {}))
+    binds = effective_keybinds(cfg)
+    if binds:
+        lines.append("-- Keybindings (hypr/keybinds.json + Settings → Keybindings)")
+        lines += [keybind_lua(b) for b in binds]
+        lines.append("")
+    return "\n".join(lines)
+
+
+def hypr_status(cfg):
+    """Whether Bifrost's compositor settings are hooked in and current."""
+    f = hypr_file()
+    hl = Path(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")) / "hypr" / "hyprland.lua"
+    hooked = hl.exists() and "bifrost/hypr/bifrost.lua" in hl.read_text()
+    return {
+        "file": str(f),
+        "exists": f.exists(),
+        "current": f.exists() and f.read_text() == generate_hypr(cfg),
+        "hyprlandConfig": str(hl) if hl.exists() else None,
+        "hooked": hooked,
+        "running": bool(os.environ.get("HYPRLAND_INSTANCE_SIGNATURE")),
+    }
+
+
+def hypr_apply(cfg):
+    """Writes bifrost.lua and runs it in the live Hyprland (idempotent).
+    Returns (ok, message)."""
+    path = hypr_file()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = generate_hypr(cfg)
+    tmp = path.with_suffix(".lua.tmp")
+    tmp.write_text(text)
+    os.replace(tmp, path)
+    if not os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+        return True, f"wrote {path} (Hyprland not running here; applies on next start)"
+    code, out = run(["hyprctl", "eval", f"dofile({lua_str(str(path))})"], timeout=10)
+    ok = code == 0 and not out.strip().lower().startswith("error")
+    return ok, f"wrote and applied {path}" if ok else f"wrote {path}; apply failed: {out.strip()}"
+
+
+def verify_hypr(path: Path):
+    """Runs Hyprland --verify-config on a throwaway wrapper that loads `path`."""
+    if not shutil.which("Hyprland"):
+        return False, "Hyprland not installed"
+    with tempfile.TemporaryDirectory() as tmp:
+        wrapper = Path(tmp) / "verify.lua"
+        wrapper.write_text(f'__bifrost_verify = true\nhl.monitor({{ output = "", mode = "preferred", position = "0x0", scale = 1 }})\ndofile({lua_str(str(path))})\n')
+        code, out = run(["Hyprland", "--verify-config", "--config", str(wrapper)], timeout=20)
+    ok = code == 0 and "config ok" in out
+    return ok, out.strip().splitlines()[-1] if out.strip() else ""
+
+
+def production_checks(cfg):
+    """Read-only checks before a switch. Returns [(status, name, detail)]."""
+    rows = []
+    f = hypr_file()
+    if f.exists():
+        ok, msg = verify_hypr(f)
+        rows.append(("ok" if ok else "fail", "bifrost.lua", f"{f} ({'verifierad' if ok else msg})"))
+        if f.read_text() != generate_hypr(cfg):
+            rows.append(("warn", "bifrost.lua aktuell", "inställningarna har ändrats sedan filen skrevs — generera igen"))
+    else:
+        rows.append(("warn", "bifrost.lua", "inte genererad ännu (bifrostctl hypr generate --write)"))
+    hl = Path(os.path.expanduser("~/.config/hypr/hyprland.lua"))
+    if hl.exists():
+        text = hl.read_text()
+        rows.append(("info", "hyprland.lua laddar Bifrost", "ja" if "bifrost/hypr/bifrost.lua" in text else "nej (steg 3 i SWITCHOVER.md)"))
+        rows.append(("info", "hyprland.lua laddar DMS-binds", "ja (tas bort vid bytet)" if 'require("dms.binds")' in text else "nej"))
+    unit = Path(os.path.expanduser("~/.config/systemd/user/bifrost.service"))
+    rows.append(("info", "bifrost.service installerad", "ja" if unit.exists() else "nej (steg 2 i SWITCHOVER.md)"))
+    dms_active = run(["systemctl", "--user", "is-active", "dms.service"])[1].strip() == "active"
+    rows.append(("info", "DMS körs", "ja — stoppas när bifrost.service startas (Conflicts=)" if dms_active else "nej"))
+    pam = deep_get(cfg.values, "lock.pamService")[0] or "login"
+    rows.append(("ok" if Path("/etc/pam.d", pam).exists() else "fail", "PAM-tjänst för låsskärmen", f"/etc/pam.d/{pam}"))
+    wp = deep_get(cfg.values, "wallpaper.path")[0]
+    rows.append(("ok" if wp and Path(os.path.expanduser(wp)).exists() else "warn", "Bakgrundsbild", wp or "ingen vald (svart bakgrund)"))
+    pinned = deep_get(cfg.values, "dock.pinned")[0] or []
+    rows.append(("info", "Fästa appar i docken", str(len(pinned)) + (" (import från DMS möjlig)" if not pinned else "")))
+    rows.append(("info", "Greeter", "greetd med DMS-greetern påverkas inte av bytet"))
+    return rows
+
+
+# ── commands ──────────────────────────────────────────────────────────────
+def fmt(v):
+    return json.dumps(v, ensure_ascii=False)
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog="bifrostctl", description=__doc__.split("\n")[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("path")
+    p = sub.add_parser("list")
+    p.add_argument("section", nargs="?")
+    p = sub.add_parser("get")
+    p.add_argument("key")
+    p = sub.add_parser("set")
+    p.add_argument("key")
+    p.add_argument("value")
+    p = sub.add_parser("reset")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("key", nargs="?")
+    g.add_argument("--section")
+    g.add_argument("--all", action="store_true")
+    sub.add_parser("show")
+    sub.add_parser("validate")
+    p = sub.add_parser("doctor")
+    p.add_argument("--production", action="store_true", help="read-only checks before switching from DMS")
+    p.add_argument("--json", action="store_true")
+    p = sub.add_parser("hypr")
+    p.add_argument("action", choices=["generate", "verify", "apply", "binds", "status"])
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--write", action="store_true")
+    p = sub.add_parser("greeter", help="the login screen's copy of your look")
+    p.add_argument("action", choices=["sync", "status"])
+    p.add_argument("--json", action="store_true")
+    p = sub.add_parser("keybinds", help="the keybinding editor's operations")
+    p.add_argument("action", choices=["list", "check", "set", "off", "reset", "add"])
+    p.add_argument("id", nargs="?", help="binding id (list shows them); 'new' for check before add")
+    p.add_argument("keys", nargs="?")
+    p.add_argument("command", nargs="?", help="add: 'ipc …', 'run …' or 'dispatch …'")
+    p.add_argument("--all", action="store_true", help="reset: every default")
+    p.add_argument("--force", action="store_true", help="set/add: turn off or remove what else uses the keys")
+    p.add_argument("--json", action="store_true")
+    p = sub.add_parser("input")
+    p.add_argument("action", choices=["query"])
+    p.add_argument("--json", action="store_true")
+    p = sub.add_parser("icons")
+    p.add_argument("action", choices=["list", "effective", "index"])
+    p.add_argument("theme", nargs="?")
+    p.add_argument("--variant", choices=["light", "dark"])
+    p.add_argument("--json", action="store_true")
+    p = sub.add_parser("appearance")
+    p.add_argument("action", choices=["apply", "status"])
+    p.add_argument("--variant", choices=["light", "dark"])
+    p.add_argument("--json", action="store_true")
+    sub.add_parser("env")
+    p = sub.add_parser("preset")
+    p.add_argument("action", choices=["list", "set"])
+    p.add_argument("name", nargs="?")
+    p.add_argument("--json", action="store_true")
+    p = sub.add_parser("profile")
+    p.add_argument("action", choices=["list", "save", "load", "delete"])
+    p.add_argument("name", nargs="?")
+    p.add_argument("--json", action="store_true")
+    p = sub.add_parser("export")
+    p.add_argument("file", nargs="?")
+    p = sub.add_parser("import")
+    p.add_argument("file")
+    p.add_argument("--apply", action="store_true")
+    p.add_argument("--json", action="store_true")
+    p = sub.add_parser("import-dms")
+    p.add_argument("--apply", action="store_true")
+    p.add_argument("--appearance", action="store_true", help="also translate visual settings (radius, spacing)")
+    p.add_argument("--themes", action="store_true", help="convert DMS colour themes into ~/.config/bifrost/themes")
+    p.add_argument("--detect", action="store_true", help="only report whether DMS settings exist")
+    p.add_argument("--json", action="store_true")
+    p = sub.add_parser("themes")
+    p.add_argument("action", choices=["browse", "install", "remove"])
+    p.add_argument("theme", nargs="?")
+    p.add_argument("--refresh", action="store_true")
+    p.add_argument("--json", action="store_true")
+    args = ap.parse_args(argv)
+
+    if args.cmd == "doctor" and args.production:
+        rows = production_checks(Config(Schema()))
+        if args.json:
+            print(json.dumps([{"status": st, "name": n, "detail": d} for st, n, d in rows], ensure_ascii=False))
+        else:
+            for st, n, d in rows:
+                print(f" {st:<5} {n:<30} {d}")
+        return 1 if any(st == "fail" for st, _, _ in rows) else 0
+    if args.cmd == "doctor":
+        return doctor(args)
+    if args.cmd == "greeter":
+        cache = greeter_cache()
+        if args.action == "sync":
+            res = greeter_sync(Config(Schema()))
+        else:
+            try:
+                meta = json.loads((cache / "greeter.json").read_text())
+            except (OSError, json.JSONDecodeError):
+                meta = None
+            res = {"ok": meta is not None, "cache": str(cache), "installed": Path("/usr/share/bifrost-greeter/bin/bifrost-greeter").exists(),
+                   "writable": cache.is_dir() and os.access(cache, os.W_OK), "synced": meta}
+        print(json.dumps(res, ensure_ascii=False) if args.json else json.dumps(res, indent=2, ensure_ascii=False))
+        return 0 if res["ok"] else 1
+    if args.cmd == "keybinds":
+        cfg = Config(Schema())
+        live = live_keybinds()
+        if args.action == "list":
+            kb = keybind_defaults()
+            actions, seen = [], set()
+            for b in kb["binds"] + kb.get("actions", []):
+                if action_text(b) not in seen:
+                    seen.add(action_text(b))
+                    actions.append({"label": b["description"], "action": action_text(b)})
+            out = {"entries": keybind_entries(cfg, live), "live": bool(live), "groups": kb["groups"], "actions": actions}
+            if args.json:
+                print(json.dumps(out, ensure_ascii=False))
+            else:
+                for e in out["entries"]:
+                    print(f"{e['id']:<26} {e['keys']:<28} {e['state']:<9} {e['description']}" + (f"  ⚠ {', '.join(e['conflicts'])}" if e["conflicts"] else ""))
+            return 0
+        if args.action == "check":
+            canon = canon_keys(args.keys or "")
+            res = {"ok": bool(canon), "keys": canon, "conflicts": keybind_conflicts(cfg, args.id, canon, live) if canon else []}
+        elif args.action == "add":
+            res = keybind_edit(cfg, "add", keys=args.id, action=args.keys, force=args.force, live=live)
+        else:
+            if args.action != "reset" and not args.id or args.action == "reset" and not (args.id or args.all):
+                raise SystemExit("which binding? (bifrostctl keybinds list)")
+            res = keybind_edit(cfg, args.action, None if args.all else args.id, args.keys, force=args.force, live=live)
+        print(json.dumps(res, ensure_ascii=False) if args.json else (res.get("error") or "ok"))
+        return 0 if res["ok"] else 1
+    if args.cmd == "input":
+        import input_backend
+        print(json.dumps(input_backend.query()))
+        return 0
+    if args.cmd == "hypr":
+        cfg = Config(Schema())
+        if args.action == "generate":
+            text = generate_hypr(cfg)
+            if args.write:
+                hypr_file().parent.mkdir(parents=True, exist_ok=True)
+                hypr_file().write_text(text)
+                ok, msg = verify_hypr(hypr_file())
+                print(f"wrote {hypr_file()} ({'verified' if ok else 'VERIFY FAILED: ' + msg})")
+                return 0 if ok else 1
+            print(text)
+            return 0
+        if args.action == "apply":
+            ok, msg = hypr_apply(cfg)
+            print(json.dumps({"ok": ok, "message": msg, **hypr_status(cfg)}) if args.json else msg)
+            return 0 if ok else 1
+        if args.action == "status":
+            st = hypr_status(cfg)
+            print(json.dumps(st) if args.json else "\n".join(f"{k}: {v}" for k, v in st.items()))
+            return 0
+        if args.action == "binds":
+            binds = effective_keybinds(cfg)
+            if args.json:
+                print(json.dumps(binds, ensure_ascii=False))
+            else:
+                for b in binds:
+                    act = b.get("ipc") and "ipc " + b["ipc"] or b.get("run") and "run " + b["run"] or b.get("dispatch")
+                    print(f"{b['keys']:<28} {act}")
+            return 0
+        ok, msg = verify_hypr(hypr_file())
+        print(("ok: " if ok else "failed: ") + msg)
+        return 0 if ok else 1
+    if args.cmd == "icons":
+        cfg = Config(Schema())
+        if args.action == "list":
+            items = installed_icon_themes()
+            print(json.dumps(items) if args.json else "\n".join(f"{t['id']:<32} {t['name']}" for t in items))
+        elif args.action == "effective":
+            theme, source = effective_icon_theme(cfg, args.variant)
+            print(json.dumps({"theme": theme, "source": source}) if args.json else theme)
+        else:
+            theme = args.theme or effective_icon_theme(cfg, args.variant)[0]
+            if not icon_theme_exists(theme):
+                raise SystemExit(f"icon theme '{theme}' not installed")
+            f = icon_index_file(theme)
+            print(json.dumps({"theme": theme, "file": str(f)}) if args.json else f)
+        return 0
+    if args.cmd == "appearance":
+        cfg = Config(Schema())
+        variant = args.variant or effective_variant(cfg)
+        rows = appearance_apply(cfg, variant, dry=args.action == "status")
+        print(json.dumps({"variant": variant, "icons": effective_icon_theme(cfg, variant)[0], "targets": rows}) if args.json
+              else "\n".join(f"{r['status']:<12} {r['target']:<8} {r['detail']}" for r in rows))
+        return 0 if all(r["status"] != "error" for r in rows) else 1
+    if args.cmd == "env":
+        # Environment for Bifrost's Quickshell processes (scripts/env.sh).
+        theme, _ = effective_icon_theme(Config(Schema()))
+        if theme and theme != "hicolor":
+            print(f"export QS_ICON_THEME={shlex.quote(theme)}")
+        return 0
+    if args.cmd == "themes":
+        sys.path.insert(0, str(REPO / "tools"))
+        import theme_catalog
+        try:
+            result = theme_catalog.run(args, config_dir(), deep_get(Config(Schema()).values, "appearance.theme")[0], write_json_atomic)
+        except (OSError, ValueError) as error:
+            print(json.dumps({"error": str(error)}))
+            return 1
+        print(json.dumps(result, ensure_ascii=False))
+        return 0
+    if args.cmd == "path":
+        print(config_file())
+        return 0
+
+    schema = Schema()
+    if args.cmd == "validate":
+        problems = list(schema.errors)
+        try:
+            problems += Config(schema).issues
+        except json.JSONDecodeError as e:
+            problems.append(f"config.json: invalid JSON: {e}")
+        for p in problems:
+            print(p)
+        print("ok" if not problems else f"{len(problems)} problem(s)")
+        return 1 if problems else 0
+
+
+    if args.cmd == "preset":
+        if args.action == "list":
+            items = list_presets()
+            print(json.dumps(items, ensure_ascii=False) if args.json else "\n".join(f"{p['id']:<16} {p['name']} — {p['description']}" for p in items))
+            return 0
+        if not args.name or args.name not in [p["id"] for p in list_presets()]:
+            raise SystemExit("unknown preset")
+        cfg = Config(schema)
+        apply_values(cfg, cfg.doc.get("values", {}), preset=args.name, replace=True)
+        print(f"preset = {args.name}")
+        return 0
+
+    if args.cmd == "profile":
+        if args.action == "list":
+            items = list_profiles()
+            print(json.dumps(items, ensure_ascii=False) if args.json else "\n".join(f"{p['name']:<24} {p['count']:>3} inställningar  {p['created']}" for p in items))
+            return 0
+        if not args.name:
+            raise SystemExit("profile name required")
+        path = profile_path(args.name)
+        if args.action == "save":
+            cfg = Config(schema)
+            write_json_atomic(path, {"name": args.name, "created": now_iso(), "preset": cfg.doc.get("preset", "default"), "values": cfg.doc.get("values", {})})
+            print(f"saved profile '{args.name}' → {path}")
+        elif args.action == "load":
+            if not path.exists():
+                raise SystemExit(f"no profile '{args.name}'")
+            data = json.loads(path.read_text())
+            b = backup_config("before-profile")
+            problems = apply_values(Config(schema), data.get("values", {}), preset=data.get("preset", "default"))
+            print(f"loaded profile '{args.name}'" + (f" (backup: {b})" if b else ""))
+            for pr in problems:
+                print("  " + pr)
+        elif args.action == "delete":
+            path.unlink(missing_ok=True)
+            print(f"deleted profile '{args.name}'")
+        return 0
+
+    if args.cmd == "export":
+        path = export_bundle(Config(schema), Path(args.file) if args.file else None)
+        print(path)
+        return 0
+
+    if args.cmd == "import":
+        bundle = read_bundle(Path(args.file))
+        cfg = Config(schema)
+        changes = diff_values(schema, cfg.values, bundle.get("values", {}))
+        if args.json and not args.apply:
+            print(json.dumps({"changes": [{"key": k, "old": o, "new": n} for k, o, n in changes], "themes": list(bundle.get("themes", {}))}, ensure_ascii=False))
+            return 0
+        for k, o, n in changes:
+            print(f"  {k}: {fmt(o)} → {fmt(n)}")
+        if not args.apply:
+            print(f"{len(changes)} change(s); run with --apply to import")
+            return 0
+        for tid, tdata in bundle.get("themes", {}).items():
+            write_json_atomic(config_dir() / "themes" / f"{tid}.json", tdata)
+        b = backup_config("before-import")
+        problems = apply_values(cfg, bundle.get("values", {}), preset=bundle.get("preset", "default"))
+        print(f"imported {args.file}" + (f" (backup: {b})" if b else ""))
+        for pr in problems:
+            print("  " + pr)
+        return 0
+
+    if args.cmd == "import-dms" and args.detect:
+        found = (dms_paths()[0] / "settings.json").exists()
+        print(json.dumps({"found": found}) if args.json else ("found" if found else "not found"))
+        return 0
+    if args.cmd == "import-dms":
+        values, notes, themes = dms_translate(args.appearance)
+        cfg = Config(schema)
+        changes = diff_values(schema, cfg.values, values)
+        if args.json:
+            print(json.dumps({"changes": [{"key": k, "old": o, "new": n} for k, o, n in changes],
+                              "notes": notes, "themes": [t["id"] for t in themes.values()], "applied": bool(args.apply)}, ensure_ascii=False))
+        else:
+            for k, o, n in changes:
+                print(f"  {k}: {fmt(o)} → {fmt(n)}")
+            for n_ in notes:
+                if n_["key"] is None:
+                    print(f"  (skipped) {n_['value']}: {n_['from']}")
+            if args.themes:
+                print(f"  themes: {', '.join(t['id'] for t in themes.values())}")
+        if not args.apply:
+            if not args.json:
+                print(f"{len(changes)} change(s) from DMS; nothing written. Run with --apply to import.")
+            return 0
+        if args.themes:
+            for t in themes.values():
+                write_json_atomic(config_dir() / "themes" / f"{t['id']}.json", t)
+        b = backup_config("before-dms-import")
+        merged = merge(cfg.doc.get("values", {}), values, schema.leaf_keys)
+        problems = apply_values(cfg, merged, preset=None, replace=True)
+        if not args.json:
+            print("imported from DMS" + (f" (backup: {b})" if b else ""))
+            for pr in problems:
+                print("  " + pr)
+        return 0
+
+    cfg = Config(schema)
+    if args.cmd == "show":
+        print(json.dumps(cfg.values, indent=2, ensure_ascii=False))
+    elif args.cmd == "get":
+        if args.key not in schema.entries:
+            raise SystemExit(f"unknown setting '{args.key}'")
+        print(fmt(deep_get(cfg.values, args.key)[0]))
+    elif args.cmd == "list":
+        for key in schema.keys:
+            d = schema.entries[key]
+            if args.section and d["section"] != args.section:
+                continue
+            value = deep_get(cfg.values, key)[0]
+            mark = "*" if deep_get(cfg.overrides, key)[1] else " "
+            print(f"{mark} {key:<36} {fmt(value):<24} default={fmt(d.get('default'))}  [{d['apply']}]")
+    elif args.cmd == "set":
+        v = cfg.set(args.key, parse_value(args.value))
+        cfg.save()
+        mode = schema.entries[args.key]["apply"]
+        print(f"{args.key} = {fmt(v)}" + ("" if mode == "live" else f"  (takes effect after shell {mode})"))
+    elif args.cmd == "reset":
+        keys = schema.keys if args.all else schema.section_keys(args.section) if args.section else [args.key]
+        if not keys or (args.key and args.key not in schema.entries):
+            raise SystemExit("nothing to reset (unknown key or section)")
+        for k in keys:
+            deep_delete(cfg.doc["values"], k)
+        cfg.save()
+        print(f"reset {len(keys)} setting(s)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

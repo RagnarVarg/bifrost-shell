@@ -1,0 +1,29 @@
+{
+  "section": "motion",
+  "label": "Animations",
+  "icon": "motion",
+  "groups": {
+    "motion": "Animations"
+  },
+  "settings": [
+    {
+      "key": "appearance.motion.enabled",
+      "type": "bool",
+      "default": true,
+      "label": "Animations",
+      "group": "motion"
+    },
+    {
+      "key": "appearance.motion.speed",
+      "type": "real",
+      "default": 1.0,
+      "min": 0.25,
+      "max": 3,
+      "step": 0.05,
+      "label": "Speed",
+      "description": "1 = normal, higher = faster",
+      "group": "motion",
+      "dependsOn": "appearance.motion.enabled"
+    }
+  ]
+}

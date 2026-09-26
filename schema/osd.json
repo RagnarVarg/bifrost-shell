@@ -1,0 +1,54 @@
+{
+  "section": "osd",
+  "label": "OSD",
+  "icon": "volume",
+  "groups": {
+    "general": "General"
+  },
+  "settings": [
+    {
+      "key": "osd.enabled",
+      "type": "bool",
+      "default": true,
+      "label": "Show the OSD for volume, microphone and brightness",
+      "group": "general"
+    },
+    {
+      "key": "osd.position",
+      "type": "enum",
+      "default": "bottom",
+      "options": [
+        "top",
+        "center",
+        "bottom"
+      ],
+      "optionLabels": {
+        "top": "Top",
+        "center": "Centre",
+        "bottom": "Bottom"
+      },
+      "label": "Position",
+      "group": "general"
+    },
+    {
+      "key": "osd.media",
+      "type": "bool",
+      "default": true,
+      "label": "Media keys",
+      "description": "Shows play, pause, next or previous with the current track when a media key is pressed",
+      "dependsOn": "osd.enabled",
+      "group": "general"
+    },
+    {
+      "key": "osd.timeoutMs",
+      "type": "int",
+      "default": 1400,
+      "min": 500,
+      "max": 5000,
+      "step": 100,
+      "unit": "ms",
+      "label": "Display time",
+      "group": "general"
+    }
+  ]
+}

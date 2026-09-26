@@ -1,0 +1,190 @@
+{
+  "section": "settingsUI",
+  "label": "Settings layout",
+  "icon": "layout",
+  "page": "SettingsLayoutPage",
+  "settings": [
+    {
+      "key": "settingsUI.layout",
+      "type": "enum",
+      "default": "grouped",
+      "label": "Settings layout",
+      "options": [
+        "boxed",
+        "grouped"
+      ],
+      "optionLabels": {
+        "boxed": "Boxed",
+        "grouped": "Grouped"
+      },
+      "scope": "hyprland"
+    },
+    {
+      "key": "settingsUI.grouped.background",
+      "type": "bool",
+      "default": true,
+      "label": "Group background",
+      "dependsOnValue": {
+        "settingsUI.layout": "grouped"
+      },
+      "scope": "hyprland"
+    },
+    {
+      "key": "settingsUI.grouped.density",
+      "type": "enum",
+      "default": "inherit",
+      "label": "Group density",
+      "options": [
+        "inherit",
+        "compact",
+        "standard",
+        "spacious"
+      ],
+      "optionLabels": {
+        "inherit": "Inherit global density",
+        "compact": "Compact",
+        "standard": "Normal",
+        "spacious": "Spacious"
+      },
+      "dependsOnValue": {
+        "settingsUI.layout": "grouped"
+      }
+    },
+    {
+      "key": "settingsUI.grouped.innerPadding",
+      "type": "int",
+      "default": null,
+      "label": "Inner padding",
+      "nullable": true,
+      "min": 0,
+      "max": 64,
+      "unit": "px",
+      "description": "Empty = follow the theme and density",
+      "dependsOnValue": {
+        "settingsUI.layout": "grouped"
+      }
+    },
+    {
+      "key": "settingsUI.grouped.groupSpacing",
+      "type": "int",
+      "default": null,
+      "label": "Spacing between groups",
+      "nullable": true,
+      "min": 0,
+      "max": 64,
+      "unit": "px",
+      "description": "Empty = follow the theme and density",
+      "dependsOnValue": {
+        "settingsUI.layout": "grouped"
+      }
+    },
+    {
+      "key": "settingsUI.grouped.rowSpacing",
+      "type": "int",
+      "default": null,
+      "label": "Vertical spacing between rows",
+      "nullable": true,
+      "min": 0,
+      "max": 64,
+      "unit": "px",
+      "description": "Empty = follow the theme and density",
+      "dependsOnValue": {
+        "settingsUI.layout": "grouped"
+      }
+    },
+    {
+      "key": "settingsUI.grouped.contentPadding",
+      "type": "int",
+      "default": null,
+      "label": "Padding around content",
+      "nullable": true,
+      "min": 0,
+      "max": 64,
+      "unit": "px",
+      "description": "Empty = follow the theme and density",
+      "dependsOnValue": {
+        "settingsUI.layout": "grouped"
+      }
+    },
+    {
+      "key": "settingsUI.grouped.separatorInset",
+      "type": "int",
+      "default": null,
+      "label": "Separator inset",
+      "nullable": true,
+      "min": 0,
+      "max": 64,
+      "unit": "px",
+      "description": "Empty = follow the theme and density",
+      "dependsOnValue": {
+        "settingsUI.layout": "grouped"
+      }
+    },
+    {
+      "key": "settingsUI.grouped.titleSpacing",
+      "type": "int",
+      "default": null,
+      "label": "Section title spacing",
+      "nullable": true,
+      "min": 0,
+      "max": 64,
+      "unit": "px",
+      "description": "Empty = follow the theme and density",
+      "dependsOnValue": {
+        "settingsUI.layout": "grouped"
+      }
+    },
+    {
+      "key": "settingsUI.grouped.descriptionSpacing",
+      "type": "int",
+      "default": null,
+      "label": "Description spacing",
+      "nullable": true,
+      "min": 0,
+      "max": 64,
+      "unit": "px",
+      "description": "Empty = follow the theme and density",
+      "dependsOnValue": {
+        "settingsUI.layout": "grouped"
+      }
+    },
+    {
+      "key": "settingsUI.grouped.separators",
+      "type": "bool",
+      "default": true,
+      "label": "Separators between rows",
+      "dependsOnValue": {
+        "settingsUI.layout": "grouped"
+      }
+    },
+    {
+      "key": "settingsUI.grouped.dividerStyle",
+      "type": "enum",
+      "default": "solid",
+      "label": "Divider style",
+      "options": [
+        "solid",
+        "dashed"
+      ],
+      "optionLabels": {
+        "solid": "Solid",
+        "dashed": "Dashed"
+      },
+      "dependsOnValue": {
+        "settingsUI.layout": "grouped"
+      }
+    },
+    {
+      "key": "settingsUI.grouped.dividerOpacity",
+      "type": "int",
+      "default": 100,
+      "label": "Divider opacity",
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "dependsOnValue": {
+        "settingsUI.layout": "grouped"
+      }
+    }
+  ]
+}

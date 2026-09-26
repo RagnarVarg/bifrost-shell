@@ -1,0 +1,106 @@
+{
+  "section": "workspaces",
+  "label": "Workspaces",
+  "icon": "layers",
+  "groups": {
+    "display": "Display",
+    "behavior": "Behaviour",
+    "preview": "Workspace preview",
+    "motion": "Workspace motion"
+  },
+  "settings": [
+    {
+      "key": "workspaces.persistent",
+      "type": "int",
+      "default": 5,
+      "min": 0,
+      "max": 10,
+      "label": "Always shown",
+      "description": "Number of workspaces shown even when empty",
+      "group": "display"
+    },
+    {
+      "key": "workspaces.labels",
+      "type": "enum",
+      "default": "numbers",
+      "options": [
+        "numbers",
+        "dots",
+        "runes"
+      ],
+      "optionLabels": {
+        "numbers": "Numbers",
+        "dots": "Dots",
+        "runes": "Runes"
+      },
+      "label": "Labels",
+      "description": "Runes use the Elder Futhark (needs Noto Sans Runic)",
+      "group": "display"
+    },
+    {
+      "key": "workspaces.showEmpty",
+      "type": "bool",
+      "default": true,
+      "label": "Show empty",
+      "description": "Show workspaces without windows (beyond the always shown ones)",
+      "group": "display"
+    },
+    {
+      "key": "workspaces.perMonitor",
+      "type": "bool",
+      "default": true,
+      "label": "Per display",
+      "description": "Show only the display's own workspaces",
+      "group": "display",
+      "requires": {
+        "capability": "monitors"
+      }
+    },
+    {
+      "key": "workspaces.scroll",
+      "type": "bool",
+      "default": true,
+      "label": "Switch with the scroll wheel",
+      "description": "Scroll over the bar to switch workspace",
+      "group": "behavior",
+      "requires": {
+        "capability": "focusWorkspace"
+      }
+    },
+    {
+      "key": "workspaces.preview",
+      "type": "bool",
+      "default": true,
+      "label": "Preview on hover",
+      "description": "Hovering a workspace shows a map of its windows",
+      "group": "preview",
+      "requires": {
+        "capability": "windowList"
+      }
+    },
+    {
+      "key": "workspaces.previewLive",
+      "type": "bool",
+      "default": true,
+      "label": "Live window pictures",
+      "description": "Show what the windows show, captured while the preview is open. Off = app icons",
+      "group": "preview",
+      "dependsOn": "workspaces.preview",
+      "requires": {
+        "capability": "windowCapture"
+      }
+    },
+    {
+      "key": "workspaces.transitionSpeed",
+      "type": "real",
+      "default": 4,
+      "min": 1,
+      "max": 10,
+      "step": 0.5,
+      "label": "Workspace transition duration",
+      "description": "Horizontal slide with smooth acceleration and deceleration. Higher values take longer. Trackpad swipes follow your fingers.",
+      "group": "motion",
+      "scope": "hyprland"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Bifrost's login screen for greetd, with dms-greeter as the safety net.
+#   /etc/greetd/config.toml:  command = "/usr/share/bifrost-greeter/bin/bifrost-greeter"
+#
+# Starts a minimal Hyprland (greeter/hyprland.lua) that runs the login screen
+# (shell/greeter.qml). When a login succeeds the greeter leaves a "launched"
+# marker and greetd starts your session. Without that marker – Hyprland or
+# Quickshell missing, a crash, a broken file – this starts the previous
+# greeter instead, so there is always a login screen:
+#   BIFROST_GREETER_FALLBACK (default: dms-greeter --command hyprland --cache-dir /var/cache/dms-greeter)
+# Logs: $XDG_RUNTIME_DIR/bifrost-greeter/ (greeter.log, hyprland.log, fallback.log).
+self="$0"; [[ -L "$self" ]] && self="$(readlink -f "$self")"
+root="${BIFROST_GREETER_ROOT:-$(cd "$(dirname "$self")/.." && pwd)}"
+export BIFROST_GREETER_ROOT="$root"
+export BIFROST_GREETER_CACHE="${BIFROST_GREETER_CACHE:-/var/cache/bifrost-greeter}"
+export BIFROST_CONFIG_DIR="$BIFROST_GREETER_CACHE/config"
+run="${BIFROST_GREETER_RUN:-${XDG_RUNTIME_DIR:-/tmp}/bifrost-greeter}"
+mkdir -p "$run" && chmod 700 "$run"
+export BIFROST_GREETER_RUN="$run"
+rm -f "$run/launched" "$run/greeter.exit"
+fallback="${BIFROST_GREETER_FALLBACK:-/usr/bin/dms-greeter --command hyprland --cache-dir /var/cache/dms-greeter}"
+
+# Language of the copied settings, so texts and dates match the session.
+if [[ -z "${LANG:-}" && -r "$BIFROST_GREETER_CACHE/greeter.json" ]]; then
+    lang="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("language",""))' "$BIFROST_GREETER_CACHE/greeter.json" 2>/dev/null)"
+    [[ -n "$lang" ]] && export LANG="$lang"
+fi
+
+fall_back() {
+    echo "$(date '+%F %T') bifrost-greeter: $1; starting the fallback greeter" >> "$run/fallback.log"
+    # shellcheck disable=SC2086  # the fallback is a command line
+    exec $fallback
+}
+
+command -v Hyprland >/dev/null || fall_back "Hyprland not found"
+command -v qs >/dev/null || fall_back "Quickshell not found"
+[[ -r "$root/shell/greeter.qml" && -r "$root/greeter/hyprland.lua" ]] || fall_back "greeter files missing in $root"
+
+# start-hyprland is Hyprland's own watchdog starter (0.55+); plain Hyprland otherwise.
+if command -v start-hyprland >/dev/null; then
+    start-hyprland -- --config "$root/greeter/hyprland.lua" > "$run/hyprland.log" 2>&1
+else
+    Hyprland --config "$root/greeter/hyprland.lua" > "$run/hyprland.log" 2>&1
+fi
+code=$?
+[[ -e "$run/launched" ]] && exit 0
+fall_back "login screen ended without a login (Hyprland exit $code, greeter exit $(cat "$run/greeter.exit" 2>/dev/null || echo none))"

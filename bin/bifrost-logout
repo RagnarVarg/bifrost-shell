@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Ends the graphical session cleanly (used by the shell's Log out).
+# Usage: bifrost-logout <compositor dispatch that exits>
+# Stops the session's systemd units first (shell, portals, …), then the
+# compositor. Otherwise graphical-session.target outlives a compositor that
+# crashes while exiting (Hyprland 0.56 / aquamarine 0.15 segfault on exit), its
+# services restart without a display, and the next login inherits the mess.
+# The shell starts this outside its own cgroup (systemd-run), since stopping the
+# target stops the shell.
+request="${1:?usage: bifrost-logout <exit dispatch>}"
+timeout 10 systemctl --user stop graphical-session.target
+if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+    hyprctl dispatch "$request"
+fi

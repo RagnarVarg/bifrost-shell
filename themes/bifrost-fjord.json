@@ -1,0 +1,111 @@
+{
+  "id": "bifrost-fjord",
+  "name": "Bifrost Fjord",
+  "version": 1,
+  "extends": "_base",
+  "description": "Colder variant: deep blue-slate base with a teal-steel accent.",
+  "variants": {
+    "dark": {
+      "palette": {
+        "void": "#070A0D",
+        "base": "#0C1115",
+        "surface": "#131A20",
+        "surfaceRaised": "#1A232A",
+        "surfaceHover": "#222D35",
+        "text": "#E3EBEF",
+        "textMuted": "#8A9BA5",
+        "textFaint": "#56646D",
+        "silver": "#C3D2D9",
+        "silverBright": "#EEF5F8",
+        "accent": "#7FB2BF",
+        "accentDeep": "#4F7F8C",
+        "accentText": "#081013",
+        "success": "#7FB89A",
+        "warning": "#D6A76A",
+        "danger": "#D0707A",
+        "aurora": [
+          "#7FB2BF",
+          "#8FA0C8",
+          "#8CC4A8"
+        ]
+      }
+    },
+    "light": {
+      "palette": {
+        "void": "#10171C",
+        "base": "#E6EDF0",
+        "surface": "#F0F5F7",
+        "surfaceRaised": "#F8FBFC",
+        "surfaceHover": "#D8E3E8",
+        "text": "#10181D",
+        "textMuted": "#4B5C66",
+        "textFaint": "#83949D",
+        "silver": "#566B76",
+        "silverBright": "#FFFFFF",
+        "accent": "#3E7E8D",
+        "accentDeep": "#2B5F6B",
+        "accentText": "#F3F9FA",
+        "success": "#3E7F5E",
+        "warning": "#9A6A2A",
+        "danger": "#A8404C",
+        "aurora": [
+          "#4F8E9C",
+          "#6B78A8",
+          "#4E9A7D"
+        ]
+      },
+      "opacity": {
+        "outerBorder": 0.18,
+        "innerBorder": 0.55,
+        "hairline": 0.16,
+        "controlFill": 0.05,
+        "fieldFill": 0.06,
+        "track": 0.2,
+        "divider": 0.1,
+        "stateHover": 0.06,
+        "stateSelected": 0.12,
+        "stateActive": 0.16
+      },
+      "glass": {
+        "depth": 0.06,
+        "density": 0.2,
+        "highlight": 0.12,
+        "grain": 0.01
+      },
+      "materials": {
+        "bar": {
+          "opacity": 0.66
+        },
+        "dock": {
+          "opacity": 0.64
+        },
+        "panel": {
+          "opacity": 0.72
+        },
+        "popover": {
+          "opacity": 0.8
+        },
+        "osd": {
+          "opacity": 0.76
+        },
+        "tooltip": {
+          "opacity": 0.92
+        },
+        "lock": {
+          "opacity": 0.4
+        }
+      },
+      "elevation": {
+        "low": {
+          "opacity": 0.1
+        },
+        "mid": {
+          "opacity": 0.14
+        },
+        "high": {
+          "opacity": 0.18
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "section": "greeter",
+  "label": "Login screen",
+  "icon": "lock",
+  "description": "The Bifrost login screen (greetd). It shows a copy of your look, wallpaper and picture, kept in /var/cache/bifrost-greeter.",
+  "groups": {
+    "general": "General"
+  },
+  "settings": [
+    {
+      "key": "greeter.avatar",
+      "type": "path",
+      "default": "",
+      "label": "Your picture",
+      "description": "Shown above your name. Empty = ~/.face if it exists, otherwise your initials",
+      "group": "general"
+    },
+    {
+      "key": "greeter.sync",
+      "type": "bool",
+      "default": true,
+      "label": "Keep the login screen in step",
+      "description": "Copies your theme, glass, wallpaper, picture, keyboard layout and displays to the login screen when they change (bifrostctl greeter sync)",
+      "group": "general"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# bifrost-screenshot region|full|window
+# Saves to the XDG pictures dir (Screenshots/), copies to the clipboard and
+# shows a notification. Uses grim + slurp; the window's geometry comes from
+# Hyprland.
+set -uo pipefail
+mode="${1:-region}"
+for tool in grim wl-copy; do
+    command -v "$tool" >/dev/null || { notify-send -a Bifrost "Screenshot failed" "$tool is not installed"; exit 1; }
+done
+pictures="$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")"
+out_dir="$pictures/Screenshots"
+mkdir -p "$out_dir"
+file="$out_dir/Screenshot_$(date +%Y-%m-%d_%H-%M-%S).png"
+case "$mode" in
+    region)
+        command -v slurp >/dev/null || { notify-send -a Bifrost "Screenshot failed" "slurp is not installed"; exit 1; }
+        geom="$(slurp -d)" || exit 0          # Esc cancels quietly
+        grim -g "$geom" "$file" ;;
+    window)
+        geom="$(hyprctl activewindow -j 2>/dev/null | python3 -c '
+import json, sys
+w = json.load(sys.stdin)
+print(f"{w[\"at\"][0]},{w[\"at\"][1]} {w[\"size\"][0]}x{w[\"size\"][1]}")' 2>/dev/null)"
+        if [[ -z "$geom" ]]; then
+            grim "$file"
+        else
+            grim -g "$geom" "$file"
+        fi ;;
+    full)
+        output="$(hyprctl monitors -j 2>/dev/null | python3 -c '
+import json, sys
+print(next((m["name"] for m in json.load(sys.stdin) if m.get("focused")), ""))' 2>/dev/null)"
+        if [[ -n "$output" ]]; then grim -o "$output" "$file"; else grim "$file"; fi ;;
+    *) echo "usage: bifrost-screenshot region|full|window" >&2; exit 2 ;;
+esac || { notify-send -a Bifrost "Screenshot failed"; exit 1; }
+wl-copy --type image/png <"$file"
+notify-send -a Bifrost -i "$file" "Screenshot saved" "$(basename "$file") — copied to the clipboard" 2>/dev/null
+exit 0

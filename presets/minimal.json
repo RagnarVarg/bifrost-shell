@@ -1,0 +1,18 @@
+{
+  "name": "Minimal",
+  "description": "No panel, one glass bubble per side, hidden dock, softer prism",
+  "values": {
+    "bar": {
+      "background": "none",
+      "widgetStyle": "grouped"
+    },
+    "dock": {
+      "autohide": true
+    },
+    "appearance": {
+      "prism": {
+        "intensity": 0.6
+      }
+    }
+  }
+}

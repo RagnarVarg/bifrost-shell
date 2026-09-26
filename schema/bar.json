@@ -1,0 +1,364 @@
+{
+  "section": "bar",
+  "label": "Top bar",
+  "icon": "bar",
+  "groups": {
+    "general": "General",
+    "layout": "Position and size",
+    "appearance": "Appearance",
+    "behavior": "Behaviour",
+    "menus": "Menus",
+    "widgets": "Widgets",
+    "systemStatus": "System status"
+  },
+  "settings": [
+    {
+      "key": "bar.enabled",
+      "type": "bool",
+      "default": true,
+      "label": "Show bar",
+      "group": "general",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "bar.screens",
+      "type": "list",
+      "default": [
+        "all"
+      ],
+      "label": "Displays",
+      "description": "Output names or \"all\"",
+      "group": "general",
+      "scope": "shell",
+      "apply": "reload",
+      "editor": "ScreenListEditor"
+    },
+    {
+      "key": "bar.layout",
+      "type": "enum",
+      "default": "bar",
+      "options": [
+        "bar",
+        "frame"
+      ],
+      "optionLabels": {
+        "bar": "Top bar",
+        "frame": "Frame"
+      },
+      "label": "Layout",
+      "description": "Frame = the bar continues as a thin glass frame around the screen, as one surface with rounded inner corners",
+      "group": "layout"
+    },
+    {
+      "key": "bar.position",
+      "type": "enum",
+      "default": "top",
+      "options": [
+        "top",
+        "bottom",
+        "left",
+        "right"
+      ],
+      "label": "Position",
+      "description": "Left and right turn the bar into a vertical side bar; widgets stay upright and stack, the window title is left out",
+      "group": "layout",
+      "scope": "shell",
+      "apply": "live",
+      "optionLabels": {
+        "top": "Top",
+        "bottom": "Bottom",
+        "left": "Left",
+        "right": "Right"
+      }
+    },
+    {
+      "key": "bar.frame.thickness",
+      "type": "int",
+      "default": 6,
+      "min": 2,
+      "max": 32,
+      "unit": "px",
+      "label": "Frame thickness",
+      "description": "Width of the frame on the other three sides",
+      "group": "layout",
+      "dependsOnValue": {
+        "bar.layout": "frame"
+      }
+    },
+    {
+      "key": "bar.height",
+      "type": "int",
+      "default": 38,
+      "min": 24,
+      "max": 72,
+      "step": 1,
+      "unit": "px",
+      "label": "Height",
+      "group": "layout",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "bar.margin",
+      "type": "int",
+      "default": 8,
+      "min": 0,
+      "max": 48,
+      "unit": "px",
+      "label": "Distance to screen edge",
+      "group": "layout",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "bar.spacing",
+      "type": "int",
+      "default": 6,
+      "min": 0,
+      "max": 24,
+      "unit": "px",
+      "label": "Widget spacing",
+      "group": "layout",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "bar.style",
+      "type": "enum",
+      "default": "floating",
+      "options": [
+        "floating",
+        "attached"
+      ],
+      "label": "Style",
+      "group": "appearance",
+      "scope": "shell",
+      "apply": "live",
+      "optionLabels": {
+        "floating": "Floating",
+        "attached": "Attached to the edge"
+      },
+      "description": "Floating = away from the screen edge with rounded corners; Attached = edge to edge"
+    },
+    {
+      "key": "bar.background",
+      "type": "enum",
+      "default": "panel",
+      "options": [
+        "panel",
+        "subtle",
+        "none"
+      ],
+      "optionLabels": {
+        "panel": "Full panel",
+        "subtle": "Faint panel",
+        "none": "No panel"
+      },
+      "label": "Panel background",
+      "description": "The bar's own glass: full, a faint hint of glass, or none (widgets float on their own)",
+      "group": "appearance"
+    },
+    {
+      "key": "bar.widgetStyle",
+      "type": "enum",
+      "default": "integrated",
+      "options": [
+        "integrated",
+        "boxed",
+        "grouped"
+      ],
+      "optionLabels": {
+        "integrated": "Integrated",
+        "boxed": "Boxed",
+        "grouped": "Grouped"
+      },
+      "label": "Widgets",
+      "description": "Integrated = directly on the panel; Boxed = every widget in its own rounded glass bubble; Grouped = one bubble per side (left, centre, right)",
+      "group": "appearance"
+    },
+    {
+      "key": "bar.autohide.enabled",
+      "type": "bool",
+      "default": false,
+      "label": "Autohide",
+      "group": "behavior",
+      "scope": "shell",
+      "apply": "live",
+      "description": "The bar hides and takes no space; tiled windows cover the whole screen"
+    },
+    {
+      "key": "bar.autohide.smart",
+      "type": "bool",
+      "default": true,
+      "label": "Smart",
+      "description": "Visible when no window covers the bar (e.g. an empty workspace), otherwise hidden until the pointer reaches the edge",
+      "group": "behavior",
+      "scope": "shell",
+      "apply": "live",
+      "dependsOn": "bar.autohide.enabled"
+    },
+    {
+      "key": "bar.autohide.delayMs",
+      "type": "int",
+      "default": 250,
+      "min": 0,
+      "max": 3000,
+      "step": 50,
+      "unit": "ms",
+      "label": "Autohide delay",
+      "group": "behavior",
+      "scope": "shell",
+      "apply": "live",
+      "dependsOn": "bar.autohide.enabled"
+    },
+    {
+      "key": "bar.autohide.pinWhilePopupOpen",
+      "type": "bool",
+      "default": true,
+      "label": "Keep visible while a popup is open",
+      "group": "behavior",
+      "scope": "shell",
+      "apply": "live",
+      "dependsOn": "bar.autohide.enabled"
+    },
+    {
+      "key": "bar.menus.openOnHover",
+      "type": "bool",
+      "default": true,
+      "label": "Open menus on hover",
+      "description": "Bar menus, system status and the control center open when the pointer rests on the icon. Off = they open on click only.",
+      "group": "menus",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "bar.menus.hoverDelayMs",
+      "type": "int",
+      "default": 120,
+      "min": 0,
+      "max": 1000,
+      "step": 10,
+      "unit": "ms",
+      "label": "Delay before a menu opens",
+      "description": "How long the pointer rests on the icon before the menu opens",
+      "group": "menus",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "bar.menus.closeOnLeave",
+      "type": "bool",
+      "default": true,
+      "label": "Close menus when the pointer leaves them",
+      "description": "Bar menus close when the pointer leaves the menu and the icon that opened it",
+      "group": "menus",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "bar.menus.closeDelayMs",
+      "type": "int",
+      "default": 150,
+      "min": 0,
+      "max": 1000,
+      "step": 10,
+      "unit": "ms",
+      "label": "Delay before a menu closes",
+      "description": "The pointer can move back into the menu during this time",
+      "group": "menus",
+      "scope": "shell",
+      "apply": "live",
+      "dependsOn": "bar.menus.closeOnLeave"
+    },
+    {
+      "key": "bar.menus.contentTopPadding",
+      "type": "int",
+      "default": 0,
+      "min": -8,
+      "max": 32,
+      "step": 1,
+      "unit": "px",
+      "label": "Extra space at the top of menus",
+      "description": "Moves the whole content of bar menus down; row spacing stays. 0 = default position.",
+      "group": "menus",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "bar.systemStatus.clickCommand",
+      "type": "string",
+      "default": "bifrost-terminal btop",
+      "label": "Click opens",
+      "description": "Command run when system status is clicked. bifrost-terminal CMD runs CMD in your terminal",
+      "group": "systemStatus",
+      "scope": "shell",
+      "apply": "live"
+    },
+    {
+      "key": "bar.widgets",
+      "type": "widgetLayout",
+      "default": {
+        "left": [
+          {
+            "id": "power"
+          },
+          {
+            "id": "launcher"
+          },
+          {
+            "id": "workspaces"
+          },
+          {
+            "id": "activeWindow"
+          }
+        ],
+        "center": [
+          {
+            "id": "clock"
+          }
+        ],
+        "right": [
+          {
+            "id": "systemStats"
+          },
+          {
+            "id": "gpu"
+          },
+          {
+            "id": "tray"
+          },
+          {
+            "id": "notifications"
+          },
+          {
+            "id": "display"
+          },
+          {
+            "id": "status"
+          },
+          {
+            "id": "controlCenter"
+          },
+          {
+            "id": "settings"
+          }
+        ]
+      },
+      "label": "Widgets",
+      "group": "widgets",
+      "scope": "shell",
+      "apply": "live",
+      "editor": "WidgetLayoutEditor"
+    },
+    {
+      "key": "bar.battery.showPercentage",
+      "type": "bool",
+      "default": true,
+      "label": "Show battery percentage",
+      "group": "widgets",
+      "scope": "shell",
+      "apply": "live"
+    }
+  ]
+}

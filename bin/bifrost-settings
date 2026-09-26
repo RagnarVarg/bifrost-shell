@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Opens Bifrost Settings (or shows and focuses the running instance).
+# ~/.local/bin/<cmd> links to <install>/bin/<cmd>: follow that one link only,
+# so the install path stays as installed (even when it is itself a symlink).
+self="$0"; [[ -L "$self" ]] && self="$(readlink "$self")"
+dir="$(cd "$(dirname "$self")/.." && pwd)"
+exec "$dir/scripts/settings.sh" "$@"

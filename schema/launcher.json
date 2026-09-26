@@ -1,0 +1,60 @@
+{
+  "section": "launcher",
+  "label": "Launcher",
+  "icon": "apps",
+  "groups": {
+    "placement": "Placement",
+    "layout": "Layout",
+    "behavior": "Behaviour"
+  },
+  "settings": [
+    {
+      "key": "launcher.placement",
+      "type": "enum",
+      "default": "dock",
+      "options": [
+        "dock",
+        "center",
+        "bar"
+      ],
+      "label": "Placement",
+      "description": "Dock = the launcher grows out of the dock; Center = middle of the screen; Top panel = the panel button, or the panel edge when no launcher button is present. Without a dock, Dock falls back to Center.",
+      "group": "placement",
+      "scope": "shell",
+      "apply": "live",
+      "optionLabels": {
+        "dock": "Dock",
+        "center": "Center",
+        "bar": "Top panel"
+      }
+    },
+    {
+      "key": "launcher.columns",
+      "type": "int",
+      "default": 6,
+      "min": 3,
+      "max": 10,
+      "label": "Columns",
+      "group": "layout"
+    },
+    {
+      "key": "launcher.iconSize",
+      "type": "int",
+      "default": 48,
+      "min": 32,
+      "max": 96,
+      "step": 4,
+      "unit": "px",
+      "label": "Icon size",
+      "group": "layout"
+    },
+    {
+      "key": "launcher.hidden",
+      "type": "list",
+      "default": [],
+      "label": "Hidden apps",
+      "description": "Desktop ids that aren't shown",
+      "group": "behavior"
+    }
+  ]
+}
