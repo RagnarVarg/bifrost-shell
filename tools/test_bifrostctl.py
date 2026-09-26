@@ -57,6 +57,15 @@ class BifrostctlTest(unittest.TestCase):
         self.assertEqual(ctl.deep_get(ctl.Config(self.schema).values,"input.devices")[0], value)
         self.assertFalse(ctl.coerce(self.schema.entries["input.gestures"],{"3:evil()":"workspace"})[0])
 
+    def test_border_resize_applies_both_values_independently_of_appearance(self):
+        cfg = ctl.Config(self.schema)
+        cfg.set("hyprland.manage", False)
+        for enabled in (True, False):
+            cfg.set("input.resizeOnBorder", enabled)
+            cfg.save()
+            text = ctl.generate_hypr(ctl.Config(self.schema))
+            self.assertIn("resize_on_border = " + str(enabled).lower(), text)
+
     def test_input_generator_verifies_all_device_kinds_and_gestures(self):
         cfg = ctl.Config(self.schema)
         cfg.set("input.devices", {
@@ -298,7 +307,7 @@ class BifrostctlTest(unittest.TestCase):
         ctl.main(["set", "hyprland.manage", "false"])
         ctl.main(["set", "keybinds.enabled", "false"])
         text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
-        self.assertNotIn("hl.config(", text)
+        self.assertNotIn("gaps_in =", text)  # appearance disabled; input still applies
         self.assertNotIn('bind("', text)
 
     def test_vrr_mode_selector_reapplies_same_physical_mode(self):

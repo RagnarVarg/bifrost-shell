@@ -1721,6 +1721,7 @@ def generate_hypr(cfg) -> str:
     lines.append('hl.curve("bifrost_workspace", {type="bezier", points={{0.42,0},{0.58,1}}})')
     for leaf in ("workspaces", "workspacesIn", "workspacesOut"):
         lines.append('hl.animation({leaf='+lua_str(leaf)+', enabled=true, speed='+str(v("workspaces.transitionSpeed") or 4)+', bezier="bifrost_workspace", style="slide"})')
+    lines.append("hl.config({ general = { resize_on_border = " + str(bool(v("input.resizeOnBorder"))).lower() + " } })")
     lines.append(input_backend.generate(v("input.devices") or {}, v("input.gestures") or {}, v("input.activeLayouts") or {}))
     binds = effective_keybinds(cfg)
     if binds:

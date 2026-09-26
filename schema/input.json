@@ -6,6 +6,20 @@
   "description": "Keyboard, mouse and trackpad settings.",
   "settings": [
     {
+      "key": "input.resizeOnBorder",
+      "type": "bool",
+      "default": false,
+      "scope": "hyprland",
+      "apply": "live",
+      "label": "Resize windows by dragging borders",
+      "description": "Drag window borders or gaps with the left mouse button to resize windows.",
+      "requires": {
+        "compositor": [
+          "hyprland"
+        ]
+      }
+    },
+    {
       "key": "input.devices",
       "type": "object",
       "default": {},

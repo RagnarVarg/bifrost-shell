@@ -962,5 +962,7 @@
   "Turn off": "Stäng av",
   "Type it": "Skriv det",
   "Your shortcuts are paused while recording (Super+Esc resumes them).": "Dina kortkommandon är pausade under registreringen (Super+Esc återupptar dem).",
-  "your Hyprland config": "din Hyprland-konfiguration"
+  "your Hyprland config": "din Hyprland-konfiguration",
+  "Resize windows by dragging borders": "Ändra fönsterstorlek genom att dra i kanterna",
+  "Drag window borders or gaps with the left mouse button to resize windows.": "Dra i fönsterkanter eller mellanrum med vänster musknapp för att ändra fönsterstorleken."
 }
