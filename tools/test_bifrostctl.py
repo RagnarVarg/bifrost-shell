@@ -6,6 +6,7 @@ import json
 import re
 import os
 import tempfile
+from pathlib import Path
 import unittest
 import sys
 from types import SimpleNamespace
@@ -413,6 +414,21 @@ class BifrostctlTest(unittest.TestCase):
         self.assertRegex(text, r'bifrost-settings".*rounding = %d, rounding_power = 2' % round(14 * 1))
         ctl.main(["set", "materials.all.radius", "32"])
         self.assertRegex(ctl.generate_hypr(ctl.Config(ctl.Schema())), r'bifrost-settings".*rounding = 20,')  # Hyprland's maximum
+
+    def test_binds_call_the_installed_shell(self):
+        """IPC binds run the install's bifrost-ipc (it reaches the session's
+        shell), also when bifrostctl runs from a checkout next to a copied
+        install; a checkout's own bin only without any install."""
+        data = Path(self.tmp.name) / "data"
+        os.environ["XDG_DATA_HOME"] = str(data)
+        try:
+            self.assertIn(str(ctl.REPO / "bin"), ctl.install_bin_lua().replace('os.getenv("HOME") .. "', os.path.expanduser("~")).replace('"', ""))
+            (data / "bifrost-shell" / "bin").mkdir(parents=True)
+            (data / "bifrost-shell" / "bin" / "bifrost-ipc").write_text("#!/bin/sh\n")
+            self.assertIn("bifrost-shell/bin/", ctl.install_bin_lua())
+            self.assertNotIn(str(ctl.REPO), ctl.install_bin_lua())
+        finally:
+            del os.environ["XDG_DATA_HOME"]
 
     def test_migrate_4_to_5_blur_amounts(self):
         doc = {"version": 4, "values": {"materials": {"blurStrength": 49, "bar": {"blur": True}, "dock": {"blur": False}}}}

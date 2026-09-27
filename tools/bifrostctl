@@ -1145,10 +1145,13 @@ def install_bin_lua() -> str:
     so the generated file never carries a personal path."""
     home = Path(os.path.expanduser("~"))
     data_home = Path(os.environ.get("XDG_DATA_HOME") or home / ".local/share")
-    # Prefer the standard install path when it is this checkout (a --link
-    # install), so the file stays valid if it is later replaced by a copy.
+    # The session's shell runs from the standard install path, a copy or a
+    # --link to a checkout: whenever it exists, its bin/ is what binds must
+    # call. A checkout's own bin/ would reach no shell (bifrost-ipc finds the
+    # shell next to itself), which silently broke every IPC bind after a
+    # `bifrostctl hypr apply` run from a checkout next to a copied install.
     installed = data_home / "bifrost-shell"
-    bin_dir = installed / "bin" if installed.exists() and installed.resolve() == REPO else REPO / "bin"
+    bin_dir = installed / "bin" if (installed / "bin" / "bifrost-ipc").exists() else REPO / "bin"
     try:
         rel = bin_dir.relative_to(home)
         return f'os.getenv("HOME") .. {lua_str("/" + str(rel) + "/")}'
