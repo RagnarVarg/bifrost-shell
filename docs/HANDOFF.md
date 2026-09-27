@@ -905,3 +905,32 @@ Validation: 535 QML, 46 CLI tests including HDR/hdredid/SDR persistence and gene
 ### HDR brightness range — 2026-09-27
 - Raised the HDR desktop brightness slider maximum to 1500% (15x), with matching runtime and generated Hyprland limits. Default remains 100%.
 - Added generator coverage for 1500% and upper/lower clamping. Selftest: 536 QML, 49 CLI, 1 startup and 9 dependency tests pass; sandbox runtime still reports the known hyprctl version parse diagnostic.
+
+### Minimize: Settings, shortcuts, gestures and transition (2026-09-27, Claude)
+- **Why SUPER+M did nothing:** `install_bin_lua` used a checkout's own `bin/` unless the install *was* that checkout
+  (--link). `bifrostctl hypr apply` run from `~/Projects/bifrost-shell` next to the copied install wrote the repo's
+  `bin/` into bifrost.lua; that `bifrost-ipc` finds no shell, so **every** IPC bind/gesture silently failed.
+  Binds now always call the install's `bin/` when it exists (`0779fe0c`). Rule: in dev, never apply the production
+  config from a checkout without this fix; for nested tests use an empty `XDG_DATA_HOME` so binds call the repo's
+  bin (qs ipc -p finds instances by path across sessions — the install's bifrost-ipc would reach the real shell!).
+- **Gesture actions are a catalogue** (`hypr/keybinds.json` gestureActions → `bifrostctl gesture_actions`, `input
+  query` returns it to Settings; schema valueOptions checked equal by a test). Minimize/restore reuse the binds' ipc.
+  Hyprland refuses a specific gesture after a more general one on the same fingers ("Previous SWIPE shadows new UP")
+  and the error aborted the rest of bifrost.lua (binds!): specific directions are now registered first, each gesture
+  is pcall'd and only accepted ones are recorded as live (`8da60e2d`).
+- **Settings → Input:** Keyboard / Gestures / Mouse / Trackpad; Keyboard has "Window management" built from the
+  Shortcuts rows (KeybindGroupCard, same record/type/off/reset/conflict) (`ce378316`).
+- **Transition** (`5acd7767`): Hyprland 0.56 only fades a window moved to a hidden workspace; the sideways slide came
+  from the focus hop (workspace slide) — the hop now runs with animations off. Bifrost draws the motion
+  (Modules/WindowTransitions: WindowCapture down into the dock's edge and back), registered as
+  `Compositor.windowTransitions`; the backend moves the window with `no_anim` (set_prop, lifted by hl.timer 700 ms).
+  Minimize.js and special:bifrost-minimized unchanged.
+- Verified: nested Hyprland with a raw-protocol virtual keyboard/pointer (scratchpad vk.py/vp.py): SUPER+M/SHIFT+M,
+  re-record to SUPER+J in Settings (UI), conflict warning (SUPER+Q), Turn off, Reset to default, apply ×3 without
+  duplicate binds/gestures, transitions filmed for tiled/fullscreen/shortcut/IPC. Live session: bin path fixed,
+  binds active, configerrors empty, SUPER+M/SHIFT+M on a test window. selftest 574/0, 52 CLI tests, validate ok.
+- **Not verified:** a physical trackpad swipe (no virtual touchpad gestures), and logout/login (would end the user's
+  session). Persistence: config.json + bifrost.lua, loaded at login by the hyprland.lua BIFROST hook.
+- **App CSD minimize buttons (−):** Hyprland 0.56.2 ignores xdg_toplevel.set_minimized and emits no event for it
+  (no socket2 event, no Lua event; tested with a GTK window) — Bifrost cannot hear those clicks. Bifrost has no
+  window buttons of its own; GTK button layout here is appmenu:close.
