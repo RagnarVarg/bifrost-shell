@@ -5,7 +5,7 @@ import qs.Modules
 import qs.Modules.Bar
 import qs.Modules.Launcher
 
-// Bifrost mark; opens the launcher on this bar's screen. With
+// Bifrost launcher mark; opens the launcher on this bar's screen. With
 // launcher.placement "bar" (Top panel) the launcher is this button's bar
 // menu, grown out of the bar (MenuHost); the menu and ShellState.launcherOpen
 // follow each other, so keybinds and IPC open the same menu. Otherwise the
@@ -35,7 +35,7 @@ BarWidget {
         BIcon {
             source: "file://" + Paths.assetsDir + "/brand/bifrost-mark.svg"
             size: Theme.icon.size.lg
-            color: Theme.color.text
+            color: "#FFFFFF"
         }
     }
 
