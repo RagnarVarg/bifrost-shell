@@ -29,3 +29,10 @@ function sync(model, keys) {
         if(j<model.count)model.move(j,i,1);else model.insert(i,{key:keys[i]});
     }
 }
+
+// The windows a monitor's overview shows. selected: null = every window
+// (minimized ones included, drawn dimmed), a workspace id, or "minimized".
+// A minimized window belongs to the monitor it returns to and to no workspace.
+function visible(windows, monitor, selected) {
+    return windows.filter(w => w.monitor === monitor && (selected === null || (selected === "minimized" ? w.minimized === true : !w.minimized && w.workspaceId === selected)));
+}

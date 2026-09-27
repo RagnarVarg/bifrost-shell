@@ -43,6 +43,7 @@ import "Core/Migrations.js" as Migrations
 import "Shared/WorkspaceMap.js" as WorkspaceMap
 import "Modules/Dock/DockModel.js" as DockModel
 import "Modules/Overview/OverviewLayout.js" as OverviewLayout
+import "Compositor/Minimize.js" as Minimize
 import "Modules/Dock/DockGeometry.js" as DockGeometry
 import "Settings/KeyNames.js" as KeyNames
 import "Greeter/GreeterLogic.js" as GreeterLogic
@@ -1006,6 +1007,68 @@ ShellRoot {
             check("backend exposes monitors", Array.isArray(Compositor.monitors));
     }
 
+    // Minimize: backend-neutral state (Compositor/Minimize.js), the dock's
+    // choice and the overview's filter. No compositor actions are sent.
+    function testMinimize() {
+        for (const c of ["minimizeWindow", "restoreWindow", "minimizedWindowState"])
+            check("capability declared: " + c, typeof Compositor.capabilities[c] === "boolean");
+        if (Compositor.kind === "none")
+            check("minimize refused without support", Compositor.minimizeWindow("0x1") === false && Compositor.restoreWindow("0x1") === false);
+        const mons = [{ name: "A", focused: true, activeWorkspaceId: 1 }, { name: "B", focused: false, activeWorkspaceId: 5 }];
+        const wss = [{ id: 1, name: "1", monitor: "A", special: false }, { id: 3, name: "3", monitor: "A", special: false }, { id: 5, name: "5", monitor: "B", special: false }, { id: -99, name: "special:magic", monitor: "A", special: true }];
+        const w = (id, ws, mon, extra) => Object.assign({ id: id, appId: "app", workspaceId: ws, workspaceName: String(ws), monitor: mon, minimized: false, minimizedAt: 0 }, extra || {});
+        // Minimize remembers where each window was.
+        let store = Minimize.remember({}, w("a", 3, "A"), false, 100);
+        store = Minimize.remember(store, w("b", 5, "B"), true, 200);
+        store = Minimize.remember(store, w("c", -99, "A", { workspaceName: "special:magic" }), false, 300);
+        eq("minimize: record", store.a, { workspaceId: 3, workspaceName: "3", monitor: "A", pinned: false, at: 100 });
+        check("minimize: pin remembered", store.b.pinned === true);
+        // Restore: original workspace, also on the other monitor, also a user special one.
+        eq("restore to original workspace", Minimize.restoreTarget(store.a, wss, mons, null), { workspaceId: 3, workspaceName: "3", monitor: "A", create: false });
+        eq("restore on second monitor", Minimize.restoreTarget(store.b, wss, mons, null), { workspaceId: 5, workspaceName: "5", monitor: "B", create: false });
+        eq("restore to user's special workspace", Minimize.restoreTarget(store.c, wss, mons, null).workspaceName, "special:magic");
+        // A dropped (empty) workspace is created again on the window's monitor,
+        // or on the focused one when that monitor is gone.
+        eq("restore: workspace gone -> recreated on its monitor", Minimize.restoreTarget({ workspaceId: 7, workspaceName: "7", monitor: "B" }, wss, mons, null), { workspaceId: 7, workspaceName: "7", monitor: "B", create: true });
+        eq("restore: monitor gone -> recreated on focused monitor", Minimize.restoreTarget({ workspaceId: 9, workspaceName: "9", monitor: "Z" }, wss, mons, null), { workspaceId: 9, workspaceName: "9", monitor: "A", create: true });
+        eq("restore: named workspace gone -> recreated", Minimize.restoreTarget({ workspaceId: -1337, workspaceName: "web", monitor: "A" }, wss, mons, null).workspaceName, "web");
+        eq("restore: user special gone -> its monitor's workspace", Minimize.restoreTarget({ workspaceId: -97, workspaceName: "special:gone", monitor: "B" }, wss, mons, null), { workspaceId: 5, workspaceName: "5", monitor: "B", create: false });
+        eq("restore without record -> focused monitor", Minimize.restoreTarget(null, wss, mons, mons[1]).workspaceId, 5);
+        // State comes from the compositor (isMinimized), the monitor from the record.
+        const live = Minimize.annotate([w("a", -98, "B"), w("b", -98, "A"), w("d", 1, "A")], store, x => x.workspaceId === -98);
+        eq("minimized flags", live.map(x => x.minimized), [true, true, false]);
+        eq("minimized window listed on its return monitor", live.map(x => x.monitor), ["A", "B", "A"]);
+        eq("minimizedAt", live.map(x => x.minimizedAt), [100, 200, 0]);
+        // Closing a minimized window forgets it; a fresh record waits for the compositor.
+        eq("restored elsewhere forgotten after grace", Object.keys(Minimize.prune(store, ["a", "b"], ["a", "b", "c"], 10000, 3000, false)), ["a", "b"]);
+        eq("fresh record survives until moved", Object.keys(Minimize.prune(store, [], ["a", "b", "c"], 250, 3000, false)), ["a", "b", "c"]);
+        eq("incomplete window list keeps records (shell start)", Object.keys(Minimize.prune(store, [], [], 10000, 3000, false)), ["a", "b", "c"]);
+        eq("closed minimized window forgotten once list is complete", Object.keys(Minimize.prune(store, ["a"], ["a", "x"], 10000, 3000, true)), ["a"]);
+        eq("restored elsewhere forgotten", Object.keys(Minimize.forget(store, "a")), ["b", "c"]);
+        // Dock: focus/cycle shown windows; all minimized -> latest minimized comes back.
+        const shownAndMin = [w("x", 1, "A"), w("y", -98, "A", { minimized: true, minimizedAt: 50 }), w("z", 1, "A")];
+        eq("dock focuses a shown window", Minimize.dockActivation(shownAndMin, ""), { id: "x", restore: false });
+        eq("dock cycles shown windows only", Minimize.dockActivation(shownAndMin, "x"), { id: "z", restore: false });
+        eq("dock cycle wraps past minimized", Minimize.dockActivation(shownAndMin, "z"), { id: "x", restore: false });
+        const allMin = [w("p", -98, "A", { minimized: true, minimizedAt: 10 }), w("q", -98, "A", { minimized: true, minimizedAt: 30 })];
+        eq("dock restores latest minimized", Minimize.dockActivation(allMin, ""), { id: "q", restore: true });
+        eq("dock: closed app has nothing", Minimize.dockActivation([], ""), null);
+        const dockEntries = DockModel.build(["app"], allMin, true, id => ({ id: id }), id => ({ id: id }));
+        check("dock: minimized app still running", dockEntries.length === 1 && dockEntries[0].windows.length === 2);
+        // Overview: minimized windows only in "all" (dimmed) and "minimized", never in a workspace.
+        const ov = [w("m", -98, "A", { minimized: true }), w("n", 1, "A"), w("o", 5, "B")];
+        eq("overview all includes minimized", OverviewLayout.visible(ov, "A", null).map(x => x.id), ["m", "n"]);
+        eq("overview workspace excludes minimized", OverviewLayout.visible(ov, "A", 1).map(x => x.id), ["n"]);
+        eq("overview minimized view", OverviewLayout.visible(ov, "A", "minimized").map(x => x.id), ["m"]);
+        eq("overview per monitor", OverviewLayout.visible(ov, "B", "minimized").length, 0);
+        if (Compositor.kind === "hyprland") {
+            const b = Compositor.backend;
+            eq("hyprland selectors", [b.workspaceSelector(3, "3"), b.workspaceSelector(-99, "special:magic"), b.workspaceSelector(-1337, "web")], ["3", "special:magic", "name:web"]);
+            check("own special workspace", b.minimizedWorkspace === "special:bifrost-minimized");
+            check("minimized state reported", Compositor.windows.every(x => typeof x.minimized === "boolean"));
+        }
+    }
+
     // Async: an external edit of config.json must reach Config via the watcher.
     function testWatcher() {
         externalWriter.path = Paths.configFile;
@@ -1150,6 +1213,7 @@ ShellRoot {
             test.testPhase7();
             test.testApplyState();
             test.testCompositor();
+            test.testMinimize();
             appsWait.start();
         }
     }

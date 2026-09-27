@@ -61,10 +61,9 @@ Item {
             Apps.launch(model.app);
             return;
         }
-        // Focus the app; when it is already active, cycle its windows.
-        const ws = model.windows;
-        const cur = ws.findIndex(w => Compositor.activeWindow && w.id === Compositor.activeWindow.id);
-        Compositor.focusWindow(ws[(cur + 1) % ws.length].id);
+        // Focus the app; when it is already active, cycle its windows. All
+        // minimized: the last minimized one comes back.
+        Compositor.activateAppWindows(model.windows);
     }
 
     StateLayer {

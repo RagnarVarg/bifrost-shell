@@ -159,12 +159,33 @@ Item {
         Repeater {
             model: menu.item && menu.windows.length > 1 ? menu.windows : []
 
+            // Focusing a minimized window restores it (Compositor.focusWindow).
             delegate: MenuRow {
                 required property var modelData
 
-                icon: "windows"
-                text: modelData.title
+                icon: modelData.minimized ? "arrow-up" : "windows"
+                text: modelData.minimized ? I18n.tr("%1 (minimized)").arg(modelData.title) : modelData.title
                 onActivated: Compositor.focusWindow(modelData.id)
+            }
+        }
+
+        // Minimize / restore: the app's shown windows, or all of them back
+        // when every one is minimized.
+        MenuRow {
+            readonly property var shown: menu.windows.filter(w => !w.minimized)
+            readonly property bool restoring: menu.windows.length > 0 && shown.length === 0
+
+            visible: menu.item !== null && menu.windows.length > 0 && Compositor.supports("minimizeWindow")
+            icon: restoring ? "arrow-up" : "minus"
+            text: restoring ? (menu.windows.length > 1 ? I18n.tr("Restore all windows") : I18n.tr("Restore")) : (menu.windows.length > 1 ? I18n.tr("Minimize all windows") : I18n.tr("Minimize"))
+            onActivated: {
+                if (restoring) {
+                    for (const w of menu.windows)
+                        Compositor.restoreWindow(w.id);
+                } else {
+                    for (const w of shown)
+                        Compositor.minimizeWindow(w.id);
+                }
             }
         }
 

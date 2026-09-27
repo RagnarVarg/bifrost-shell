@@ -41,6 +41,8 @@
     { "group": "windows", "id": "maximize", "keys": "SUPER + F", "dispatch": "hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\" })", "description": "Maximize" },
     { "group": "windows", "id": "fullscreen", "keys": "SUPER + SHIFT + F", "dispatch": "hl.dsp.window.fullscreen({ mode = \"fullscreen\", action = \"toggle\" })", "description": "Fullscreen" },
     { "group": "windows", "id": "float", "keys": "SUPER + SHIFT + T", "dispatch": "hl.dsp.window.float({ action = \"toggle\" })", "description": "Float/tile" },
+    { "group": "windows", "id": "minimize", "keys": "SUPER + M", "ipc": "wm minimizeActive", "description": "Minimize window" },
+    { "group": "windows", "id": "restore-minimized", "keys": "SUPER + SHIFT + M", "ipc": "wm restoreLast", "description": "Restore last minimized window" },
     { "group": "windows", "id": "focus-left", "keys": "SUPER + left", "dispatch": "hl.dsp.focus({ direction = \"l\" })", "description": "Focus left" },
     { "group": "windows", "id": "focus-right", "keys": "SUPER + right", "dispatch": "hl.dsp.focus({ direction = \"r\" })", "description": "Focus right" },
     { "group": "windows", "id": "focus-up", "keys": "SUPER + up", "dispatch": "hl.dsp.focus({ direction = \"u\" })", "description": "Focus up" },

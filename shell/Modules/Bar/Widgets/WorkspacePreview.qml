@@ -31,7 +31,7 @@ BarMenu {
     readonly property var wins: workspace ? Compositor.windows.filter(w => w.workspaceId === workspace.id) : []
     readonly property bool live: Config.values.workspaces.previewLive !== false && Compositor.supports("windowCapture")
     // Every window on this monitor, for the tiles (see above).
-    readonly property var monitorWins: Compositor.windows.filter(w => w.monitor === monitorName)
+    readonly property var monitorWins: Compositor.windows.filter(w => w.monitor === monitorName && !w.minimized)
     readonly property var map: WorkspaceMap.layout(mon, monitorWins, Theme.layout.workspacePreviewWidth)
     readonly property bool activeWorkspace: workspace && workspace.active === true
     readonly property string workspaceKey: workspace ? String(workspace.id) : ""

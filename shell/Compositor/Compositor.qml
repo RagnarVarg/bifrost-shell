@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs.Compat
+import "Minimize.js" as Min
 
 // The only compositor API that bar, dock, launcher, Settings etc. may use.
 // Picks a backend at startup; everything compositor-specific (hyprctl, Niri
@@ -154,15 +155,50 @@ Singleton {
         return next !== current ? focusWorkspace(next) : false;
     }
 
+    // Focusing a minimized window restores it (focusing it where it is
+    // hidden would reveal the compositor's hiding place instead).
     function focusWindow(windowId: string): bool {
+        if (isMinimized(windowId))
+            return restoreWindow(windowId);
         return backend.focusWindow(windowId);
+    }
+
+    function isMinimized(windowId: string): bool {
+        const w = backend ? backend.findWindow(windowId) : null;
+        return !!w && w.minimized === true;
+    }
+
+    function minimizeWindow(windowId: string): bool {
+        return backend && supports("minimizeWindow") ? backend.minimizeWindow(windowId) : false;
+    }
+
+    // Back where it was (or to `workspaceId`), focused.
+    function restoreWindow(windowId: string, workspaceId: var): bool {
+        return backend && supports("restoreWindow") ? backend.restoreWindow(windowId, workspaceId === undefined ? null : workspaceId) : false;
+    }
+
+    // An app's windows, activated from the dock: focus (cycling while the
+    // app is focused) its shown windows, or restore the most recently
+    // minimized one when all are minimized (Minimize.dockActivation).
+    function activateAppWindows(appWindows: var): bool {
+        const a = Min.dockActivation(appWindows || [], activeWindow ? activeWindow.id : "");
+        if (!a)
+            return false;
+        return a.restore ? restoreWindow(a.id) : focusWindow(a.id);
+    }
+
+    function toggleMinimized(windowId: string): bool {
+        return isMinimized(windowId) ? restoreWindow(windowId) : minimizeWindow(windowId);
     }
 
     function focusProcessWindow(pid: int): bool {
         return backend.focusProcessWindow(pid);
     }
 
+    // A minimized window moved to a workspace is restored there.
     function moveWindowToWorkspace(windowId: string, workspaceId: var): bool {
+        if (isMinimized(windowId))
+            return restoreWindow(windowId, workspaceId);
         return backend.moveWindowToWorkspace(windowId, workspaceId);
     }
 

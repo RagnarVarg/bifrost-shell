@@ -170,11 +170,12 @@ Resten av looken (ton, toppkant-highlight, inre/yttre kant, korn, skugga) görs 
 
 ```
 workspace { id, name, index, monitor, active, focused, urgent, windowCount, special }
-window    { id, appId, title, workspaceId, monitor, focused, floating, fullscreen }
+window    { id, appId, title, workspaceId, workspaceName, monitor, focused, floating, fullscreen,
+            minimized, minimizedAt }
 monitor   { name, x, y, width, height, scale, refreshRate, focused, activeWorkspaceId }
 ```
 Åtgärder: `focusWorkspace, focusWindow, moveWindowToWorkspace, closeWindow, setFullscreen, setFloating,
-ensureSurfaceEffects`. Händelser: `event(name, data)` med normaliserade namn (`workspace`, `focus`,
+minimizeWindow, restoreWindow, ensureSurfaceEffects`. Händelser: `event(name, data)` med normaliserade namn (`workspace`, `focus`,
 `window-opened`, `window-closed`, `window-moved`, `window-changed`, `monitors`, `config-reloaded`).
 **Capabilities** (`Compositor.supports("floating")` …) används av UI och av schemats `requires` — aldrig compositornamn.
 
@@ -182,6 +183,13 @@ ensureSurfaceEffects`. Händelser: `event(name, data)` med normaliserade namn (`
   Väljer Lua- eller legacy-dispatch via `Hyprland.usingLua`.
 - `NiriBackend.qml`: stub (detekteras, alla capabilities false). Implementeras via `niri msg --json` + event-stream.
 - `CompositorBackend.qml`: kontraktet + no-op-standarder (används också när ingen compositor känns igen).
+- **Minimera** (capabilities `minimizeWindow`, `restoreWindow`, `minimizedWindowState`): backenden döljer
+  fönstret och rapporterar `minimized` ur compositorns state (aldrig ur geometri). Allt compositor-neutralt
+  – var fönstret ska tillbaka, städning av stängda, Dockans val, Overviews filter – ligger i
+  `Compositor/Minimize.js` (testat i selftest). Fasaden: `focusWindow` och `moveWindowToWorkspace` på ett
+  minimerat fönster återställer det; `activateAppWindows` är Dockans klick. Hyprland: Bifrost-ägt
+  `special:bifrost-minimized`, återställningsinfo i `$XDG_RUNTIME_DIR/bifrost/minimized-<instans>.json`.
+  En Niri-backend behöver bara implementera `minimizeWindow/restoreWindow` och sätta `minimized`.
 
 Hyprland-inställningar (`schema/hyprland.json`, `requires.compositor = ["hyprland"]`) ligger under
 Avancerat, skrivs i fas 8 bara till `~/.config/bifrost/hypr/bifrost.lua` och appliceras bara i production.

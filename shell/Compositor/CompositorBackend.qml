@@ -7,8 +7,10 @@ import QtQuick
 //
 // Normalised shapes (plain JS objects):
 //   workspace { id, name, index, monitor, active, focused, urgent, windowCount, special }
-//   window    { id, appId, title, workspaceId, monitor, focused, floating, fullscreen,
-//               x, y, width, height }   (global layout coordinates)
+//   window    { id, appId, title, workspaceId, workspaceName, monitor, focused, floating,
+//               fullscreen, minimized, minimizedAt, x, y, width, height }
+//               (global layout coordinates). A minimized window is still open and
+//               listed; `monitor` is the one it returns to (Minimize.js).
 //   monitor   { name, x, y, width, height, scale, refreshRate, focused, activeWorkspaceId }
 QtObject {
     id: backend
@@ -39,7 +41,12 @@ QtObject {
             cursorPosition: false,
             outputConfig: false,
             inputConfig: false,
-            windowCapture: false
+            windowCapture: false,
+            // minimizeWindow/restoreWindow work, and windows report `minimized`
+            // from compositor state (not geometry).
+            minimizeWindow: false,
+            restoreWindow: false,
+            minimizedWindowState: false
         })
 
     property var workspaces: []
@@ -56,6 +63,17 @@ QtObject {
     // Normalised compositor events, e.g. "workspace", "window-opened",
     // "window-closed", "focus", "monitors", "config-reloaded".
     signal event(string name, var data)
+
+    // The normalised window with this id (backends may accept more than one
+    // spelling of an id, e.g. Hyprland addresses with or without "0x").
+    function findWindow(windowId) {
+        const key = normaliseId(windowId);
+        return windows.find(w => normaliseId(w.id) === key) || null;
+    }
+
+    function normaliseId(windowId) {
+        return String(windowId);
+    }
 
     function unsupported(what) {
         console.warn("[bifrost] " + kind + ": " + what + " is not supported");
@@ -82,6 +100,18 @@ QtObject {
 
     function closeWindow(windowId) {
         return unsupported("closeWindow");
+    }
+
+    // Hides a window without closing it; it stays in `windows` with
+    // minimized: true and must not take focus.
+    function minimizeWindow(windowId) {
+        return unsupported("minimizeWindow");
+    }
+
+    // Brings a minimized window back (to `workspaceId` if given, else where
+    // it was) and focuses it.
+    function restoreWindow(windowId, workspaceId) {
+        return unsupported("restoreWindow");
     }
 
     // mode: "fullscreen" | "maximized"; action: "toggle" | "set" | "unset"

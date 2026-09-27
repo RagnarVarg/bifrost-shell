@@ -53,7 +53,11 @@ Scope {
                 out.push({id:next,name:String(next)+" +",active:false,monitor:""});
                 return out.sort((a,b)=>a.id-b.id);
             }
-            readonly property var wins: Compositor.windows.filter(w=>w.monitor===window.modelData.name && (selected===null || w.workspaceId===selected))
+            // selected: null = every window (minimized ones dimmed), a
+            // workspace id, or "minimized". A minimized window is listed on
+            // the monitor it returns to; clicking it restores it.
+            readonly property var wins: Layout.visible(Compositor.windows,window.modelData.name,selected)
+            readonly property int minimizedCount: Compositor.windows.filter(w=>w.minimized===true && w.monitor===window.modelData.name).length
             readonly property var boxes: Layout.layout(wins,area.width,area.height,Theme.space.xl,Theme.control.height.md)
             ListModel { id: tiles }
             onWinsChanged: if(!dragged)Layout.sync(tiles,wins.map(w=>String(w.id)))
@@ -90,6 +94,18 @@ Scope {
                     Row {
                         id:workspaceRow
                         spacing:Theme.space.sm
+                        // First, so it is seen however many workspaces follow.
+                        Rectangle {
+                            visible:window.minimizedCount>0
+                            width:minimizedLabel.implicitWidth+Theme.space.xl*2
+                            height:Theme.control.height.lg
+                            radius:Theme.radius.md
+                            color:Theme.color.controlFill
+                            border.width:window.selected==="minimized" ? Theme.border.focus : Theme.border.hairline
+                            border.color:window.selected==="minimized" ? Theme.color.accent : Theme.color.hairline
+                            BText {id:minimizedLabel;anchors.centerIn:parent;role:"label";tone:"muted";text:I18n.tr("Minimized · %1").arg(window.minimizedCount)}
+                            MouseArea {anchors.fill:parent;onClicked:window.selected=window.selected==="minimized" ? null : "minimized"}
+                        }
                         Repeater {
                             id:workspaceRepeater
                             model:window.workspaces
@@ -111,7 +127,7 @@ Scope {
             BText {
                 id:heading
                 x:Theme.space.xl;y:strip.y+strip.height+Theme.space.lg
-                text:window.selected===null ? I18n.tr("Window overview") : I18n.tr("Workspace %1").arg(window.selected)
+                text:window.selected===null ? I18n.tr("Window overview") : window.selected==="minimized" ? I18n.tr("Minimized windows") : I18n.tr("Workspace %1").arg(window.selected)
                 role:"heading"
             }
             Item {
@@ -127,6 +143,8 @@ Scope {
                         readonly property var win:window.wins.find(w=>String(w.id)===key)
                         readonly property var box:window.boxes.find(b=>b.key===key) || ({x:0,y:0,width:0,height:0})
                         readonly property var app:win ? Apps.forAppId(win.appId) : null
+                        // Minimized: picture and title dimmed, a label on top.
+                        readonly property real dim:win && win.minimized ? Theme.opacity.disabled : 1
                         property real offsetX:0
                         property real offsetY:0
                         x:box.x+offsetX;y:box.y+offsetY
@@ -137,9 +155,25 @@ Scope {
                             anchors.fill:parent
                             material:Theme.materials.panel
                             Rectangle {anchors.fill:parent;color:"transparent";radius:Theme.radius.md;border.width:mouse.containsMouse ? Theme.border.focus : 0;border.color:Theme.color.accent}
-                            WindowCapture {id:capture;width:parent.width;height:tile.box.height;source:tile.win ? Compositor.captureSource(tile.win.id) : null;live:overview.open && tile.visible}
+                            WindowCapture {id:capture;opacity:tile.dim;width:parent.width;height:tile.box.height;source:tile.win ? Compositor.captureSource(tile.win.id) : null;live:overview.open && tile.visible}
                             Image {anchors.centerIn:capture;width:Theme.icon.size.xl;height:width;source:tile.app ? tile.app.icon : "";visible:!capture.hasContent}
+                            Rectangle {
+                                visible:!!tile.win && tile.win.minimized===true
+                                anchors.centerIn:capture
+                                width:minimizedBadge.implicitWidth+Theme.space.lg*2
+                                height:Theme.control.height.md
+                                radius:height/2
+                                color:Theme.color.controlFill
+                                Row {
+                                    id:minimizedBadge
+                                    anchors.centerIn:parent
+                                    spacing:Theme.space.sm
+                                    BIcon {anchors.verticalCenter:parent.verticalCenter;name:"arrow-up";size:Theme.icon.size.sm;color:Theme.color.text}
+                                    BText {anchors.verticalCenter:parent.verticalCenter;role:"label";text:I18n.tr("Minimized · click to restore")}
+                                }
+                            }
                             Row {
+                                opacity:tile.dim
                                 x:Theme.space.sm;y:tile.box.height;spacing:Theme.space.sm
                                 height:Theme.control.height.md
                                 Image {anchors.verticalCenter:parent.verticalCenter;width:Theme.icon.size.sm;height:width;source:tile.app ? tile.app.icon : ""}

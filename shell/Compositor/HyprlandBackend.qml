@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Hyprland
 import qs.Compat
 import "../Compat/Version.js" as V
+import "Minimize.js" as Min
 
 // Hyprland backend. The only file in Bifrost that imports Quickshell.Hyprland,
 // builds dispatcher syntax or calls hyprctl. Version and config-language
@@ -54,8 +55,149 @@ CompositorBackend {
             exitSession: true,
             cursorPosition: true,
             outputConfig: true,
-            windowCapture: true
+            windowCapture: true,
+            minimizeWindow: true,
+            restoreWindow: true,
+            minimizedWindowState: true
         })
+
+    // ── Minimize ────────────────────────────────────────────────────────
+    // Hyprland has no minimized state (a client's xdg minimize request is
+    // ignored). A minimized window is moved, silently, to a special
+    // workspace only Bifrost uses; being on it *is* the minimized state, so
+    // it survives shell restarts and is never guessed from geometry. Where it
+    // came from is remembered (Minimize.js) in a runtime file per Hyprland
+    // instance. Pinned windows can't be moved, so the pin is lifted and put
+    // back; fullscreen/maximized state travels with the window. Each action
+    // is one `hyprctl eval`, so its steps run in order (a focus arriving
+    // before the move back would show the special workspace).
+    readonly property string minimizedWorkspace: "special:bifrost-minimized"
+    property var minimizedStore: ({})
+    property bool storeLoaded: false
+    readonly property int minimizeGraceMs: 3000
+
+    function minimizeWindow(windowId) {
+        const w = findWindow(windowId);
+        if (!w)
+            return false;
+        if (w.minimized)
+            return true;
+        windowId = w.id;
+        const t = Hyprland.toplevels.values.find(x => x.address === windowId);
+        const pinned = !!(t && t.lastIpcObject && t.lastIpcObject.pinned);
+        setMinimizedStore(Min.remember(minimizedStore, w, pinned, Date.now()));
+        const steps = [];
+        if (pinned)
+            steps.push(["hl.dsp.window.pin({ action = \"unset\", window = " + lua(target(windowId)) + " })", "pin " + target(windowId)]);
+        steps.push(["hl.dsp.window.move({ workspace = " + lua(minimizedWorkspace) + ", follow = false, window = " + lua(target(windowId)) + " })",
+                "movetoworkspacesilent " + minimizedWorkspace + "," + target(windowId)]);
+        steps.push([releaseFocus(windowId, workspaceSelector(w.workspaceId, w.workspaceName)), "", true]);
+        return runSteps(steps);
+    }
+
+    // Lua run after the move: Hyprland leaves the keyboard on the hidden
+    // window when it was focused, so input would go to it. Focus the most
+    // recent other window on its workspace; on a now empty workspace, step
+    // to a scratch workspace and back, which leaves nothing focused (there
+    // is no dispatcher for that). Not for special workspaces (toggled views).
+    function releaseFocus(windowId, fromSelector) {
+        const addr = lua("0x" + normaliseId(windowId));
+        const from = lua(fromSelector);
+        return "local a = hl.get_active_window(); if a and a.address == " + addr + " then " +
+            "local best = nil; for _, x in ipairs(hl.get_workspace_windows(" + from + ") or {}) do " +
+            "if x.address ~= " + addr + " and x.mapped and not x.hidden and (best == nil or x.focus_history_id < best.focus_history_id) then best = x end end; " +
+            "if best then hl.dispatch(hl.dsp.focus({ window = \"address:\" .. best.address })) " +
+            (fromSelector.startsWith("special:") ? "" : "else hl.dispatch(hl.dsp.focus({ workspace = \"name:bifrost-refocus\" })); hl.dispatch(hl.dsp.focus({ workspace = " + from + " })) ") +
+            "end end";
+    }
+
+    function restoreWindow(windowId, workspaceId) {
+        const w = findWindow(windowId);
+        if (!w)
+            return false;
+        windowId = w.id;
+        const rec = minimizedStore[windowId] || null;
+        let to = null;
+        if (workspaceId !== undefined && workspaceId !== null) {
+            const ws = workspaces.find(x => x.id === workspaceId);
+            to = { workspaceId: workspaceId, workspaceName: ws ? ws.name : String(workspaceId) };
+        } else if (w.minimized) {
+            to = Min.restoreTarget(rec, workspaces, monitors, focusedMonitor);
+        }
+        if (!w.minimized)
+            return to ? moveWindowToWorkspace(windowId, to.workspaceId) : focusWindow(windowId);
+        if (!to)
+            return false;
+        const sel = workspaceSelector(to.workspaceId, to.workspaceName);
+        const steps = [];
+        // A workspace Hyprland dropped is created on the focused monitor:
+        // focus the window's monitor first (the window takes focus anyway).
+        if (to.create && to.monitor)
+            steps.push(["hl.dsp.focus({ monitor = " + lua(to.monitor) + " })", "focusmonitor " + to.monitor]);
+        steps.push(["hl.dsp.window.move({ workspace = " + lua(sel) + ", follow = false, window = " + lua(target(windowId)) + " })",
+                "movetoworkspacesilent " + sel + "," + target(windowId)]);
+        if (rec && rec.pinned)
+            steps.push(["hl.dsp.window.pin({ action = \"set\", window = " + lua(target(windowId)) + " })", "pin " + target(windowId)]);
+        steps.push(["hl.dsp.focus({ window = " + lua(target(windowId)) + " })", "focuswindow " + target(windowId)]);
+        setMinimizedStore(Min.forget(minimizedStore, windowId));
+        return runSteps(steps);
+    }
+
+    // Hyprland workspace selector: special and named workspaces by name,
+    // numbered ones by id.
+    function workspaceSelector(id, name) {
+        if (name && name.startsWith("special:"))
+            return name;
+        if (name && name !== String(id))
+            return "name:" + name;
+        return String(id);
+    }
+
+    // [[lua, legacy, raw], …] in order: one eval in Lua mode (a raw step is
+    // plain Lua, else a dispatcher), else the legacy dispatches.
+    function runSteps(steps) {
+        if (usingLua && hasEval) {
+            Exec.run(["hyprctl", "eval", steps.map(x => x[2] ? x[0] : "hl.dispatch(" + x[0] + ")").join("; ")], (code, out, err) => {
+                if (code !== 0 || /error/i.test(out + err))
+                    console.error("[bifrost] window action failed:", (out + err).trim());
+                backend.refreshTimer.restart();
+            }, 5000);
+            return true;
+        }
+        if (usingLua)
+            return unsupported("minimize without hyprctl eval");
+        for (const x of steps)
+            if (x[1])
+                Hyprland.dispatch(x[1]);
+        refreshTimer.restart();
+        return true;
+    }
+
+    function setMinimizedStore(store) {
+        if (store === minimizedStore || !storeLoaded)
+            return;
+        minimizedStore = store;
+        if (storeFile.path)
+            storeFile.write(JSON.stringify(store));
+    }
+
+    // Once the toplevel list is complete after a start, forget windows that
+    // closed while no shell was watching.
+    property Timer storeSweep: Timer {
+        interval: 5000
+        running: backend.storeLoaded && Hyprland.toplevels.values.length > 0
+        onTriggered: {
+            const wins = backend.windows;
+            if (wins.some(w => w.workspaceName === ""))
+                return restart();
+            backend.setMinimizedStore(Min.prune(backend.minimizedStore, wins.filter(w => w.minimized).map(w => w.id), wins.map(w => w.id), Date.now(), backend.minimizeGraceMs, true));
+        }
+    }
+
+    property WatchedFile storeFile: WatchedFile {
+        watch: false
+        path: Platform.env("XDG_RUNTIME_DIR") && Platform.env("HYPRLAND_INSTANCE_SIGNATURE") ? Platform.env("XDG_RUNTIME_DIR") + "/bifrost/minimized-" + Platform.env("HYPRLAND_INSTANCE_SIGNATURE") + ".json" : ""
+    }
 
     // Hyprland maps its windows to Wayland toplevels (hyprland-toplevel-mapping),
     // which Quickshell's screencopy can capture, also on hidden workspaces.
@@ -275,6 +417,10 @@ CompositorBackend {
     }
 
     // ── Internals ───────────────────────────────────────────────────────
+    function normaliseId(windowId) {
+        return String(windowId).replace(/^0x/, "");
+    }
+
     function target(windowId) {
         return "address:" + (String(windowId).startsWith("0x") ? windowId : "0x" + windowId);
     }
@@ -369,6 +515,7 @@ CompositorBackend {
                 title: t.title,
                 pid: ipc.pid || 0,
                 workspaceId: t.workspace ? t.workspace.id : null,
+                workspaceName: t.workspace ? t.workspace.name : ((ipc.workspace || {}).name || ""),
                 monitor: t.monitor ? t.monitor.name : "",
                 focused: t.activated,
                 floating: ipc.floating === true,
@@ -379,8 +526,12 @@ CompositorBackend {
                 height: ipc.size ? ipc.size[1] : 0
             };
         });
+        const minimizedIds = wins.filter(w => w.workspaceName === minimizedWorkspace).map(w => w.id);
+        // Windows whose workspace isn't known yet (right after a start) can't
+        // be judged.
+        setMinimizedStore(Min.prune(minimizedStore, minimizedIds, wins.filter(w => w.workspaceName !== "").map(w => w.id), Date.now(), minimizeGraceMs, false));
         workspaces = ws;
-        windows = wins;
+        windows = Min.annotate(wins, minimizedStore, w => w.workspaceName === minimizedWorkspace);
         monitors = mons;
         activeWorkspace = ws.find(w => w.focused) || null;
         activeWindow = wins.find(w => w.focused) || null;
@@ -473,6 +624,8 @@ CompositorBackend {
             const name = backend.eventMap[event.name];
             if (!name)
                 return;
+            if (event.name === "closewindow")
+                backend.setMinimizedStore(Min.forget(backend.minimizedStore, backend.normaliseId(String(event.data).split(",")[0])));
             if (name === "config-reloaded")
                 for (const prefix in backend.surfaceEffects)
                     backend.applySurfaceEffects(prefix, true);
@@ -482,6 +635,14 @@ CompositorBackend {
     }
 
     Component.onCompleted: {
+        if (storeFile.path) {
+            try {
+                minimizedStore = JSON.parse(storeFile.readNow() || "{}") || {};
+            } catch (e) {
+                minimizedStore = {};
+            }
+        }
+        storeLoaded = true;
         Exec.run(["hyprctl", "version", "-j"], (exitCode, out) => {
             try {
                 const info = JSON.parse(out);

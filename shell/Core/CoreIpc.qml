@@ -40,7 +40,8 @@ IpcHandler {
             activeWindow: Compositor.activeWindow,
             monitors: Compositor.monitors,
             workspaces: Compositor.workspaces,
-            windowCount: Compositor.windows.length
+            windowCount: Compositor.windows.length,
+            windows: Compositor.windows.map(w => ({ id: w.id, appId: w.appId, workspaceId: w.workspaceId, monitor: w.monitor, focused: w.focused, minimized: w.minimized === true, minimizedAt: w.minimizedAt || 0 }))
         });
     }
 

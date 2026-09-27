@@ -978,5 +978,15 @@
   "Linked to All surfaces; changing it unlinks this surface": "Länkad till Alla ytor; ändrar du den avlänkas ytan",
   "Linked: this surface uses All surfaces for every property. Changing a property unlinks it; switch Linked back on to make it follow All surfaces again.": "Länkad: den här ytan använder Alla ytor för varje egenskap. Ändrar du en egenskap avlänkas den; slå på Länkad igen så följer den Alla ytor igen.",
   "Unlinked surfaces": "Avlänkade ytor",
-  "Surfaces that use their own values although Link all surfaces is on. Editing a linked surface adds it; its Linked switch removes it again": "Ytor som använder sina egna värden fast Länka alla ytor är på. Ändrar du en länkad yta läggs den till; dess Länkad-reglage tar bort den igen"
+  "Surfaces that use their own values although Link all surfaces is on. Editing a linked surface adds it; its Linked switch removes it again": "Ytor som använder sina egna värden fast Länka alla ytor är på. Ändrar du en länkad yta läggs den till; dess Länkad-reglage tar bort den igen",
+  "%1 (minimized)": "%1 (minimerat)",
+  "Minimize": "Minimera",
+  "Restore": "Återställ",
+  "Minimize all windows": "Minimera alla fönster",
+  "Restore all windows": "Återställ alla fönster",
+  "Minimized · %1": "Minimerade · %1",
+  "Minimized windows": "Minimerade fönster",
+  "Minimized · click to restore": "Minimerat · klicka för att återställa",
+  "Minimize window": "Minimera fönster",
+  "Restore last minimized window": "Återställ senast minimerade fönster"
 }

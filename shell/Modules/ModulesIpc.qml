@@ -163,6 +163,24 @@ Scope {
         function floating(id: string): bool {
             return Compositor.setFloating(id, "toggle");
         }
+
+        function minimize(id: string): bool {
+            return Compositor.minimizeWindow(id);
+        }
+
+        function restore(id: string): bool {
+            return Compositor.restoreWindow(id);
+        }
+
+        // Keybinds: the focused window, and the most recently minimized one.
+        function minimizeActive(): bool {
+            return Compositor.activeWindow !== null && Compositor.minimizeWindow(Compositor.activeWindow.id);
+        }
+
+        function restoreLast(): bool {
+            const last = Compositor.windows.filter(w => w.minimized).sort((a, b) => b.minimizedAt - a.minimizedAt)[0];
+            return !!last && Compositor.restoreWindow(last.id);
+        }
     }
 
     IpcHandler {
