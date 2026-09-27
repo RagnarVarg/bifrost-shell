@@ -1,5 +1,9 @@
 # Bifrost Shell
 
+<p align="center">
+  <img src="assets/brand/bifrost-logo.svg" alt="Bifrost logo" width="180">
+</p>
+
 A custom Hyprland shell built with Quickshell, featuring a top bar, dock, launcher,
 window overview, settings, notifications, lock screen, networking, Bluetooth,
 audio, brightness, power controls, screenshots, and an optional login screen.
