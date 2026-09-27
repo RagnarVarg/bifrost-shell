@@ -26,7 +26,11 @@ def run(args):
         return 1, ''
 
 def fields():
-    return json.loads((ROOT/'schema/input.json').read_text())['settings'][0]['deviceFields']
+    schema = json.loads((ROOT/'schema/input.json').read_text())
+    setting = next((s for s in schema.get('settings', []) if s.get('key') == 'input.devices'), None)
+    if not setting or 'deviceFields' not in setting:
+        raise KeyError("input.devices.deviceFields")
+    return setting['deviceFields']
 
 def json_stream(text):
     decoder = json.JSONDecoder()
