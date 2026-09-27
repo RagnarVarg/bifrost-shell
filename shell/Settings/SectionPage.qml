@@ -12,7 +12,9 @@ Flickable {
 
     property string sectionId: ""
     readonly property var section: Schema.section(sectionId)
-    readonly property var keys: section ? section.settings.map(d => d.key).filter(k => Schema.isSupported(k)) : []
+    // Rows marked hideUnlessMet are left out (not just dimmed) while their
+    // dependsOnValue doesn't hold, e.g. per-part glass while it is linked.
+    readonly property var keys: section ? section.settings.filter(d => Schema.isSupported(d.key) && (!d.hideUnlessMet || Object.keys(d.dependsOnValue || {}).every(k => Array.isArray(d.dependsOnValue[k]) ? d.dependsOnValue[k].indexOf(Config.get(k)) >= 0 : Config.get(k) === d.dependsOnValue[k]))).map(d => d.key) : []
     readonly property var groups: {
         const out = [];
         for (const k of keys) {

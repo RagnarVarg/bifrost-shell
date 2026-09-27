@@ -60,30 +60,22 @@ PanelWindow {
         return m;
     }
     readonly property var panelMaterial: material
-    // Bubbles and islands (bar.boxes.*: colour per light/dark mode,
-    // transparency). Unset, they are the bar glass without a panel, and a
+    // Bubbles and islands: the Widgets glass (Glass & transparency). Unless
+    // it has its own values they are the bar glass without a panel, and a
     // lighter glass within glass without their own shadow on a panel.
     readonly property var boxes: cfg.boxes || ({})
     readonly property var shapeMaterial: {
-        const m = Object.assign({}, material, { radius: boxes.round === true ? shapeHeight / 2 : Math.min(material.radius, barHeight / 2) });
-        if (panel) {
-            m.fill = Qt.alpha(material.tint, material.opacity * 0.45);
+        const w = Theme.materials.widgets || material;
+        const m = Object.assign({}, w, { radius: boxes.round === true ? shapeHeight / 2 : Math.min(w.radius, barHeight / 2) });
+        if (panel && !w.custom) {
+            m.fill = Qt.alpha(w.tint, w.opacity * 0.45);
             m.elevation = { blur: 0, y: 0, spread: 0, opacity: 0 };
-            m.depth = material.depth * 0.5;
+            m.depth = w.depth * 0.5;
             m.density = 0;
         } else if (bubbles) {
             // Neighbouring bubbles are close: a short, centred shadow keeps
             // the gaps between them clean.
-            m.elevation = { blur: (material.elevation.blur || 0) * 0.5, y: 0, spread: 0, opacity: (material.elevation.opacity || 0) * 0.6 };
-        }
-        const tint = (boxes.tint || {})[Theme.variant];
-        const custom = typeof tint === "string" && /^#[0-9a-fA-F]{6}$/.test(tint);
-        if (custom)
-            m.tint = tint;
-        if (typeof boxes.transparency === "number" || custom) {
-            const opacity = typeof boxes.transparency === "number" ? 1 - Math.max(0, Math.min(100, boxes.transparency)) / 100 : material.opacity;
-            m.opacity = opacity;
-            m.fill = Qt.alpha(m.tint, opacity);
+            m.elevation = { blur: (w.elevation.blur || 0) * 0.5, y: 0, spread: 0, opacity: (w.elevation.opacity || 0) * 0.6 };
         }
         return m;
     }

@@ -2,7 +2,7 @@
   "section": "materials",
   "label": "Glass & transparency",
   "icon": "layers",
-  "description": "One glass for every Bifrost surface: the bar, dock, menus, launcher, control center, notifications, OSD and Settings. Application windows are not affected.",
+  "description": "The glass of every Bifrost surface. With Same glass everywhere on, every part uses the values under All; switch it off to give the top bar, widgets, panels, control center and Bifrost windows their own. Application windows always have their own.",
   "settings": [
     {
       "key": "materials.transparency",
@@ -15,7 +15,8 @@
       "label": "Transparency",
       "description": "0 % = solid, 100 % = fully clear (only the border and blur remain). Standard = the theme's glass, tuned per surface and for light and dark",
       "nullLabel": "Standard",
-      "inherit": "materials.panel.transparency"
+      "inherit": "materials.panel.transparency",
+      "group": "all"
     },
     {
       "key": "materials.blur",
@@ -29,7 +30,8 @@
       "scope": "hyprland",
       "requires": {
         "capability": "surfaceBlur"
-      }
+      },
+      "group": "all"
     },
     {
       "key": "materials.tint.light",
@@ -39,7 +41,8 @@
       "label": "Tint (light mode)",
       "description": "Colour of the glass in light mode. Empty = the theme's colour",
       "nullLabel": "Theme",
-      "inherit": "materials.panel.tint"
+      "inherit": "materials.panel.tint",
+      "group": "all"
     },
     {
       "key": "materials.tint.dark",
@@ -49,14 +52,449 @@
       "label": "Tint (dark mode)",
       "description": "Colour of the glass in dark mode. Empty = the theme's colour",
       "nullLabel": "Theme",
-      "inherit": "materials.panel.tint"
+      "inherit": "materials.panel.tint",
+      "group": "all"
     },
     {
       "key": "materials.border",
       "type": "bool",
       "default": true,
       "label": "Border",
-      "description": "A thin outline around the glass"
+      "description": "A thin outline around the glass",
+      "group": "all"
+    },
+    {
+      "key": "materials.linked",
+      "type": "bool",
+      "default": true,
+      "label": "Same glass everywhere",
+      "description": "On: every part uses the values above. Off: each part below can have its own; empty = the values above",
+      "group": "all",
+      "scope": "hyprland"
+    },
+    {
+      "key": "materials.bar.transparency",
+      "type": "int",
+      "default": null,
+      "nullable": true,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "label": "Transparency",
+      "description": "For the top bar and its frame. Empty = the value under All",
+      "group": "bar",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.bar.transparency"
+    },
+    {
+      "key": "materials.bar.blur",
+      "type": "bool",
+      "default": null,
+      "nullable": true,
+      "label": "Background blur",
+      "description": "Blur behind the top bar and its frame (strength: under All). Empty = like All",
+      "group": "bar",
+      "nullLabel": "All",
+      "scope": "hyprland",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "requires": {
+        "capability": "surfaceBlur"
+      },
+      "inherit": "materials.bar.blur"
+    },
+    {
+      "key": "materials.bar.tint.light",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Colour (light mode)",
+      "description": "For the top bar and its frame in light mode. Empty = the colour under All",
+      "group": "bar",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.bar.tint"
+    },
+    {
+      "key": "materials.bar.tint.dark",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Colour (dark mode)",
+      "description": "For the top bar and its frame in dark mode. Empty = the colour under All",
+      "group": "bar",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.bar.tint"
+    },
+    {
+      "key": "materials.widgets.transparency",
+      "type": "int",
+      "default": null,
+      "nullable": true,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "label": "Transparency",
+      "description": "For the Boxed and Grouped widget boxes. Empty = the value under All",
+      "group": "widgets",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.widgets.transparency"
+    },
+    {
+      "key": "materials.widgets.blur",
+      "type": "bool",
+      "default": null,
+      "nullable": true,
+      "label": "Background blur",
+      "description": "Blur behind the Boxed and Grouped widget boxes (strength: under All). Empty = like All",
+      "group": "widgets",
+      "nullLabel": "All",
+      "scope": "hyprland",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "requires": {
+        "capability": "surfaceBlur"
+      },
+      "inherit": "materials.widgets.blur"
+    },
+    {
+      "key": "materials.widgets.tint.light",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Colour (light mode)",
+      "description": "For the Boxed and Grouped widget boxes in light mode. Empty = the colour under All",
+      "group": "widgets",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.widgets.tint"
+    },
+    {
+      "key": "materials.widgets.tint.dark",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Colour (dark mode)",
+      "description": "For the Boxed and Grouped widget boxes in dark mode. Empty = the colour under All",
+      "group": "widgets",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.widgets.tint"
+    },
+    {
+      "key": "materials.panels.transparency",
+      "type": "int",
+      "default": null,
+      "nullable": true,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "label": "Transparency",
+      "description": "For the dock, launcher, notifications, OSD and menus. Empty = the value under All",
+      "group": "panels",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.panel.transparency"
+    },
+    {
+      "key": "materials.panels.blur",
+      "type": "bool",
+      "default": null,
+      "nullable": true,
+      "label": "Background blur",
+      "description": "Blur behind the dock, launcher, notifications, OSD and menus (strength: under All). Empty = like All",
+      "group": "panels",
+      "nullLabel": "All",
+      "scope": "hyprland",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "requires": {
+        "capability": "surfaceBlur"
+      },
+      "inherit": "materials.panel.blur"
+    },
+    {
+      "key": "materials.panels.tint.light",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Colour (light mode)",
+      "description": "For the dock, launcher, notifications, OSD and menus in light mode. Empty = the colour under All",
+      "group": "panels",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.panel.tint"
+    },
+    {
+      "key": "materials.panels.tint.dark",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Colour (dark mode)",
+      "description": "For the dock, launcher, notifications, OSD and menus in dark mode. Empty = the colour under All",
+      "group": "panels",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.panel.tint"
+    },
+    {
+      "key": "materials.controlCenter.transparency",
+      "type": "int",
+      "default": null,
+      "nullable": true,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "label": "Transparency",
+      "description": "For the control center. Empty = the value under All",
+      "group": "controlCenter",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.controlCenter.transparency"
+    },
+    {
+      "key": "materials.controlCenter.blur",
+      "type": "bool",
+      "default": null,
+      "nullable": true,
+      "label": "Background blur",
+      "description": "Blur behind the control center (strength: under All). Empty = like All",
+      "group": "controlCenter",
+      "nullLabel": "All",
+      "scope": "hyprland",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "requires": {
+        "capability": "surfaceBlur"
+      },
+      "inherit": "materials.controlCenter.blur"
+    },
+    {
+      "key": "materials.controlCenter.tint.light",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Colour (light mode)",
+      "description": "For the control center in light mode. Empty = the colour under All",
+      "group": "controlCenter",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.controlCenter.tint"
+    },
+    {
+      "key": "materials.controlCenter.tint.dark",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Colour (dark mode)",
+      "description": "For the control center in dark mode. Empty = the colour under All",
+      "group": "controlCenter",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.controlCenter.tint"
+    },
+    {
+      "key": "materials.controlButtons.transparency",
+      "type": "int",
+      "default": null,
+      "nullable": true,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "label": "Transparency",
+      "description": "For the control center's buttons. Empty = the value under All",
+      "group": "controlButtons",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.controlButtons.transparency"
+    },
+    {
+      "key": "materials.controlButtons.tint.light",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Colour (light mode)",
+      "description": "For the control center's buttons in light mode. Empty = the colour under All",
+      "group": "controlButtons",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.controlButtons.tint"
+    },
+    {
+      "key": "materials.controlButtons.tint.dark",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Colour (dark mode)",
+      "description": "For the control center's buttons in dark mode. Empty = the colour under All",
+      "group": "controlButtons",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.controlButtons.tint"
+    },
+    {
+      "key": "materials.windows.transparency",
+      "type": "int",
+      "default": null,
+      "nullable": true,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "label": "Transparency",
+      "description": "For Settings and other Bifrost windows. Empty = the value under All",
+      "group": "windows",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.settings.transparency"
+    },
+    {
+      "key": "materials.windows.blur",
+      "type": "bool",
+      "default": null,
+      "nullable": true,
+      "label": "Background blur",
+      "description": "Blur behind Settings and other Bifrost windows (strength: under All). Empty = like All",
+      "group": "windows",
+      "nullLabel": "All",
+      "scope": "hyprland",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "requires": {
+        "capability": "surfaceBlur"
+      },
+      "inherit": "materials.settings.blur"
+    },
+    {
+      "key": "materials.windows.tint.light",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Colour (light mode)",
+      "description": "For Settings and other Bifrost windows in light mode. Empty = the colour under All",
+      "group": "windows",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.settings.tint"
+    },
+    {
+      "key": "materials.windows.tint.dark",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Colour (dark mode)",
+      "description": "For Settings and other Bifrost windows in dark mode. Empty = the colour under All",
+      "group": "windows",
+      "nullLabel": "All",
+      "dependsOnValue": {
+        "materials.linked": false
+      },
+      "hideUnlessMet": true,
+      "inherit": "materials.settings.tint"
+    },
+    {
+      "key": "materials.apps.transparency",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 90,
+      "unit": "%",
+      "label": "Transparency",
+      "description": "Ordinary application windows (through Hyprland). Not affected by Same glass everywhere, so they can never vanish by mistake",
+      "group": "apps",
+      "scope": "hyprland",
+      "requires": {
+        "compositor": [
+          "hyprland"
+        ]
+      }
+    },
+    {
+      "key": "materials.apps.blur",
+      "type": "bool",
+      "default": true,
+      "label": "Background blur",
+      "description": "Blur behind transparent application windows (strength: under All)",
+      "group": "apps",
+      "scope": "hyprland",
+      "requires": {
+        "compositor": [
+          "hyprland"
+        ]
+      }
     }
-  ]
+  ],
+  "groups": {
+    "all": "All",
+    "bar": "Top bar",
+    "widgets": "Widgets",
+    "panels": "Panels and menus",
+    "controlCenter": "Control center",
+    "controlButtons": "Control center buttons",
+    "windows": "Bifrost windows",
+    "apps": "Application windows"
+  }
 }

@@ -77,6 +77,47 @@ function clamp(v, lo, hi) {
     return Math.max(lo, Math.min(hi, v));
 }
 
+// Glass groups (schema/materials.json) and the theme materials each styles.
+// widgets = the bar's Boxed/Grouped shapes, controlButtons = the control
+// center's tiles and sliders (a fill only). Same in bifrostctl (GLASS_GROUPS).
+const glassGroups = {
+    bar: ["bar"],
+    widgets: ["widgets"],
+    panels: ["panel", "dock", "popover", "tooltip", "osd", "lock", "launcher", "notifications"],
+    controlCenter: ["controlCenter"],
+    controlButtons: ["controlButtons"],
+    windows: ["settings", "settingsGroups"]
+};
+
+function groupOf(material) {
+    for (const g in glassGroups)
+        if (glassGroups[g].indexOf(material) >= 0)
+            return g;
+    return "panels";
+}
+
+// The glass values a group uses: the shared ones while materials.linked is
+// on (the default), else its own where set. A group's blur is on/off; the
+// strength is always the shared amount. `custom` = it differs from the
+// shared glass (it then has its own shape where it would join another).
+// Same in bifrostctl (group_glass).
+function groupGlass(s, group) {
+    s = s || {};
+    const own = s.linked === false ? (s[group] || {}) : {};
+    const shared = typeof s.blur === "number" ? s.blur : 20;
+    const tint = Object.assign({}, s.tint || {});
+    for (const v of ["light", "dark"])
+        if (own.tint && typeof own.tint[v] === "string")
+            tint[v] = own.tint[v];
+    return {
+        transparency: typeof own.transparency === "number" ? own.transparency : s.transparency,
+        blur: own.blur === false ? 0 : own.blur === true ? (shared > 0 ? shared : 20) : shared,
+        tint: tint,
+        border: s.border,
+        custom: typeof own.transparency === "number" || typeof own.blur === "boolean" || Object.keys(own.tint || {}).some(v => typeof own.tint[v] === "string")
+    };
+}
+
 // Glass & transparency (schema/materials.json): one set of values for every
 // material. `s` is Config.values.materials; unset values keep the theme's
 // glass. The tint is set per light/dark variant. Above the theme's own
@@ -217,8 +258,18 @@ function build(chain, variant, app, materials) {
     t = materialize(L.resolveRefs(t, t));
 
     // ── Derived values ──
-    for (const k in t.materials)
-        applyMaterial(t.materials[k], materials || {}, t.glass, k, variant);
+    // The widget boxes start as the bar's glass, the control center's
+    // buttons as the panel glass.
+    t.materials.widgets = L.clone(t.materials.bar);
+    t.materials.controlButtons = L.clone(t.materials.panel);
+    for (const k in t.materials) {
+        const g = groupGlass(materials, groupOf(k));
+        applyMaterial(t.materials[k], g, t.glass, k, variant);
+        t.materials[k].custom = g.custom;
+    }
+    // Buttons without their own glass keep the plain control fill.
+    if (!t.materials.controlButtons.custom)
+        t.materials.controlButtons.fill = t.color.controlFill;
     if (t.prism.enabled === false)
         for (const k in t.states)
             if (t.states[k].fill === "prism")

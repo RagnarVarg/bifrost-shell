@@ -47,6 +47,7 @@ BarWidget {
 
         panel: "controlCenter"
         bar: widget.bar
+        ownMaterial: Theme.materials.controlCenter.custom ? Theme.materials.controlCenter : null
         anchorItem: button
         hosting: widget.hosts
         panelOpen: widget.openHere

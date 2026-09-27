@@ -27,7 +27,8 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: Theme.radius.lg
-        color: Theme.color.controlFill
+        // Glass & transparency → Control center buttons.
+        color: Theme.materials.controlButtons.fill
         border.width: Theme.border.hairline
         border.color: Theme.color.hairline
     }

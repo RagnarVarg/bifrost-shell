@@ -48,7 +48,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-FORMAT_VERSION = 8
+FORMAT_VERSION = 9
 NULLABLE_TYPES = {"bool", "int", "real", "color", "string", "font", "icon", "path"}
 APPLY_MODES = {"live", "reload", "restart"}
 SCOPES = {"shell", "hyprland", "system"}
@@ -711,6 +711,9 @@ def migrate(doc):
         if isinstance(bar, dict) and bar.get("background") == "subtle":
             bar["background"] = "panel"
         v = 8
+    if v == 8:
+        migrate_8(doc.setdefault("values", {}))
+        v = 9
     doc["version"] = v
     return doc
 
@@ -762,6 +765,33 @@ def migrate_6(vals):
                 s[key] = {"light": s[key], "dark": s[key]}
             elif not isinstance(s[key], dict):
                 del s[key]
+
+
+def migrate_8(vals):
+    """8 → 9 (Migrations.js step 8): the widget boxes' own glass moved from
+    bar.boxes.* to the Widgets group under Glass & transparency; having any
+    of it turns Same glass everywhere off so it keeps showing."""
+    boxes = (vals.get("bar") or {}).get("boxes")
+    if not isinstance(boxes, dict):
+        return
+    own = {}
+    if isinstance(boxes.get("tint"), dict) and boxes["tint"]:
+        own["tint"] = boxes.pop("tint")
+    else:
+        boxes.pop("tint", None)
+    if isinstance(boxes.get("transparency"), (int, float)) and not isinstance(boxes.get("transparency"), bool):
+        own["transparency"] = boxes.pop("transparency")
+    else:
+        boxes.pop("transparency", None)
+    if boxes.get("blur") is False:
+        own["blur"] = False
+    boxes.pop("blur", None)
+    if not boxes:
+        del vals["bar"]["boxes"]
+    if own:
+        m = vals.setdefault("materials", {})
+        m["widgets"] = own
+        m["linked"] = False
 
 
 class Config:
@@ -1633,8 +1663,22 @@ def blur_amount(x) -> float:
     return max(0, min(100, x))
 
 
-# Bifrost's layer namespaces that get compositor blur (Glass & transparency).
-BLUR_NAMESPACES = ("bar", "dock", "launcher", "power", "controlcenter", "notifications", "notificationcenter", "prompt", "osd", "overview")
+# Bifrost's layer namespaces that get compositor blur, and the glass group
+# (Glass & transparency, ThemeLogic.glassGroups) whose blur each follows.
+BLUR_NAMESPACES = {"bar": "bar", "dock": "panels", "launcher": "panels", "power": "panels", "controlcenter": "controlCenter",
+                   "notifications": "panels", "notificationcenter": "panels", "prompt": "panels", "osd": "panels", "overview": "panels"}
+GLASS_GROUPS = ("bar", "widgets", "panels", "controlCenter", "controlButtons", "windows")
+
+
+def group_glass(cfg, group):
+    """ThemeLogic.groupGlass: a group's transparency and blur amount — the
+    shared values while materials.linked is on, else its own where set."""
+    v = lambda k: deep_get(cfg.values, k)[0]
+    own = (v(f"materials.{group}") or {}) if v("materials.linked") is False else {}
+    shared = blur_amount(v("materials.blur"))
+    blur = 0 if own.get("blur") is False else (shared if shared > 0 else 20) if own.get("blur") is True else shared
+    t = own.get("transparency")
+    return {"transparency": t if isinstance(t, (int, float)) and not isinstance(t, bool) else v("materials.transparency"), "blur": blur}
 
 
 def theme_chain(cfg):
@@ -1734,8 +1778,14 @@ def generate_hypr(cfg) -> str:
         "",
     ]
     glass_tokens = json.loads((REPO / "themes/_base.json").read_text())["glass"]
-    # One blur for every Bifrost surface (Glass & transparency).
-    strength = blur_amount(v("materials.blur"))
+    # One blur strength (the shared amount under Glass & transparency); each
+    # glass group and application windows turn it on or off for themselves.
+    shared_blur = blur_amount(v("materials.blur"))
+    strength = shared_blur if shared_blur > 0 else 20
+    group_blur = {g: group_glass(cfg, g)["blur"] > 0 for g in GLASS_GROUPS}
+    apps_t = max(0, min(90, v("materials.apps.transparency") or 0))
+    apps_blur = v("materials.apps.blur") is not False
+    blur_on = any(group_blur.values()) or (apps_blur and apps_t > 0)
     blur_size = max(1, round(1 + strength * 0.39))
     blur_passes = 2 if strength < 10 else min(6, 2 + round((strength - 10) / 22.5))
     if v("hyprland.manage"):
@@ -1761,9 +1811,9 @@ def generate_hypr(cfg) -> str:
             "hl.config({",
             f"\tgeneral = {{ gaps_in = {v('hyprland.gapsIn')}, gaps_out = {v('hyprland.gapsOut')}, border_size = {v('hyprland.borderSize')},",
             f'\t\tcol = {{ active_border = "rgb({active})", inactive_border = "rgb({inactive})" }} }},',
-            f"\tdecoration = {{ rounding = {rounding}, active_opacity = 1, inactive_opacity = 1,",
+            f"\tdecoration = {{ rounding = {rounding}, active_opacity = {round(1 - apps_t / 100, 3)}, inactive_opacity = {round(1 - apps_t / 100, 3)},",
             f"\t\tshadow = {{ enabled = true, range = {shadow_range}, render_power = 3, color = \"{shadow_colour}\", color_inactive = \"{shadow_colour}\" }},",
-            f"\t\tblur = {{ enabled = {'true' if strength > 0 else 'false'}, size = {blur_size}, passes = {blur_passes} }} }},",
+            f"\t\tblur = {{ enabled = {'true' if blur_on else 'false'}, size = {blur_size}, passes = {blur_passes} }} }},",
             "})",
             "",
         ]
@@ -1773,6 +1823,13 @@ def generate_hypr(cfg) -> str:
         'local popup_rule = state.rules["bifrost-xwayland-menu-blur"]',
         'if popup_rule then popup_rule:set_enabled(false); state.rules["bifrost-xwayland-menu-blur"] = nil end',
     ]
+    # Application windows without blur (Glass & transparency → Application windows).
+    lines += [
+        'local apps_rule = state.rules["bifrost-apps-noblur"]',
+        'if apps_rule then apps_rule:set_enabled(false); state.rules["bifrost-apps-noblur"] = nil end',
+    ]
+    if v("hyprland.manage") and not apps_blur:
+        lines.append('window_rule("bifrost-apps-noblur", { match = { class = ".*" }, no_blur = true })')
     if v("hyprland.manage"):
         lines.append('window_rule("bifrost-xwayland-menu-blur", { match = { class = "^$", title = "^$", xwayland = true, float = true }, no_blur = true })')
     # Screen timeout (Settings → Power): input wakes the displays in the
@@ -1789,7 +1846,6 @@ def generate_hypr(cfg) -> str:
             lines.append(f'apply_output({{ output = {lua_str(name)}, mode = "{output_mode(o)}", position = "{o["x"]}x{o["y"]}", scale = {o["scale"]}, vrr = {1 if o.get("vrr") else 0}, bitdepth = {o.get("bitdepth", 8)}' + (f', cm = {lua_str(o["cm"])}' if o.get("cm") else "") + (f', sdrbrightness = {max(0.5, min(15, float(o["sdrBrightness"])))}' if "sdrBrightness" in o else "") + ' })')
         lines.append("")
     if v("hyprland.layerRules"):
-        blur = str(strength > 0).lower()
         mask = glass_tokens.get("blurMaskShadowed", 0.12)
         lines += [
             "-- Bifrost surfaces: the shell animates them itself; background blur from",
@@ -1800,11 +1856,11 @@ def generate_hypr(cfg) -> str:
             "end",
             'layer_rule("bifrost-noanim", { match = { namespace = "^bifrost:.*" }, no_anim = true })',
         ]
-        # A bar without a panel is only its widget boxes: they choose (bar.boxes.blur).
+        # A bar without a panel is only its widget boxes: the Widgets group decides.
         boxes_only = v("bar.background") == "none" and v("bar.widgetStyle") in ("boxed", "grouped")
-        for ns in BLUR_NAMESPACES:
-            b = str(strength > 0 and v("bar.boxes.blur") is not False).lower() if ns == "bar" and boxes_only else blur
-            lines.append(f'layer_rule("bifrost-blur-{ns}", {{ match = {{ namespace = "^bifrost:{ns}$" }}, blur = {b}, ignore_alpha = {mask:g}, blur_popups = {blur} }})')
+        for ns, group in BLUR_NAMESPACES.items():
+            b = str(group_blur["widgets" if ns == "bar" and boxes_only else group]).lower()
+            lines.append(f'layer_rule("bifrost-blur-{ns}", {{ match = {{ namespace = "^bifrost:{ns}$" }}, blur = {b}, ignore_alpha = {mask:g}, blur_popups = {b} }})')
         lines.append("")
     layout = json.loads((REPO / "themes/_base.json").read_text())["layout"]
     w, h = layout["settingsWidth"], layout["settingsHeight"]
@@ -1814,7 +1870,7 @@ def generate_hypr(cfg) -> str:
     lines += [
         "-- Bifrost's own app windows float, centred, like a settings dialog",
         f'window_rule("bifrost-settings", {{ match = {{ class = "^bifrost\\\\.settings$" }}, float = true, center = true, size = {{ "min({w}, monitor_w*0.9)", "min({h}, monitor_h*0.9)" }},'
-        f' border_size = 0, no_shadow = true, rounding = {settings_rounding}, rounding_power = 2, no_blur = {str(strength <= 0).lower()} }})',
+        f' border_size = 0, no_shadow = true, opacity = "1.0 override", rounding = {settings_rounding}, rounding_power = 2, no_blur = {str(not group_blur["windows"]).lower()} }})',
         "",
     ]
     import input_backend

@@ -8,7 +8,8 @@ EditorBase {
     id: editor
 
     readonly property bool isNull: value === null || value === undefined
-    readonly property bool effective: isNull ? inherited() === true : value === true
+    // An inherited amount (e.g. a blur strength) counts as on above 0.
+    readonly property bool effective: isNull ? (typeof inherited() === "number" ? inherited() > 0 : inherited() === true) : value === true
 
     implicitWidth: row.implicitWidth
     implicitHeight: Theme.control.height.md

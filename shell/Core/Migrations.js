@@ -185,6 +185,34 @@ const steps = {
             bar.background = "panel";
         doc.version = 8;
         return doc;
+    },
+    // 8 → 9: the widget boxes' own glass moved from bar.boxes.* to the
+    // Widgets group under Glass & transparency; having any of it turns Same
+    // glass everywhere off so it keeps showing. Same in bifrostctl (migrate_8).
+    8: function (doc) {
+        const v = doc.values || {};
+        const boxes = v.bar && v.bar.boxes;
+        if (boxes && typeof boxes === "object") {
+            const own = {};
+            if (boxes.tint && typeof boxes.tint === "object" && Object.keys(boxes.tint).length)
+                own.tint = boxes.tint;
+            if (typeof boxes.transparency === "number")
+                own.transparency = boxes.transparency;
+            if (boxes.blur === false)
+                own.blur = false;
+            delete boxes.tint;
+            delete boxes.transparency;
+            delete boxes.blur;
+            if (!Object.keys(boxes).length)
+                delete v.bar.boxes;
+            if (Object.keys(own).length) {
+                v.materials = v.materials || {};
+                v.materials.widgets = own;
+                v.materials.linked = false;
+            }
+        }
+        doc.version = 9;
+        return doc;
     }
 };
 

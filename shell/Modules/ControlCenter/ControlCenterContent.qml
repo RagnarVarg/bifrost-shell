@@ -345,7 +345,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: Theme.radius.lg
-                color: Theme.color.controlFill
+                color: Theme.materials.controlButtons.fill
                 border.width: Theme.border.hairline
                 border.color: Theme.color.hairline
             }
