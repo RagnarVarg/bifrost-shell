@@ -67,7 +67,13 @@ Item {
         }
     }
 
-    AppContextMenu { id: contextMenu }
+    // Stays inside the launcher, so its host counts it as the launcher.
+    AppContextMenu {
+        id: contextMenu
+
+        onOpenedChanged: if (!opened && content.active && ShellState.launcherOpen)
+            search.input.forceActiveFocus()
+    }
 
     AppsProvider {
         id: apps

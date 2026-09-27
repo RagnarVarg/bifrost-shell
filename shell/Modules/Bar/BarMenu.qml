@@ -28,6 +28,10 @@ Item {
     // Hover details always open on hover; other menus follow the setting.
     // One setting for every bar menu, system status included.
     property bool openOnHover: Config.values.bar.menus.openOnHover
+    // Centred on the bar's monitor instead of under the anchor (the launcher).
+    // Hover-leave closing then arms only once the pointer has been on the
+    // menu itself, as the way there from the anchor crosses the screen.
+    property bool centerOnScreen: false
     property bool isOpen: false
     property bool openedByHover: false
     property real targetX: 0            // set by MenuHost

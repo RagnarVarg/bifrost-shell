@@ -51,6 +51,9 @@ Timer {
 
     function reset() {
         generation++;
+        // `pointerInside` may depend on hoverSeen (MenuHost, centred menus):
+        // judge it for the new menu, not with the previous one's.
+        hoverSeen = false;
         hoverSeen = pointerInside;
         stop();
     }

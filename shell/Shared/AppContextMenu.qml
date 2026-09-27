@@ -2,21 +2,28 @@ import QtQuick
 import qs.Core
 import qs.Components.Glass
 
-// In-window context popup, shared with launcher-like surfaces. Remaining
-// inside the parent surface preserves its existing layer-shell focus grab.
+// In-window context popup, shared with launcher-like surfaces. It stays inside
+// `bounds` (default: the item it is declared in), so it is part of that
+// surface: a bar or dock menu counts the pointer on it as inside (hover-leave
+// closing, input region), and the surface's layer-shell focus grab still holds.
+// Below the anchor, or above it when there is more room there.
 Item {
     id: menu
     property var item: null
     property bool opened: false
+    property Item bounds: parent
+    // The anchor in bounds coordinates: centre x, top and bottom edges.
+    property real anchorX: 0
+    property real anchorTop: 0
+    property real anchorBottom: 0
 
     function close() { opened = false; }
     function open(anchor) {
-        let host = anchor;
-        while (host.parent) host = host.parent;
-        overlay.parent = host;
-        const p = anchor.mapToItem(host, anchor.width / 2, anchor.height);
-        popup.x = Math.max(Theme.space.md, Math.min(p.x - popup.width / 2, host.width - popup.width - Theme.space.md));
-        popup.y = Math.max(Theme.space.md, Math.min(p.y, host.height - popup.height - Theme.space.md));
+        overlay.parent = bounds;
+        const top = anchor.mapToItem(bounds, anchor.width / 2, 0);
+        anchorX = top.x;
+        anchorTop = top.y;
+        anchorBottom = top.y + anchor.height;
         actions.showingInfo = false;
         opened = true;
         overlay.forceActiveFocus();
@@ -32,9 +39,13 @@ Item {
         MouseArea { anchors.fill: parent; onPressed: menu.close() }
         GlassSurface {
             id: popup
+            readonly property real edge: Theme.space.md
+            readonly property bool above: menu.anchorBottom + height + edge > overlay.height && menu.anchorTop > overlay.height - menu.anchorBottom
             material: Theme.materials.popover
             width: actions.implicitWidth + Theme.space.sm * 2
             height: actions.implicitHeight + Theme.space.sm * 2
+            x: Math.max(edge, Math.min(menu.anchorX - width / 2, overlay.width - width - edge))
+            y: Math.max(edge, Math.min(above ? menu.anchorTop - height : menu.anchorBottom, overlay.height - height - edge))
             MouseArea { anchors.fill: parent }
             AppMenuContent {
                 id: actions

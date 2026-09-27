@@ -49,12 +49,13 @@ BarWidget {
         panelOpen: widget.openHere
         openOnHover: false
         exclusiveKeyboard: true
+        centerOnScreen: true
         onOpenRequested: ShellState.openLauncher(widget.screenName)
         onCloseRequested: ShellState.launcherOpen = false
 
         LauncherContent {
             active: menu.isOpen
-            width: implicitWidth
+            width: widget.bar ? Math.min(implicitWidth, widget.bar.modelData.width - Theme.space.xxxl * 2) : implicitWidth
             height: implicitHeight
             maxHeight: widget.bar ? widget.bar.modelData.height - Metrics.edgeSpace(Metrics.barEdge) - Metrics.edgeSpace("bottom") - Theme.space.xxxl : Theme.layout.launcherHeight
         }

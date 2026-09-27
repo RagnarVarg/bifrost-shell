@@ -16,8 +16,10 @@ Timer {
     property bool isOpen: false
     property bool active: Config.values.bar.menus.openOnHover
 
-    // Something opened from the bar is showing (a menu, or a bar panel).
-    readonly property bool switching: PopupGroup.current !== null || ShellState.controlCenterOpen || ShellState.notificationCenterOpen
+    // Something opened from the bar is showing (a menu, or a bar panel). A
+    // centred menu (the launcher) is not on that path: the way to it crosses
+    // other anchors, so they keep the delay.
+    readonly property bool switching: (PopupGroup.current !== null && PopupGroup.current.centerOnScreen !== true) || ShellState.controlCenterOpen || ShellState.notificationCenterOpen
 
     signal openRequested
 

@@ -427,6 +427,7 @@ PanelWindow {
                     panelOpen: hosting && ShellState.launcherOpen && ShellState.launcherScreen === root.modelData.name
                     openOnHover: false
                     exclusiveKeyboard: true
+                    centerOnScreen: true
                     onOpenRequested: ShellState.openLauncher(root.modelData.name)
                     onCloseRequested: ShellState.launcherOpen = false
 

@@ -52,7 +52,9 @@ Item {
     readonly property alias menuLayer: menuLayer
     readonly property bool wantsKeyboard: menu !== null && menu.grabFocus
     readonly property bool wantsGrab: menu !== null && menu.grabFocus && (!menu.closeOnLeave || !hoverSeen)
-    readonly property bool pointerInside: area.containsMouse || anchorHovered
+    // A centred menu counts its anchor only once the pointer has been on it
+    // (BarMenu.centerOnScreen); until then the focus grab closes it.
+    readonly property bool pointerInside: area.containsMouse || (anchorHovered && !(menu.centerOnScreen && !hoverSeen))
     // Anchors expose `hovered` (BarButton, status and tray icons, the system
     // status group): their own MouseArea is the only reliable hover source
     // there, as Qt does not tell overlapping handlers when the pointer moves on.
@@ -146,8 +148,12 @@ Item {
         if (!m || !m.anchorItem)
             return;
         const a = rectIn(m.anchorItem);
-        const ax = a.x + a.width / 2;
-        const g = glassAt(ax);
+        // Centred: the middle of the band, which spans the monitor along the bar.
+        const ax = m.centerOnScreen && band ? mapFromItem(band, band.width / 2, 0).x : a.x + a.width / 2;
+        let g = glassAt(ax);
+        // It joins a glass only if it grows from it, else it floats.
+        if (m.centerOnScreen && g && (ax < g.x || ax > g.x + g.width))
+            g = null;
         hostGlass = g;
         const top = band ? mapFromItem(band, 0, 0).y : 0;
         anchorStrip = Qt.rect(a.x, top, a.width, band ? band.height : height);
