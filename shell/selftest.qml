@@ -134,8 +134,11 @@ ShellRoot {
             appearance: { prism: { enabled: false, intensity: 2 }, spacingScale: 1.5, radiusScale: 2 },
             hyprland: { windows: { activeTransparency: 10, inactiveTransparency: 20 }, gapsIn: 3 },
             settingsUI: { layout: "boxed" } } };
+        const v6 = { version: 6, values: { appearance: { accent: "#123456" }, materials: { tint: "#0F1516", blur: 5 } } };
+        const out7 = Migrations.migrate(v6, Config.formatVersion).values;
+        eq("6 → 7: one accent and tint become the same colour in light and dark", [out7.appearance.accent, out7.materials.tint], [{ light: "#123456", dark: "#123456" }, { light: "#0F1516", dark: "#0F1516" }]);
         const out6 = Migrations.migrate(v5, Config.formatVersion).values;
-        eq("5 → 6: All surfaces' glass is kept, per-surface and link settings are dropped", out6.materials, { transparency: 44, blur: 22, tint: "#0F1516" });
+        eq("5 → 6: All surfaces' glass is kept, per-surface and link settings are dropped", out6.materials, { transparency: 44, blur: 22, tint: { light: "#0F1516", dark: "#0F1516" } });
         eq("5 → 6: prism switch off → intensity 0; spacing scale → density", [out6.appearance.prism, out6.appearance.density, out6.appearance.spacingScale, out6.appearance.radiusScale], [{ intensity: 0 }, "spacious", undefined, 2]);
         eq("5 → 6: app window transparency and the Settings layout page removed", [out6.hyprland, out6.settingsUI], [{ gapsIn: 3 }, undefined]);
         check("old keys removed", out.values.appearance.transparency === undefined && out.values.bar.radius === undefined && out.values.hyprland.blur === undefined && out.values.hyprland.gapsIn === 4);
@@ -158,11 +161,11 @@ ShellRoot {
         check("dark at midnight", !Sun.isDaylight(new Date(Date.UTC(2026, 8, 25, 23)), st.lat, st.lon));
         const next = Sun.nextChange(noon, st.lat, st.lon);
         check("next change after noon is sunset", next && Math.abs(utcMin(next) - 999) <= 3, next ? next.toISOString() : "null");
-        Config.set("appearance.accent", "#E06C75");
+        Config.set("appearance.accent.dark", "#E06C75");
         Theme.rebuild();
         eq("custom accent", String(Theme.color.accent).toUpperCase(), "#E06C75");
         check("accent family follows", Theme.palette.accentDeep !== "#5C7596" && Theme.palette.accentText === "#0B0D10", Theme.palette.accentDeep + " " + Theme.palette.accentText);
-        Config.reset("appearance.accent");
+        Config.reset("appearance.accent.dark");
         Config.set("appearance.mode", "light");
         eq("fixed light mode", ThemeMode.variant, "light");
         Config.set("appearance.mode", "dark");
@@ -194,10 +197,10 @@ ShellRoot {
         Config.reset("appearance.radiusScale");
         eq("reset single key", Config.modifiedKeys(""), []);
 
-        Config.set("appearance.accent", "#112233");
-        eq("nullable set", Config.get("appearance.accent"), "#112233");
-        Config.set("appearance.accent", null);
-        check("nullable back to null removes override", !Config.isModified("appearance.accent"));
+        Config.set("appearance.accent.dark", "#112233");
+        eq("nullable set", Config.get("appearance.accent.dark"), "#112233");
+        Config.set("appearance.accent.dark", null);
+        check("nullable back to null removes override", !Config.isModified("appearance.accent.dark"));
 
         Config.set("bar.widgets", { left: [{ id: "clock" }], center: [], right: [] });
         eq("widget layout replaced, not merged", Config.get("bar.widgets"), { left: [{ id: "clock" }], center: [], right: [] });
@@ -268,10 +271,17 @@ ShellRoot {
         Config.reset("materials.transparency");
         Theme.rebuild();
         check("standard transparency keeps the theme glass per surface", Theme.materials.dock.opacity > 0.4 && Theme.materials.dock.opacity < 1 && Theme.materials.popover.opacity !== Theme.materials.dock.opacity && Theme.materials.lock.opacity < 1);
-        Config.set("materials.tint", "#112233");
+        Config.set("materials.tint.dark", "#112233");
+        Config.set("materials.tint.light", "#DDEEFF");
         Config.set("materials.border", false);
         Theme.rebuild();
         check("tint and border reach every surface", Theme.materials.osd.tint === "#112233" && Theme.materials.bar.borderWidth === 0 && Theme.materials.settings.borderWidth === 0);
+        Config.set("materials.transparency", 100);
+        Theme.rebuild();
+        check("100 % transparency is fully clear", ["bar", "dock", "popover", "launcher", "settings"].every(k => { const m = Theme.materials[k]; return m.opacity === 0 && m.density === 0 && m.depth === 0 && m.highlight === 0 && m.sheen === 0 && m.bevelStrength === 0 && m.elevation.opacity === 0; }));
+        Config.reset("materials.transparency");
+        Theme.rebuild();
+        check("standard transparency keeps the glass body", Theme.materials.dock.density > 0 && Theme.materials.dock.elevation.opacity > 0);
         Config.set("materials.blur", 60);
         Theme.rebuild();
         check("one blur amount for every surface", Theme.materials.launcher.blur === 60 && Theme.materials.bar.blur === 60 && Theme.materials.tooltip.blur === 0);
@@ -280,12 +290,21 @@ ShellRoot {
         Theme.rebuild();
         check("blur 0 turns blur off everywhere", Theme.materials.launcher.blur === 0 && Theme.materials.launcher.blurMask === 0);
         Config.resetSection("materials");
-        Config.set("appearance.accent", "#FF8800");
+        Config.set("appearance.accent.dark", "#FF8800");
+        Config.set("materials.tint.dark", "#112233");
+        Config.set("materials.tint.light", "#DDEEFF");
         Theme.rebuild();
         eq("accent override", Theme.color.accent, "#FF8800");
         Config.set("appearance.mode", "light");
         Theme.rebuild();
         eq("light variant", Theme.palette.base, "#E8EBF0");
+        check("dark accent does not change light mode", Theme.color.accent !== "#FF8800", Theme.color.accent);
+        eq("light mode uses its own tint", Theme.materials.bar.tint, "#DDEEFF");
+        Config.set("appearance.accent.light", "#00AA55");
+        Theme.rebuild();
+        eq("light accent", Theme.color.accent, "#00AA55");
+        eq("dark accent kept", Config.get("appearance.accent.dark"), "#FF8800");
+        Config.resetSection("materials");
         Config.set("appearance.theme", "does-not-exist");
         Theme.rebuild();
         check("unknown theme falls back with issue", Theme.chainIds[1] === "bifrost-graphite" && Theme.issues.length > 0, Theme.issues);
@@ -331,7 +350,7 @@ ShellRoot {
             ["ThemeModeEditor", "appearance.mode", "light"],
             ["SegmentedEditor", "keybinds.workspaceStyle", "moveFollow"],
             ["EnumEditor", "notifications.position", "bottom-right"],
-            ["ColorEditor", "appearance.accent", "#8899AA"],
+            ["ColorEditor", "appearance.accent.dark", "#8899AA"],
             ["FontEditor", "appearance.font.ui", "Geist Mono"],
             ["TextEditor", "appearance.theme", "bifrost-graphite"],
             ["ThemeEditor", "appearance.theme", "bifrost-graphite"],
@@ -426,7 +445,7 @@ ShellRoot {
         }
         for (const scale of [1, 1.5])
         for (const width of [320, 520, 800, 1400])
-            for (const key of ["appearance.mode", "appearance.accent", "materials.blur", "materials.border", "notifications.position", "keybinds.workspaceStyle"])
+            for (const key of ["appearance.mode", "appearance.accent.dark", "materials.blur", "materials.border", "notifications.position", "keybinds.workspaceStyle"])
             {
                 const row = c.createObject(test, { key: key, width: width,
                     note: "Lång svensk beskrivning med flera ord ochLongEnglishTextWithoutSpacesThatMustWrapCorrectly ".repeat(3) });

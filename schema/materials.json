@@ -13,7 +13,7 @@
       "max": 100,
       "unit": "%",
       "label": "Transparency",
-      "description": "0 % = solid, 100 % = clear glass. Standard = the theme's glass, tuned per surface and for light and dark",
+      "description": "0 % = solid, 100 % = fully clear (only the border and blur remain). Standard = the theme's glass, tuned per surface and for light and dark",
       "nullLabel": "Standard",
       "inherit": "materials.panel.transparency"
     },
@@ -32,12 +32,22 @@
       }
     },
     {
-      "key": "materials.tint",
+      "key": "materials.tint.light",
       "type": "color",
       "default": null,
       "nullable": true,
-      "label": "Tint",
-      "description": "Colour of the glass. Empty = the theme's colour",
+      "label": "Tint (light mode)",
+      "description": "Colour of the glass in light mode. Empty = the theme's colour",
+      "nullLabel": "Theme",
+      "inherit": "materials.panel.tint"
+    },
+    {
+      "key": "materials.tint.dark",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Tint (dark mode)",
+      "description": "Colour of the glass in dark mode. Empty = the theme's colour",
       "nullLabel": "Theme",
       "inherit": "materials.panel.tint"
     },

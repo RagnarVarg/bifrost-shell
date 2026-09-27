@@ -78,12 +78,23 @@
       "nullLabel": "From time zone"
     },
     {
-      "key": "appearance.accent",
+      "key": "appearance.accent.light",
       "type": "color",
       "default": null,
       "nullable": true,
-      "label": "Accent colour",
-      "description": "Used everywhere: selection, sliders, focus rings, window borders. Empty = Bifrost default (the theme's accent)",
+      "label": "Accent colour (light mode)",
+      "description": "Selection, sliders, focus rings and window borders in light mode. Empty = the theme's accent",
+      "group": "colors",
+      "inherit": "palette.accent",
+      "nullLabel": "Bifrost default"
+    },
+    {
+      "key": "appearance.accent.dark",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Accent colour (dark mode)",
+      "description": "Selection, sliders, focus rings and window borders in dark mode. Empty = the theme's accent",
       "group": "colors",
       "inherit": "palette.accent",
       "nullLabel": "Bifrost default"

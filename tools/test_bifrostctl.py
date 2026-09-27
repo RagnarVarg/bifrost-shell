@@ -366,7 +366,9 @@ class BifrostctlTest(unittest.TestCase):
         self.assertNotIn("active_opacity", text)
 
     def test_window_border_colours_override_and_restore_theme(self):
-        ctl.main(["set", "appearance.accent", "#112233"])
+        ctl.main(["set", "appearance.mode", "dark"])
+        ctl.main(["set", "appearance.accent.dark", "#112233"])
+        ctl.main(["set", "appearance.accent.light", "#445566"])
         ctl.main(["set", "hyprland.activeBorderColor", "#ABCDEF"])
         ctl.main(["set", "hyprland.inactiveBorderColor", "#123456"])
         text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
@@ -463,12 +465,17 @@ class BifrostctlTest(unittest.TestCase):
             "hyprland": {"windows": {"activeTransparency": 10, "inactiveTransparency": 20}, "gapsIn": 3},
             "settingsUI": {"layout": "boxed"}}}
         out = ctl.migrate(doc)
-        self.assertEqual(out["version"], 6)
+        self.assertEqual(out["version"], ctl.FORMAT_VERSION)
         v = out["values"]
-        self.assertEqual(v["materials"], {"transparency": 44, "blur": 22, "tint": "#0F1516"})
+        self.assertEqual(v["materials"], {"transparency": 44, "blur": 22, "tint": {"light": "#0F1516", "dark": "#0F1516"}})
         self.assertEqual(v["appearance"], {"prism": {"intensity": 0}, "radiusScale": 2, "density": "spacious"})
         self.assertEqual(v["hyprland"], {"gapsIn": 3})
         self.assertNotIn("settingsUI", v)
+
+    def test_migrate_6_to_7_colours_per_mode(self):
+        doc = {"version": 6, "values": {"appearance": {"accent": "#123456"}, "materials": {"tint": "#0F1516", "blur": 5}}}
+        v = ctl.migrate(doc)["values"]
+        self.assertEqual((v["appearance"]["accent"], v["materials"]["tint"]), ({"light": "#123456", "dark": "#123456"}, {"light": "#0F1516", "dark": "#0F1516"}))
 
     def test_panel_windows_mask_their_shadow(self):
         """A panel window grown by its glass's shadow reaches over the bar;
@@ -596,7 +603,7 @@ class BifrostctlTest(unittest.TestCase):
         face = Path(self.tmp.name) / "me.jpg"
         face.write_bytes(b"jpg")
         for k, val in (("wallpaper.path", str(wall)), ("greeter.avatar", str(face)), ("appearance.mode", "system"),
-                       ("appearance.accent", "#112233"), ("bar.height", 44)):
+                       ("appearance.accent.dark", "#112233"), ("bar.height", 44)):
             self.assertEqual(ctl.main(["set", k, json.dumps(val)]), 0)
         (Path(self.tmp.name) / "themes").mkdir()
         (Path(self.tmp.name) / "themes" / "mine.json").write_text("{}")
@@ -606,7 +613,7 @@ class BifrostctlTest(unittest.TestCase):
         values = json.loads((cache / "config/config.json").read_text())["values"]
         self.assertEqual(values["wallpaper"]["path"], str(cache / "wallpaper.png"))
         self.assertIn(values["appearance"]["mode"], ("light", "dark"))      # resolved, the greeter has no system setting
-        self.assertEqual(values["appearance"]["accent"], "#112233")
+        self.assertEqual(values["appearance"]["accent"], {"dark": "#112233"})
         self.assertNotIn("bar", values)
         self.assertTrue((cache / "config/themes/mine.json").is_file())
         meta = json.loads((cache / "greeter.json").read_text())

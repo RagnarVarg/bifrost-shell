@@ -48,7 +48,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-FORMAT_VERSION = 6
+FORMAT_VERSION = 7
 NULLABLE_TYPES = {"bool", "int", "real", "color", "string", "font", "icon", "path"}
 APPLY_MODES = {"live", "reload", "restart"}
 SCOPES = {"shell", "hyprland", "system"}
@@ -703,6 +703,9 @@ def migrate(doc):
     if v == 5:
         migrate_5(doc.setdefault("values", {}))
         v = 6
+    if v == 6:
+        migrate_6(doc.setdefault("values", {}))
+        v = 7
     doc["version"] = v
     return doc
 
@@ -743,6 +746,17 @@ def migrate_5(vals):
         w.pop("inactiveTransparency", None)
         if not w:
             del vals["hyprland"]["windows"]
+
+
+def migrate_6(vals):
+    """6 → 7 (Migrations.js step 6): accent and glass tint per light/dark mode."""
+    for section, key in (("appearance", "accent"), ("materials", "tint")):
+        s = vals.get(section)
+        if isinstance(s, dict) and key in s:
+            if isinstance(s[key], str):
+                s[key] = {"light": s[key], "dark": s[key]}
+            elif not isinstance(s[key], dict):
+                del s[key]
 
 
 class Config:
@@ -1725,8 +1739,9 @@ def generate_hypr(cfg) -> str:
         pal = theme_palette(cfg)
         active = (pal.get("accent") or "#8FA8C8").lstrip("#").lower()
         inactive = (pal.get("surfaceRaised") or "#1E2126").lstrip("#").lower()
-        if v("appearance.accent"):
-            active = v("appearance.accent").lstrip("#").lower()
+        accent = v(f"appearance.accent.{effective_variant(cfg)}")
+        if accent:
+            active = accent.lstrip("#").lower()
         if v("hyprland.activeBorderColor"):
             active = v("hyprland.activeBorderColor").lstrip("#").lower()
         if v("hyprland.inactiveBorderColor"):

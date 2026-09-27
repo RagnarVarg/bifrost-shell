@@ -79,27 +79,38 @@ function clamp(v, lo, hi) {
 
 // Glass & transparency (schema/materials.json): one set of values for every
 // material. `s` is Config.values.materials; unset values keep the theme's
-// glass. The Settings window is an app window: Hyprland clips it (and its
+// glass. The tint is set per light/dark variant. Above the theme's own
+// transparency the glass's body (density, depth, light, grain, shadow)
+// fades with the fill, so 100 % is fully clear: only the border (if on)
+// and blur (if on) remain. The Settings window is an app window: Hyprland clips it (and its
 // blur) to its rounding instead of the alpha mask, and that rounding has a
 // maximum. Same in bifrostctl (blur_mask, material_radius).
-function applyMaterial(m, s, glass, name) {
+function applyMaterial(m, s, glass, name, variant) {
     const isWindow = name === "settings";
     m.blur = m.blur === false ? 0 : typeof s.blur === "number" ? clamp(s.blur, 0, 100) : 20;
     // The compositor blurs a layer only where its alpha is above this.
     // Settings groups share the Settings window's blur.
     m.blurMask = m.blur > 0 && !isWindow && name !== "settingsGroups" ? (glass.blurMaskShadowed || 0.12) : 0;
+    const standard = m.opacity;
     if (typeof s.transparency === "number")
         m.opacity = 1 - clamp(s.transparency, 0, 100) / 100;
-    if (typeof s.tint === "string" && /^#[0-9a-fA-F]{6}$/.test(s.tint))
-        m.tint = s.tint;
+    const body = standard > 0 ? clamp(m.opacity / standard, 0, 1) : 1;
+    if (body < 1) {
+        for (const k of ["depth", "density", "highlight", "sheen", "grain"])
+            m[k] = (m[k] || 0) * body;
+        m.elevation = Object.assign({}, m.elevation, { opacity: ((m.elevation || {}).opacity || 0) * body });
+    }
+    const tint = (s.tint || {})[variant];
+    if (typeof tint === "string" && /^#[0-9a-fA-F]{6}$/.test(tint))
+        m.tint = tint;
     if (s.border === false)
         m.borderWidth = 0;
     if (isWindow)
         m.radius = Math.min(m.radius, glass.windowRadiusMax || 20);
     m.thickness = 1;
     m.bevel = glass.bevel || 3;
-    m.bevelStrength = glass.bevelStrength || 0.06;
-    m.refraction = glass.refraction || 0;
+    m.bevelStrength = (glass.bevelStrength || 0.06) * body;
+    m.refraction = (glass.refraction || 0) * body;
     m.glow = 0;
     m.opacity = clamp(m.opacity, 0, 1);
     m.fill = withAlpha(m.tint, m.opacity);
@@ -140,11 +151,13 @@ function build(chain, variant, app, materials) {
     // ── Overrides on raw tokens (before references resolve) ──
     // A custom accent replaces the whole accent family, so every derived
     // colour (pressed/deep tone, text on accent, focus, borders) follows it.
-    if (typeof app.accent === "string" && /^#[0-9a-fA-F]{6}$/.test(app.accent)) {
-        t.palette.accent = app.accent.toUpperCase();
-        t.palette.accentDeep = mixHex(app.accent, "#000000", variant === "light" ? 0.25 : 0.35);
+    // Accent and foreground are set per light/dark variant.
+    const accent = (app.accent || {})[variant];
+    if (typeof accent === "string" && /^#[0-9a-fA-F]{6}$/.test(accent)) {
+        t.palette.accent = accent.toUpperCase();
+        t.palette.accentDeep = mixHex(accent, "#000000", variant === "light" ? 0.25 : 0.35);
         // Whichever of near-black and near-white contrasts more (WCAG).
-        t.palette.accentText = luminance(app.accent) > 0.179 ? "#0B0D10" : "#F5F7FA";
+        t.palette.accentText = luminance(accent) > 0.179 ? "#0B0D10" : "#F5F7FA";
     }
     // Mode-specific foreground affects shell text and monochrome UI icons.
     // App artwork and semantic status colours remain independent.
@@ -205,7 +218,7 @@ function build(chain, variant, app, materials) {
 
     // ── Derived values ──
     for (const k in t.materials)
-        applyMaterial(t.materials[k], materials || {}, t.glass, k);
+        applyMaterial(t.materials[k], materials || {}, t.glass, k, variant);
     if (t.prism.enabled === false)
         for (const k in t.states)
             if (t.states[k].fill === "prism")

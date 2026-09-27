@@ -161,6 +161,21 @@ const steps = {
         delete v.settingsUI;
         doc.version = 6;
         return doc;
+    },
+    // 6 → 7: the accent and the glass tint are set per light/dark mode, like
+    // the foreground. One colour for both becomes the same colour in each.
+    // Same in bifrostctl (migrate_6).
+    6: function (doc) {
+        const v = doc.values || {};
+        for (const [section, key] of [["appearance", "accent"], ["materials", "tint"]]) {
+            const s = v[section];
+            if (s && typeof s[key] === "string")
+                s[key] = { light: s[key], dark: s[key] };
+            else if (s && s[key] !== undefined && (s[key] === null || typeof s[key] !== "object"))
+                delete s[key];
+        }
+        doc.version = 7;
+        return doc;
     }
 };
 
