@@ -100,6 +100,22 @@
       "apply": "live"
     },
     {
+      "key": "bar.width",
+      "type": "int",
+      "default": 100,
+      "min": 20,
+      "max": 100,
+      "unit": "%",
+      "label": "Width",
+      "description": "How much of the screen edge the bar covers, centred. 100 % = the full width. It never gets narrower than its widgets need. For a side bar this is its length",
+      "group": "layout",
+      "scope": "shell",
+      "apply": "live",
+      "dependsOnValue": {
+        "bar.layout": "bar"
+      }
+    },
+    {
       "key": "bar.margin",
       "type": "int",
       "default": 8,

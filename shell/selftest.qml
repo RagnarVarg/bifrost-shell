@@ -721,6 +721,13 @@ ShellRoot {
         row.destroy();
         Config.set("bar.position", "left");
         eq("metrics: side bar edge and space", [Metrics.barEdge, Metrics.barVertical, Metrics.edgeSpace("left") === Metrics.barSpace, Metrics.edgeSpace("top")], ["left", true, true, 0]);
+        eq("metrics: bar width is a share of the edge", Metrics.barWidth, 1);
+        Config.set("bar.width", 40);
+        eq("metrics: narrower bar", Metrics.barWidth, 0.4);
+        Config.set("bar.layout", "frame");
+        eq("metrics: a frame always spans the edge", Metrics.barWidth, 1);
+        Config.reset("bar.layout");
+        Config.reset("bar.width");
         Config.set("bar.position", "top");
         Config.set("bar.menus.hoverDelayMs", 0);
         anchor.hovered = true;

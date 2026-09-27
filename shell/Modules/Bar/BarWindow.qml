@@ -248,9 +248,13 @@ PanelWindow {
 
                 readonly property real hiddenOffset: (root.bandHeight + root.shadowRoom) * (root.atBottom ? 1 : -1)
 
-                x: root.frame ? root.frameThickness : root.margin
+                // bar.width: a share of the edge, centred, never narrower
+                // than the widgets need. A frame always spans the edge.
+                readonly property real fullWidth: band.width - (root.frame ? root.frameThickness : root.margin) * 2
+                readonly property real neededWidth: left.width + center.width + right.width + Theme.space.sm * 2 + Theme.space.xl * 2
+                x: (band.width - width) / 2
                 y: root.atBottom ? band.height - root.margin - root.barHeight : root.margin
-                width: band.width - x * 2
+                width: root.frame ? fullWidth : Math.min(fullWidth, Math.max(fullWidth * Metrics.barWidth, neededWidth))
                 height: root.barHeight
 
                 transform: Translate {

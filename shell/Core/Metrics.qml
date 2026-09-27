@@ -33,6 +33,8 @@ Singleton {
     readonly property real barHeight: panel(bar.height || 0)
     readonly property real barMargin: frame || bar.style === "attached" ? 0 : gap(bar.margin || 0)
     readonly property real barSpacing: gap(bar.spacing || 0)
+    // Share of the screen edge the bar covers (bar.width %, 1 = all of it).
+    readonly property real barWidth: frame ? 1 : Math.max(0.2, Math.min(1, (bar.width || 100) / 100))
     // Screen space the bar occupies from its edge (glass plus margins).
     readonly property real barSpace: bar.enabled ? barHeight + barMargin * 2 : 0
     // The screen edge the bar is on, and whether it is a side bar.
