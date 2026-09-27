@@ -190,12 +190,6 @@ class BifrostctlTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             theme_catalog.parse_scheme("bad", data.replace(b'base0F', b'base0E'))
 
-    def test_shadow_alpha_tracks_strength(self):
-        ctl.main(["set", "materials.all.shadow", "1"])
-        first = ctl.blur_mask(ctl.Config(ctl.Schema()), "dock", {})
-        ctl.main(["set", "materials.all.shadow", "3"])
-        self.assertGreater(ctl.blur_mask(ctl.Config(ctl.Schema()), "dock", {}), first)
-
     def test_hidden_network_validation(self):
         self.assertEqual(network_hidden.validate(dict(ssid="Hidden", password="", interface="wlan0")), ("Hidden", "", "wlan0"))
         for data in [None, {}, dict(ssid="x"*33, interface="wlan0"), dict(ssid="x", interface="wlan0", password="short"), dict(ssid="x", interface="wlan0", password=123), dict(ssid="x", interface="wlan0;bad")]:
@@ -345,11 +339,9 @@ class BifrostctlTest(unittest.TestCase):
             self.assertLess(abs(float(mode.split("@")[1]) - output["refresh"]), 0.02)
         self.assertEqual(output["refresh"], 239.761)
 
-    def test_grouped_blur_uses_settings_window(self):
-        ctl.main(["set", "materials.settings.blur", "0"])
-        ctl.main(["set", "materials.settingsGroups.blur", "30"])
-        for layout, disabled in [("grouped", "false"), ("boxed", "true")]:
-            ctl.main(["set", "settingsUI.layout", layout])
+    def test_settings_window_blur_follows_the_one_blur(self):
+        for amount, disabled in [("30", "false"), ("0", "true")]:
+            ctl.main(["set", "materials.blur", amount])
             text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
             rule = next(line for line in text.splitlines() if 'window_rule("bifrost-settings"' in line)
             self.assertIn("no_blur = " + disabled, rule)
@@ -363,17 +355,15 @@ class BifrostctlTest(unittest.TestCase):
         self.assertNotIn('window_rule("bifrost-xwayland-menu-blur"', text)
         self.assertIn('popup_rule:set_enabled(false)', text)
 
-    def test_global_shadow_controls_compositor(self):
-        ctl.main(["set", "materials.all.shadow", "0"])
-        ctl.main(["set", "materials.dock.shadow", "3"])
+    def test_window_look_is_fixed_standard(self):
+        """App windows: opaque, standard shadow; left alone without hyprland.manage."""
         text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
-        self.assertIn("shadow = { enabled = false, range = 1,", text)
-        ctl.main(["set", "materials.all.shadow", "2"])
-        text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
-        self.assertIn("shadow = { enabled = true, range = 40,", text)
+        self.assertIn("active_opacity = 1, inactive_opacity = 1,", text)
+        self.assertIn("shadow = { enabled = true, range = 20,", text)
         ctl.main(["set", "hyprland.manage", "false"])
         text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
         self.assertNotIn("shadow = { enabled", text)
+        self.assertNotIn("active_opacity", text)
 
     def test_window_border_colours_override_and_restore_theme(self):
         ctl.main(["set", "appearance.accent", "#112233"])
@@ -387,33 +377,23 @@ class BifrostctlTest(unittest.TestCase):
         self.assertIn('active_border = "rgb(112233)"', text)
         self.assertIn('inactive_border = "rgb(123456)"', text)
 
-    def test_blur_per_surface_link_and_mask(self):
-        """Blur is an amount per surface: the compositor strength is the
-        strongest one, each layer's ignore_alpha is its blur mask, and
-        materials.link makes All surfaces decide (ThemeLogic does the same)."""
+    def test_one_blur_for_every_surface(self):
+        """One blur amount: the compositor strength and every Bifrost layer
+        follow materials.blur (ThemeLogic does the same)."""
         rule = lambda text, ns: re.search(r'bifrost-blur-%s".*' % ns, text).group(0)
-        ctl.main(["set", "materials.all.shadow", "0"])
-        ctl.main(["set", "materials.all.blur", "30"])
-        ctl.main(["set", "materials.dock.blur", "0"])
-        ctl.main(["set", "materials.launcher.blur", "80"])
-        ctl.main(["set", "materials.osd.shadow", "1"])
+        ctl.main(["set", "materials.blur", "80"])
         text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
         self.assertIn("size = 32, passes = 5", text)          # 80 → round(1 + 80 * 0.39), passes
-        self.assertIn("blur = false", rule(text, "dock"))
-        self.assertIn("ignore_alpha = 0.01,", rule(text, "controlcenter"))
-        self.assertIn("ignore_alpha = 0.12,", rule(text, "osd"))  # shadow outside the glass
-        ctl.main(["set", "materials.link", "true"])
+        for ns in ctl.BLUR_NAMESPACES:
+            self.assertIn("blur = true, ignore_alpha = 0.12, blur_popups = true", rule(text, ns))
+        ctl.main(["set", "materials.blur", "0"])
         text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
-        self.assertIn("size = 13, passes = 3", text)          # all surfaces: 30
-        self.assertIn("blur = true", rule(text, "dock"))
-        self.assertIn("ignore_alpha = 0.01,", rule(text, "osd"))
-        ctl.main(["set", "materials.unlinked", '["dock"]'])   # dock keeps its own blur 0
-        self.assertIn("blur = false", rule(ctl.generate_hypr(ctl.Config(ctl.Schema())), "dock"))
-        ctl.main(["reset", "materials.unlinked"])
-        # The Settings window is its glass: rounded like it.
+        self.assertIn("blur = { enabled = false", text)
+        self.assertIn("blur = false", rule(text, "dock"))
+        # The Settings window is its glass: rounded like it, up to Hyprland's maximum.
         self.assertRegex(text, r'bifrost-settings".*rounding = %d, rounding_power = 2' % round(14 * 1))
-        ctl.main(["set", "materials.all.radius", "32"])
-        self.assertRegex(ctl.generate_hypr(ctl.Config(ctl.Schema())), r'bifrost-settings".*rounding = 20,')  # Hyprland's maximum
+        ctl.main(["set", "appearance.radiusScale", "2"])
+        self.assertRegex(ctl.generate_hypr(ctl.Config(ctl.Schema())), r'bifrost-settings".*rounding = 20,')
 
     def test_gesture_actions_catalogue(self):
         """Gesture actions come from one catalogue (keybinds.json): the schema
@@ -471,10 +451,24 @@ class BifrostctlTest(unittest.TestCase):
         finally:
             del os.environ["XDG_DATA_HOME"]
 
-    def test_migrate_4_to_5_blur_amounts(self):
+    def test_migrate_4_to_6_blur_amounts(self):
         doc = {"version": 4, "values": {"materials": {"blurStrength": 49, "bar": {"blur": True}, "dock": {"blur": False}}}}
-        m = ctl.migrate(doc)["values"]["materials"]
-        self.assertEqual((m["all"]["blur"], m["bar"]["blur"], m["dock"]["blur"], "blurStrength" in m), (49, 49, 0, False))
+        self.assertEqual(ctl.migrate(doc)["values"]["materials"], {"blur": 49})
+
+    def test_migrate_5_to_6_one_glass(self):
+        """Same as Migrations.js step 5 (selftest testMigrations)."""
+        doc = {"version": 5, "values": {
+            "materials": {"link": True, "unlinked": ["dock"], "all": {"transparency": 44, "blur": 22, "tint": "#0F1516", "thickness": 0, "glow": 0.25}, "dock": {"transparency": 100}},
+            "appearance": {"prism": {"enabled": False, "intensity": 2}, "spacingScale": 1.5, "radiusScale": 2},
+            "hyprland": {"windows": {"activeTransparency": 10, "inactiveTransparency": 20}, "gapsIn": 3},
+            "settingsUI": {"layout": "boxed"}}}
+        out = ctl.migrate(doc)
+        self.assertEqual(out["version"], 6)
+        v = out["values"]
+        self.assertEqual(v["materials"], {"transparency": 44, "blur": 22, "tint": "#0F1516"})
+        self.assertEqual(v["appearance"], {"prism": {"intensity": 0}, "radiusScale": 2, "density": "spacious"})
+        self.assertEqual(v["hyprland"], {"gapsIn": 3})
+        self.assertNotIn("settingsUI", v)
 
     def test_panel_windows_mask_their_shadow(self):
         """A panel window grown by its glass's shadow reaches over the bar;

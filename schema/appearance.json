@@ -140,35 +140,15 @@
       "group": "shape"
     },
     {
-      "key": "appearance.spacingScale",
-      "type": "real",
-      "default": 1.0,
-      "min": 0.5,
-      "max": 2,
-      "step": 0.05,
-      "label": "Spacing scale",
-      "description": "Scales every distance in the theme",
-      "group": "shape"
-    },
-    {
-      "key": "appearance.prism.enabled",
-      "type": "bool",
-      "default": true,
-      "label": "Bifrost prism",
-      "description": "Subtle refraction on active and selected elements",
-      "group": "identity"
-    },
-    {
       "key": "appearance.prism.intensity",
       "type": "real",
       "default": 1.0,
       "min": 0,
       "max": 3,
       "step": 0.05,
-      "label": "Prism intensity",
+      "label": "Bifrost prism",
       "group": "identity",
-      "dependsOn": "appearance.prism.enabled",
-      "description": "0 = off, 1 = standard, 3 = strong colour, glow and rim on hover, selection and active items"
+      "description": "Refraction on hover, selection and active items. 0 = off, 1 = standard, 3 = strong"
     }
   ]
 }

@@ -48,7 +48,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-FORMAT_VERSION = 5
+FORMAT_VERSION = 6
 NULLABLE_TYPES = {"bool", "int", "real", "color", "string", "font", "icon", "path"}
 APPLY_MODES = {"live", "reload", "restart"}
 SCOPES = {"shell", "hyprland", "system"}
@@ -700,9 +700,49 @@ def migrate(doc):
                 m.setdefault("all", {}).setdefault("blur", strength)
             m.pop("blurStrength", None)
         v = 5
+    if v == 5:
+        migrate_5(doc.setdefault("values", {}))
+        v = 6
     doc["version"] = v
     return doc
 
+
+
+def migrate_5(vals):
+    """5 → 6 (Migrations.js step 5): one glass for every surface instead of
+    per-surface overrides with link/unlink; the prism switch, the spacing
+    scale, app window transparency and the Settings layout page are gone."""
+    vals.pop("settingsUI", None)
+    m = vals.get("materials")
+    if isinstance(m, dict):
+        all_ = m.get("all") if isinstance(m.get("all"), dict) else {}
+        out = {}
+        for k in ("transparency", "blur", "tint", "border"):
+            if all_.get(k) is not None:
+                out[k] = all_[k]
+        if isinstance(out.get("blur"), bool):
+            out["blur"] = 20 if out["blur"] else 0
+        vals["materials"] = out
+    a = vals.get("appearance")
+    if isinstance(a, dict):
+        prism = a.get("prism")
+        if isinstance(prism, dict) and "enabled" in prism:
+            if prism.pop("enabled") is False:
+                prism["intensity"] = 0
+            if not prism:
+                del a["prism"]
+        scale = a.pop("spacingScale", None)
+        if isinstance(scale, (int, float)) and not isinstance(scale, bool) and "density" not in a:
+            if scale >= 1.2:
+                a["density"] = "spacious"
+            elif scale <= 0.85:
+                a["density"] = "compact"
+    w = vals.get("hyprland", {}).get("windows") if isinstance(vals.get("hyprland"), dict) else None
+    if isinstance(w, dict):
+        w.pop("activeTransparency", None)
+        w.pop("inactiveTransparency", None)
+        if not w:
+            del vals["hyprland"]["windows"]
 
 
 class Config:
@@ -1565,23 +1605,6 @@ def output_mode(output):
     return f'{output["width"]}x{output["height"]}@{refresh:.5f}'
 
 
-def surface_linked(cfg, surface) -> bool:
-    """ThemeLogic.surfaceLinked: materials.link on and the surface not in materials.unlinked."""
-    unlinked = deep_get(cfg.values, "materials.unlinked")[0] or []
-    return deep_get(cfg.values, "materials.link")[0] is True and surface != "all" and surface not in unlinked
-
-
-def material_value(cfg, surface, prop, default=None):
-    """A surface's material setting as it applies (ThemeLogic.materialValue):
-    its own value, else All surfaces'; a linked surface = All surfaces only."""
-    link = surface_linked(cfg, surface)
-    for x in ((None if link else deep_get(cfg.values, f"materials.{surface}.{prop}")[0]),
-              deep_get(cfg.values, f"materials.all.{prop}")[0]):
-        if x is not None:
-            return x
-    return default
-
-
 def blur_amount(x) -> float:
     """Background blur 0–100 (0 = off); tolerates the pre-v5 booleans."""
     if x is True or x is None:
@@ -1591,13 +1614,8 @@ def blur_amount(x) -> float:
     return max(0, min(100, x))
 
 
-def blur_mask(cfg, surface, glass) -> float:
-    """ignore_alpha for a blurred surface (ThemeLogic.blurMaskFor); 0 = not blurred."""
-    if blur_amount(material_value(cfg, surface, "blur")) <= 0:
-        return 0
-    shadow = material_value(cfg, surface, "shadow", 1)
-    glow = material_value(cfg, surface, "glow", 0)
-    return min(0.45, glass.get("blurMaskShadowed", 0.12) * max(0.25, shadow or 0, 1 if (glow or 0) > 0 else 0)) if (shadow or 0) > 0 or (glow or 0) > 0 else glass.get("blurMask", 0.01)
+# Bifrost's layer namespaces that get compositor blur (Glass & transparency).
+BLUR_NAMESPACES = ("bar", "dock", "launcher", "power", "controlcenter", "notifications", "notificationcenter", "prompt", "osd")
 
 
 def theme_chain(cfg):
@@ -1629,27 +1647,26 @@ def window_radius(cfg):
     return max(0, math.floor(radius * (scale if scale is not None else 1) + 0.5))
 
 
-def material_radius(cfg, surface, material) -> float:
-    """Corner radius of a surface's glass as ThemeLogic resolves it: the
-    user's value, else the theme material's radius token × radiusScale."""
-    own = material_value(cfg, surface, "radius")
-    if isinstance(own, (int, float)) and not isinstance(own, bool):
-        return max(0, min(40, own))
+def settings_radius(cfg) -> float:
+    """Corner radius of the Settings window's glass as ThemeLogic resolves it:
+    the theme material's radius token × radiusScale, capped to what Hyprland
+    can clip a window to."""
     variant = effective_variant(cfg)
-    radius, mats = {}, {}
+    radius, mats, glass = {}, {}, {}
     for t in theme_chain(cfg):
         for layer in (t, t.get("variants", {}).get(variant, {})):
             radius.update(layer.get("radius", {}))
+            glass.update(layer.get("glass", {}))
             for k, m in layer.get("materials", {}).items():
                 mats.setdefault(k, {}).update(m)
-    m = mats.get(material) or mats.get("panel") or {}
+    m = mats.get("settings") or mats.get("panel") or {}
     r = m.get("radius", "@radius.xl")
     if isinstance(r, str) and r.startswith("@radius."):
         r = radius.get(r.split(".", 1)[1], 0)
     scale = deep_get(cfg.values, "appearance.radiusScale")[0]
     if isinstance(scale, (int, float)) and not isinstance(scale, bool):
         r = round(r * scale * 100) / 100
-    return r
+    return min(r, glass.get("windowRadiusMax", 20))
 
 
 def generate_hypr(cfg) -> str:
@@ -1697,12 +1714,9 @@ def generate_hypr(cfg) -> str:
         "end",
         "",
     ]
-    mat = lambda inst, prop, default=None: material_value(cfg, inst, prop, default)
-    materials = next((sec for sec in Schema().sections if sec.get("section") == "materials"), {}).get("template", {})
-    instances = materials.get("instances", [])
     glass_tokens = json.loads((REPO / "themes/_base.json").read_text())["glass"]
-    # One compositor blur strength: the strongest surface with blur on.
-    strength = max([blur_amount(mat(i["id"], "blur")) for i in instances] or [0])
+    # One blur for every Bifrost surface (Glass & transparency).
+    strength = blur_amount(v("materials.blur"))
     blur_size = max(1, round(1 + strength * 0.39))
     blur_passes = 2 if strength < 10 else min(6, 2 + round((strength - 10) / 22.5))
     if v("hyprland.manage"):
@@ -1717,20 +1731,18 @@ def generate_hypr(cfg) -> str:
             active = v("hyprland.activeBorderColor").lstrip("#").lower()
         if v("hyprland.inactiveBorderColor"):
             inactive = v("hyprland.inactiveBorderColor").lstrip("#").lower()
-        window_shadow = mat("all", "shadow", 1)
         shadow_base = base["elevation"]["mid"]
-        shadow_range = max(1, round(shadow_base["blur"] * window_shadow))
+        shadow_range = max(1, round(shadow_base["blur"]))
         shadow_rgb = (pal.get("void") or "#000000").lstrip("#")
-        shadow_alpha = round(min(1, shadow_base["opacity"] * window_shadow) * 255)
+        shadow_alpha = round(min(1, shadow_base["opacity"]) * 255)
         shadow_colour = f"rgba({shadow_rgb}{shadow_alpha:02x})"
-        opacity = lambda k: round(1 - (v(k) or 0) / 100, 3)
         lines += [
             "-- Appearance (hyprland.manage)",
             "hl.config({",
             f"\tgeneral = {{ gaps_in = {v('hyprland.gapsIn')}, gaps_out = {v('hyprland.gapsOut')}, border_size = {v('hyprland.borderSize')},",
             f'\t\tcol = {{ active_border = "rgb({active})", inactive_border = "rgb({inactive})" }} }},',
-            f"\tdecoration = {{ rounding = {rounding}, active_opacity = {opacity('hyprland.windows.activeTransparency')}, inactive_opacity = {opacity('hyprland.windows.inactiveTransparency')},",
-            f"\t\tshadow = {{ enabled = {str(window_shadow > 0).lower()}, range = {shadow_range}, render_power = 3, color = \"{shadow_colour}\", color_inactive = \"{shadow_colour}\" }},",
+            f"\tdecoration = {{ rounding = {rounding}, active_opacity = 1, inactive_opacity = 1,",
+            f"\t\tshadow = {{ enabled = true, range = {shadow_range}, render_power = 3, color = \"{shadow_colour}\", color_inactive = \"{shadow_colour}\" }},",
             f"\t\tblur = {{ enabled = {'true' if strength > 0 else 'false'}, size = {blur_size}, passes = {blur_passes} }} }},",
             "})",
             "",
@@ -1757,31 +1769,29 @@ def generate_hypr(cfg) -> str:
             lines.append(f'apply_output({{ output = {lua_str(name)}, mode = "{output_mode(o)}", position = "{o["x"]}x{o["y"]}", scale = {o["scale"]}, vrr = {1 if o.get("vrr") else 0}, bitdepth = {o.get("bitdepth", 8)}' + (f', cm = {lua_str(o["cm"])}' if o.get("cm") else "") + (f', sdrbrightness = {max(0.5, min(15, float(o["sdrBrightness"])))}' if "sdrBrightness" in o else "") + ' })')
         lines.append("")
     if v("hyprland.layerRules"):
-        menus_blur = blur_amount(mat("menus", "blur")) > 0
+        blur = str(strength > 0).lower()
+        mask = glass_tokens.get("blurMaskShadowed", 0.12)
         lines += [
-            "-- Bifrost surfaces: the shell animates them itself; background blur per",
-            "-- surface from Settings → Glass & materials (menus follow 'Popup menus').",
+            "-- Bifrost surfaces: the shell animates them itself; background blur from",
+            "-- Settings → Glass & transparency.",
             "for _, n in ipairs({ \"bifrost-blur\" }) do",
             "\tlocal r = state.rules[n]",
             "\tif r then pcall(function() r:set_enabled(false) end); state.rules[n] = nil end",
             "end",
             'layer_rule("bifrost-noanim", { match = { namespace = "^bifrost:.*" }, no_anim = true })',
         ]
-        for inst in instances:
-            blur = blur_amount(mat(inst["id"], "blur")) > 0
-            mask = blur_mask(cfg, inst["id"], glass_tokens) or glass_tokens.get("blurMask", 0.01)
-            for ns in inst.get("namespaces", []):
-                lines.append(f'layer_rule("bifrost-blur-{ns}", {{ match = {{ namespace = "^bifrost:{ns}$" }}, blur = {str(blur).lower()}, ignore_alpha = {mask:g}, blur_popups = {str(blur and menus_blur).lower()} }})')
+        for ns in BLUR_NAMESPACES:
+            lines.append(f'layer_rule("bifrost-blur-{ns}", {{ match = {{ namespace = "^bifrost:{ns}$" }}, blur = {blur}, ignore_alpha = {mask:g}, blur_popups = {blur} }})')
         lines.append("")
     layout = json.loads((REPO / "themes/_base.json").read_text())["layout"]
     w, h = layout["settingsWidth"], layout["settingsHeight"]
     # The window is its glass: Hyprland clips it (and the blur behind it) to
     # the glass's corner radius.
-    settings_rounding = round(min(material_radius(cfg, "settings", "settings"), glass_tokens.get("windowRadiusMax", 20)))
+    settings_rounding = round(settings_radius(cfg))
     lines += [
         "-- Bifrost's own app windows float, centred, like a settings dialog",
         f'window_rule("bifrost-settings", {{ match = {{ class = "^bifrost\\\\.settings$" }}, float = true, center = true, size = {{ "min({w}, monitor_w*0.9)", "min({h}, monitor_h*0.9)" }},'
-        f' border_size = 0, no_shadow = true, rounding = {settings_rounding}, rounding_power = 2, no_blur = {str(max(blur_amount(mat("settings", "blur")), blur_amount(mat("settingsGroups", "blur")) if v("settingsUI.layout") == "grouped" and v("settingsUI.grouped.background") else 0) <= 0).lower()} }})',
+        f' border_size = 0, no_shadow = true, rounding = {settings_rounding}, rounding_power = 2, no_blur = {str(strength <= 0).lower()} }})',
         "",
     ]
     import input_backend

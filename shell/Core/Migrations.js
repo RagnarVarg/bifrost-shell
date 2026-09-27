@@ -113,6 +113,54 @@ const steps = {
         }
         doc.version = 5;
         return doc;
+    },
+    // 5 → 6: one glass for every surface (materials.transparency/blur/tint/
+    // border) instead of per-surface overrides with link/unlink. All
+    // surfaces' values are kept; the rest take the standard glass. The prism
+    // switch (intensity 0 = off), the spacing scale (→ density) and app
+    // window transparency are gone, and so is the Settings layout page
+    // (settingsUI). Same in bifrostctl (migrate_5).
+    5: function (doc) {
+        const v = doc.values || {};
+        const m = v.materials;
+        if (m && typeof m === "object") {
+            const all = m.all && typeof m.all === "object" ? m.all : {};
+            const out = {};
+            for (const k of ["transparency", "blur", "tint", "border"])
+                if (all[k] !== null && all[k] !== undefined)
+                    out[k] = all[k];
+            if (out.blur === true || out.blur === false)
+                out.blur = out.blur ? 20 : 0;
+            v.materials = out;
+        }
+        const a = v.appearance;
+        if (a && typeof a === "object") {
+            if (a.prism && typeof a.prism === "object" && "enabled" in a.prism) {
+                if (a.prism.enabled === false)
+                    a.prism.intensity = 0;
+                delete a.prism.enabled;
+                if (!Object.keys(a.prism).length)
+                    delete a.prism;
+            }
+            const scale = a.spacingScale;
+            delete a.spacingScale;
+            if (typeof scale === "number" && !("density" in a)) {
+                if (scale >= 1.2)
+                    a.density = "spacious";
+                else if (scale <= 0.85)
+                    a.density = "compact";
+            }
+        }
+        const w = v.hyprland && v.hyprland.windows;
+        if (w && typeof w === "object") {
+            delete w.activeTransparency;
+            delete w.inactiveTransparency;
+            if (!Object.keys(w).length)
+                delete v.hyprland.windows;
+        }
+        delete v.settingsUI;
+        doc.version = 6;
+        return doc;
     }
 };
 

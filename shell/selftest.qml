@@ -126,13 +126,18 @@ ShellRoot {
         eq("migrated version", out.version, Config.formatVersion);
         eq("variant → mode", out.values.appearance.mode, "light");
         check("stray top-level appearance dropped", out.appearance === undefined);
-        eq("transparency → materials", [out.values.materials.bar.transparency, out.values.materials.launcher.transparency], [40, 20]);
-        eq("glass/borders/shadows → materials.all", [out.values.materials.all.grain, out.values.materials.all.blur, out.values.materials.all.border, out.values.materials.all.shadow], [0.03, 0, false, 0]);
-        eq("bar radius → materials.bar.radius", out.values.materials.bar.radius, 6);
-        check("blur off stays off; the old strength key is gone", out.values.materials.all.blur === 0 && out.values.materials.blurStrength === undefined);
+        eq("old glass settings → one glass (blur off and border off kept)", out.values.materials, { blur: 0, border: false });
         const v4 = { version: 4, values: { materials: { blurStrength: 49, bar: { blur: true }, dock: { blur: false }, osd: { transparency: 10 } } } };
-        const m5 = Migrations.migrate(v4, Config.formatVersion).values.materials;
-        eq("4 → 5: blur on/off + strength → amount per surface", [m5.all.blur, m5.bar.blur, m5.dock.blur, m5.osd.blur, m5.blurStrength], [49, 49, 0, undefined, undefined]);
+        eq("4 → 6: the old blur strength becomes the one blur", Migrations.migrate(v4, Config.formatVersion).values.materials, { blur: 49 });
+        const v5 = { version: 5, values: {
+            materials: { link: true, unlinked: ["dock"], all: { transparency: 44, blur: 22, tint: "#0F1516", thickness: 0, glow: 0.25, borderWidth: 0.5 }, dock: { transparency: 100 } },
+            appearance: { prism: { enabled: false, intensity: 2 }, spacingScale: 1.5, radiusScale: 2 },
+            hyprland: { windows: { activeTransparency: 10, inactiveTransparency: 20 }, gapsIn: 3 },
+            settingsUI: { layout: "boxed" } } };
+        const out6 = Migrations.migrate(v5, Config.formatVersion).values;
+        eq("5 → 6: All surfaces' glass is kept, per-surface and link settings are dropped", out6.materials, { transparency: 44, blur: 22, tint: "#0F1516" });
+        eq("5 → 6: prism switch off → intensity 0; spacing scale → density", [out6.appearance.prism, out6.appearance.density, out6.appearance.spacingScale, out6.appearance.radiusScale], [{ intensity: 0 }, "spacious", undefined, 2]);
+        eq("5 → 6: app window transparency and the Settings layout page removed", [out6.hyprland, out6.settingsUI], [{ gapsIn: 3 }, undefined]);
         check("old keys removed", out.values.appearance.transparency === undefined && out.values.bar.radius === undefined && out.values.hyprland.blur === undefined && out.values.hyprland.gapsIn === 4);
     }
 
@@ -216,8 +221,6 @@ ShellRoot {
     }
 
     function testTheme() {
-        check("deep shadows are not clipped to standard alpha", ThemeLogic.blurMaskFor(p => p === "shadow" ? 3 : p === "blur" ? 20 : 0, {}, false) > ThemeLogic.blurMaskFor(p => p === "shadow" ? 1 : p === "blur" ? 20 : 0, {}, false));
-
         Theme.rebuild();
         eq("theme chain", Theme.chainIds, ["_base", "bifrost-graphite"]);
         eq("theme has no issues", Theme.issues, []);
@@ -253,57 +256,30 @@ ShellRoot {
         Config.set("appearance.radiusScale", 0);
         Theme.rebuild();
         check("radius scale 0 keeps 'full'", Theme.radius.lg === 0 && Theme.radius.full === 9999, Theme.radius);
-        Config.set("appearance.prism.enabled", false);
+        Config.set("appearance.prism.intensity", 0);
         Theme.rebuild();
-        eq("prism off falls back to solid", Theme.states.selected.fill, "solid");
-        Config.set("materials.bar.transparency", 0);
-        Config.set("materials.all.transparency", 25);
+        eq("prism intensity 0 falls back to solid", Theme.states.selected.fill, "solid");
+        Config.set("materials.transparency", 25);
         Theme.rebuild();
-        check("transparency 0 % makes the bar solid", Theme.materials.bar.opacity === 1 && Theme.materials.bar.fill.substring(1, 3).toLowerCase() === "ff", Theme.materials.bar.fill);
-        check("all-surfaces transparency reaches every other surface", ["panel", "popover", "osd", "launcher", "controlCenter", "notifications", "settings", "dock"].every(k => Math.abs(Theme.materials[k].opacity - 0.75) < 1e-9 && Theme.materials[k].transparency === 25));
-        Config.reset("materials.all.transparency");
+        check("one transparency reaches every surface", ["bar", "dock", "panel", "popover", "osd", "launcher", "controlCenter", "notifications", "settings", "settingsGroups"].every(k => Math.abs(Theme.materials[k].opacity - 0.75) < 1e-9 && Theme.materials[k].transparency === 25));
+        Config.set("materials.transparency", 0);
         Theme.rebuild();
-        check("unset transparency keeps the theme glass", Theme.materials.dock.opacity > 0.4 && Theme.materials.dock.opacity < 1 && Theme.materials.lock.opacity < 1);
-        const depth1 = Theme.materials.dock.depth, bevel1 = Theme.materials.dock.bevel;
-        Config.set("materials.dock.thickness", 3);
+        check("transparency 0 % makes the glass solid", Theme.materials.bar.opacity === 1 && Theme.materials.bar.fill.substring(1, 3).toLowerCase() === "ff", Theme.materials.bar.fill);
+        Config.reset("materials.transparency");
         Theme.rebuild();
-        check("thickness deepens the glass and widens the bevel", Theme.materials.dock.depth > depth1 * 2 && Theme.materials.dock.bevel === bevel1 * 3 && Theme.materials.bar.bevel === bevel1, Theme.materials.dock.depth + " " + Theme.materials.dock.bevel);
-        Config.set("materials.all.border", false);
-        Config.set("materials.dock.border", true);
-        Config.set("materials.dock.borderWidth", 3);
-        Config.set("materials.dock.borderOpacity", 80);
+        check("standard transparency keeps the theme glass per surface", Theme.materials.dock.opacity > 0.4 && Theme.materials.dock.opacity < 1 && Theme.materials.popover.opacity !== Theme.materials.dock.opacity && Theme.materials.lock.opacity < 1);
+        Config.set("materials.tint", "#112233");
+        Config.set("materials.border", false);
         Theme.rebuild();
-        check("border off everywhere except where overridden", Theme.materials.bar.borderWidth === 0 && Theme.materials.dock.borderWidth === 3, Theme.materials.dock.borderWidth);
-        check("border opacity sets the rim alpha", Theme.materials.dock.innerBorder.substring(1, 3).toLowerCase() === "cc", Theme.materials.dock.innerBorder);
-        Config.set("materials.dock.shadow", 0);
-        Config.set("materials.osd.glow", 0.5);
-        Config.set("materials.osd.refraction", 0.7);
+        check("tint and border reach every surface", Theme.materials.osd.tint === "#112233" && Theme.materials.bar.borderWidth === 0 && Theme.materials.settings.borderWidth === 0);
+        Config.set("materials.blur", 60);
         Theme.rebuild();
-        check("shadow 0 removes the shadow", Theme.materials.dock.elevation.opacity === 0);
-        check("glow and refraction reach the material", Theme.materials.osd.glow === 0.5 && Theme.materials.osd.refraction === 0.7 && Theme.materials.bar.glow === 0);
-        // Background blur: an amount per surface; the compositor's blur mask
-        // is the higher threshold only where glass draws outside itself.
-        Config.set("materials.all.blur", 60);
-        Config.set("materials.bar.blur", 0);
-        Config.set("materials.all.shadow", 0);
+        check("one blur amount for every surface", Theme.materials.launcher.blur === 60 && Theme.materials.bar.blur === 60 && Theme.materials.tooltip.blur === 0);
+        check("blur mask: layers masked, window surfaces none", Theme.materials.launcher.blurMask === Theme.glass.blurMaskShadowed && Theme.materials.settings.blurMask === 0 && Theme.materials.settingsGroups.blurMask === 0);
+        Config.set("materials.blur", 0);
         Theme.rebuild();
-        check("blur amount per surface, 0 = off", Theme.materials.launcher.blur === 60 && Theme.materials.bar.blur === 0 && Theme.materials.bar.blurMask === 0, Theme.materials.launcher.blur + "/" + Theme.materials.bar.blur);
-        check("blur mask: clean glass low, glow/shadow high, window surfaces none", Theme.materials.launcher.blurMask === Theme.glass.blurMask && Theme.materials.osd.blurMask === Theme.glass.blurMaskShadowed && Theme.materials.settings.blurMask === 0, [Theme.materials.launcher.blurMask, Theme.materials.osd.blurMask, Theme.materials.settings.blurMask]);
-        // Link all surfaces: All surfaces decides; own values are kept.
-        Config.set("materials.link", true);
-        Theme.rebuild();
-        check("link: every surface follows All surfaces", Theme.materials.bar.blur === 60 && Theme.materials.dock.borderWidth === 0 && Theme.materials.osd.glow === 0 && Theme.materials.dock.elevation.opacity === 0, [Theme.materials.bar.blur, Theme.materials.dock.borderWidth, Theme.materials.osd.glow]);
-        check("link keeps own values", Config.get("materials.dock.borderWidth") === 3 && Config.get("materials.bar.blur") === 0);
-        // One surface unlinked: its own values again, the rest still linked.
-        Config.set("materials.unlinked", ["dock"]);
-        Theme.rebuild();
-        check("unlinked surface uses its own values while linked", Theme.materials.dock.borderWidth === 3 && Theme.materials.bar.blur === 60, [Theme.materials.dock.borderWidth, Theme.materials.bar.blur]);
-        Config.reset("materials.unlinked");
-        Theme.rebuild();
-        check("relinked surface follows All surfaces", Theme.materials.dock.borderWidth === 0);
-        Config.set("materials.link", false);
-        Theme.rebuild();
-        check("unlinked: own values again", Theme.materials.bar.blur === 0 && Theme.materials.dock.borderWidth === 3 && Theme.materials.osd.glow === 0.5);
+        check("blur 0 turns blur off everywhere", Theme.materials.launcher.blur === 0 && Theme.materials.launcher.blurMask === 0);
+        Config.resetSection("materials");
         Config.set("appearance.accent", "#FF8800");
         Theme.rebuild();
         eq("accent override", Theme.color.accent, "#FF8800");
@@ -338,42 +314,20 @@ ShellRoot {
 
     // Each Settings editor bound to a real key must read and write through Config.
     function testGroupedSettings() {
-        Config.set("settingsUI.layout", "grouped");
-        Config.set("settingsUI.grouped.innerPadding", 27);
-        check("grouped layout uses persistent padding", SettingsStyle.grouped && SettingsStyle.innerPadding === 27);
-        Config.set("settingsUI.grouped.density", "compact");
-        const compact=SettingsStyle.factor;
-        Config.set("settingsUI.grouped.density", "spacious");
-        check("grouped density changes shared spacing", SettingsStyle.factor > compact);
-        Config.set("materials.link", false);
-        Config.set("materials.all.transparency", 40);
-        Config.set("materials.settingsGroups.transparency", 15);
+        Config.set("materials.transparency", 40);
         Theme.rebuild();
-        eq("group material overrides all surfaces", Theme.materials.settingsGroups.transparency,15);
-        Config.set("materials.settingsGroups.radius", 35);
-        Theme.rebuild();
-        eq("internal groups keep radius above window clipping limit", Theme.materials.settingsGroups.radius,35);
-        eq("internal groups do not apply a layer blur mask", Theme.materials.settingsGroups.blurMask,0);
-
-        Config.set("materials.link", true);
-        Theme.rebuild();
-        eq("linked group material follows all surfaces", Theme.materials.settingsGroups.transparency,40);
-        Config.set("settingsUI.layout", "boxed");
-        check("boxed ignores grouped padding and separators", !SettingsStyle.grouped && SettingsStyle.innerPadding === Theme.space.lg && !SettingsStyle.separators);
-        Config.resetSection("settingsUI");
-        Config.reset("materials.settingsGroups.transparency");
-        Config.reset("materials.settingsGroups.radius");
-        Config.reset("materials.all.transparency");
-        Config.reset("materials.link");
+        eq("groups use the one glass", Theme.materials.settingsGroups.transparency, 40);
+        eq("internal groups do not apply a layer blur mask", Theme.materials.settingsGroups.blurMask, 0);
+        Config.reset("materials.transparency");
         Theme.rebuild();
     }
 
     function testEditors() {
         const cases = [
-            ["BoolEditor", "materials.link", true],
-            ["NumberEditor", "materials.dock.blur", 40],
+            ["BoolEditor", "materials.border", false],
+            ["NumberEditor", "materials.blur", 40],
             ["NumberEditor", "bar.height", 44],
-            ["NumberEditor", "materials.all.grain", 0.05],
+            ["NumberEditor", "materials.transparency", 30],
             ["ThemeModeEditor", "appearance.mode", "light"],
             ["SegmentedEditor", "keybinds.workspaceStyle", "moveFollow"],
             ["EnumEditor", "notifications.position", "bottom-right"],
@@ -409,7 +363,7 @@ ShellRoot {
                 r.destroy();
             return ok;
         })());
-        for (const name of ["SettingsLayoutPage", "SettingsRows", "SettingsGroupSurface", "SettingsDivider", "Card", "SectionPage", "NetworkPage", "ThemeBrowserPage", "InputPage", "InputDevicePage", "InputControl", "InputGestures", "KeybindsPage", "KeybindRow", "KeybindGroupCard", "KeyChips", "KeyCaptureField"]) {
+        for (const name of ["SettingsRows", "SettingsGroupSurface", "SettingsDivider", "Card", "SectionPage", "NetworkPage", "ThemeBrowserPage", "InputPage", "InputDevicePage", "InputControl", "InputGestures", "KeybindsPage", "KeybindRow", "KeybindGroupCard", "KeyChips", "KeyCaptureField"]) {
             const component = Qt.createComponent(Qt.resolvedUrl("Settings/" + name + ".qml"));
             check("settings page compiles: " + name, component.status === Component.Ready, component.errorString());
         }
@@ -472,11 +426,10 @@ ShellRoot {
         }
         for (const scale of [1, 1.5])
         for (const width of [320, 520, 800, 1400])
-            for (const key of ["appearance.mode", "appearance.accent", "materials.all.blur", "materials.dock.border", "notifications.position", "keybinds.workspaceStyle"])
+            for (const key of ["appearance.mode", "appearance.accent", "materials.blur", "materials.border", "notifications.position", "keybinds.workspaceStyle"])
             {
                 const row = c.createObject(test, { key: key, width: width,
-                    note: "Lång svensk beskrivning med flera ord ochLongEnglishTextWithoutSpacesThatMustWrapCorrectly ".repeat(3),
-                    linked: key === "materials.dock.border" });
+                    note: "Lång svensk beskrivning med flera ord ochLongEnglishTextWithoutSpacesThatMustWrapCorrectly ".repeat(3) });
                 scaleText(row, scale);
                 layoutCases.push(row);
             }

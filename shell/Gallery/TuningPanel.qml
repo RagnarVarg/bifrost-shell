@@ -119,37 +119,18 @@ GlassSurface {
             }
 
             SliderRow {
-                key: "materials.all.thickness"
-                to: 4
-                step: 0.05
-                fallback: 1
+                key: "materials.transparency"
+                to: 100
+                step: 1
+                decimals: 0
+                fallback: Theme.materials.panel.transparency || 0
             }
 
             SliderRow {
-                key: "materials.all.grain"
-                to: 0.12
-                step: 0.005
-                decimals: 3
-                fallback: Theme.glass.grain
-            }
-
-            SliderRow {
-                key: "materials.all.refraction"
-                to: 1
-                step: 0.05
-                fallback: 0
-            }
-
-            SliderRow {
-                key: "materials.all.glow"
-                to: 1
-                step: 0.05
-            }
-
-            SliderRow {
-                key: "materials.all.shadow"
-                to: 3
-                step: 0.05
+                key: "materials.blur"
+                to: 100
+                step: 1
+                decimals: 0
             }
 
             BText {
@@ -164,21 +145,10 @@ GlassSurface {
                 step: 0.05
             }
 
-            SliderRow {
-                key: "appearance.spacingScale"
-                from: 0.5
-                to: 2
-                step: 0.05
-            }
-
             BText {
                 text: "Bifrost-prisma"
                 role: "overline"
                 tone: "muted"
-            }
-
-            ToggleRow {
-                key: "appearance.prism.enabled"
             }
 
             SliderRow {

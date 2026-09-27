@@ -2,12 +2,11 @@
   "section": "hyprland",
   "label": "Windows & compositor",
   "icon": "windows",
-  "description": "Settings for ordinary application windows, applied live to Hyprland through Bifrost's generated bifrost.lua. They never affect Bifrost's own panels (see Glass & materials).",
+  "description": "Settings for ordinary application windows, applied live to Hyprland through Bifrost's generated bifrost.lua. They never affect Bifrost's own panels (see Glass & transparency).",
   "groups": {
     "general": "General",
     "layout": "Layout",
     "decoration": "Border & corners",
-    "windows": "Window transparency",
     "integration": "Integration"
   },
   "requires": {
@@ -21,7 +20,7 @@
       "type": "bool",
       "default": true,
       "label": "Let Bifrost manage window appearance",
-      "description": "Off = Bifrost leaves gaps, borders, corners, window transparency and blur to your own Hyprland config",
+      "description": "Off = Bifrost leaves gaps, borders, corners and blur to your own Hyprland config",
       "group": "general",
       "scope": "hyprland"
     },
@@ -100,31 +99,6 @@
       "scope": "hyprland",
       "dependsOn": "hyprland.manage",
       "inherit": "radius.lg"
-    },
-    {
-      "key": "hyprland.windows.activeTransparency",
-      "type": "int",
-      "default": 0,
-      "min": 0,
-      "max": 60,
-      "unit": "%",
-      "label": "Active window transparency",
-      "description": "0 = opaque. Applies to application windows only",
-      "group": "windows",
-      "scope": "hyprland",
-      "dependsOn": "hyprland.manage"
-    },
-    {
-      "key": "hyprland.windows.inactiveTransparency",
-      "type": "int",
-      "default": 0,
-      "min": 0,
-      "max": 60,
-      "unit": "%",
-      "label": "Inactive window transparency",
-      "group": "windows",
-      "scope": "hyprland",
-      "dependsOn": "hyprland.manage"
     },
     {
       "key": "hyprland.layerRules",

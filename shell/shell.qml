@@ -111,7 +111,7 @@ ShellRoot {
 
         function onSettingChanged(key, value) {
             console.info("[bifrost] setting", key, "=", JSON.stringify(value), "(" + Config.applyModeOf(key) + ")");
-            if (key === "materials.all.blur" || key === "materials.all.shadow" || key === "materials.all.glow")
+            if (key === "materials.blur")
                 shell.applySurfaceEffects();
         }
     }

@@ -14,7 +14,7 @@ Scope {
     id: sync
 
     readonly property bool enabled: RunMode.appliesHyprlandSettings
-    readonly property var derivedKeys: ["appearance.accent", "appearance.theme", "appearance.mode", "appearance.radiusScale", "materials.all.shadow"]
+    readonly property var derivedKeys: ["appearance.accent", "appearance.theme", "appearance.mode", "appearance.radiusScale"]
 
     function affects(key: string): bool {
         const d = Schema.entries[key];

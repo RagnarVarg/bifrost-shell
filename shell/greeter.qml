@@ -155,7 +155,7 @@ ShellRoot {
 
     function applyAccessibility() {
         Config.setTransient("appearance.font.scale", largeText ? 1.3 : undefined);
-        for (const [k, v] of [["materials.all.transparency", 0], ["materials.all.border", true], ["materials.all.borderWidth", 2], ["materials.all.borderOpacity", 100], ["materials.all.borderColor", "#FFFFFF"], ["materials.all.glow", 0], ["appearance.foreground.dark", "#FFFFFF"], ["appearance.foreground.light", "#000000"]])
+        for (const [k, v] of [["materials.transparency", 0], ["materials.border", true], ["appearance.foreground.dark", "#FFFFFF"], ["appearance.foreground.light", "#000000"]])
             Config.setTransient(k, highContrast ? v : undefined);
     }
 

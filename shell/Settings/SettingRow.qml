@@ -13,11 +13,6 @@ Item {
 
     readonly property bool settingRow: true
     property string key: ""
-    // Passed to the editor: the value a nullable setting resolves to (see EditorBase).
-    property var fallback: undefined
-    // The value comes from elsewhere (a material surface linked to All
-    // surfaces): the editor shows the fallback, and `note` says why.
-    property bool linked: false
     // Extra line under the description (inheritance, what the value does now).
     property string note: ""
     readonly property var def: Schema.def(key) || ({})
@@ -163,7 +158,7 @@ Item {
     }
 
     width: parent ? parent.width : 0
-    implicitHeight: (wide ? texts.implicitHeight + Theme.space.md + editor.height : Math.max(texts.implicitHeight, editor.height)) + (Theme.space.lg * SettingsStyle.factor) * 2
+    implicitHeight: (wide ? texts.implicitHeight + Theme.space.md + editor.height : Math.max(texts.implicitHeight, editor.height)) + Theme.space.lg * 2
     enabled: dependencyMet
     opacity: enabled ? 1 : Theme.opacity.disabled
 
@@ -190,7 +185,7 @@ Item {
         objectName: "settingTexts"
 
         x: Theme.space.xl
-        y: row.wide ? (Theme.space.lg * SettingsStyle.factor) : (row.height - implicitHeight) / 2
+        y: row.wide ? Theme.space.lg : (row.height - implicitHeight) / 2
         width: row.wide ? row.innerWidth : Math.max(0, row.width - editorArea.width - Theme.space.xl * 3)
         spacing: SettingsStyle.descriptionSpacing
 
@@ -217,7 +212,7 @@ Item {
             visible: row.note !== ""
             text: row.note
             role: "caption"
-            tone: row.linked ? "accent" : "faint"
+            tone: "faint"
             wrapMode: Text.Wrap
         }
 
@@ -251,8 +246,6 @@ Item {
             sourceComponent: row.editors[row.editorName] || row.editors.TextEditor
             onLoaded: {
                 item.key = row.key;
-                item.fallback = Qt.binding(() => row.fallback);
-                item.followsFallback = Qt.binding(() => row.linked);
             }
         }
 
@@ -263,8 +256,8 @@ Item {
             anchors.top: parent.top
             icon: "reset"
             size: "sm"
-            opacity: row.modified && !row.linked ? 1 : 0
-            enabled: row.modified && !row.linked
+            opacity: row.modified ? 1 : 0
+            enabled: row.modified
             onClicked: Config.reset(row.key)
         }
     }

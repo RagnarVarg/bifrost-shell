@@ -99,7 +99,7 @@ Item {
                 anchors.top: banners.bottom
                 anchors.bottom: parent.bottom
                 width: parent.width
-                sourceComponent: SettingsNav.query !== "" ? searchPage : info && info.kind === "section" ? sectionPage : info && info.page === "SettingsLayoutPage" ? settingsLayoutPage : info && info.page === "InputPage" ? inputPage : info && info.page === "KeybindsPage" ? keybindsPage : info && info.page === "ThemeBrowserPage" ? themeBrowserPage : info && info.page === "NetworkPage" ? networkPage : info && info.page === "ProfilesPage" ? profilesPage : info && info.page === "TransferPage" ? transferPage : info && info.page === "MaterialsPage" ? materialsPage : info && info.page === "BluetoothPage" ? bluetoothPage : info && info.page === "DisplayPage" ? displayPage : dataPage
+                sourceComponent: SettingsNav.query !== "" ? searchPage : info && info.kind === "section" ? sectionPage : info && info.page === "InputPage" ? inputPage : info && info.page === "KeybindsPage" ? keybindsPage : info && info.page === "ThemeBrowserPage" ? themeBrowserPage : info && info.page === "NetworkPage" ? networkPage : info && info.page === "ProfilesPage" ? profilesPage : info && info.page === "TransferPage" ? transferPage : info && info.page === "BluetoothPage" ? bluetoothPage : info && info.page === "DisplayPage" ? displayPage : dataPage
             }
 
             BIconButton {
@@ -134,7 +134,6 @@ Item {
         DataPage {}
     }
 
-    Component { id: settingsLayoutPage; SettingsLayoutPage {} }
 
     Component { id: inputPage; InputPage {} }
 
@@ -160,12 +159,6 @@ Item {
         id: transferPage
 
         TransferPage {}
-    }
-
-    Component {
-        id: materialsPage
-
-        MaterialsPage {}
     }
 
     Component {
