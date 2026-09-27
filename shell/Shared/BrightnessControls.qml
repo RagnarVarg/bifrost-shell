@@ -5,8 +5,15 @@ import qs.Components.Text
 import qs.Components.Controls
 import qs.Modules.ControlCenter
 
+// Brightness sliders, one per controllable display. `compact` (control
+// center): only when a display has a working slider, nothing at all
+// otherwise; the full form (Settings → Displays) also explains why there is
+// none and can detect again. The column stays visible either way, so it
+// keeps looking for displays while shown.
 Column {
     id: controls
+    property bool compact: false
+    readonly property bool diagnostics: !compact
     property bool retained: false
     spacing: Theme.space.sm
     function sync() {
@@ -18,19 +25,20 @@ Column {
     Component.onDestruction: if (retained) Brightness.release()
     BText {
         width: parent.width
+        visible: controls.diagnostics || Brightness.available
         text: I18n.tr("Brightness")
         role: "label"
     }
     BText {
         width: parent.width
-        visible: !Brightness.available
+        visible: controls.diagnostics && !Brightness.available
         text: !Brightness.probed ? I18n.tr("Detecting brightness controls…") : I18n.tr("No controllable display found. Check DDC/CI in the monitor menu and I²C access on this computer.")
         wrapMode: Text.Wrap
         role: "caption"
         tone: "muted"
     }
     BButton {
-        visible: !Brightness.available
+        visible: controls.diagnostics && !Brightness.available
         text: I18n.tr("Detect displays again")
         enabled: !Brightness.busy
         onClicked: Brightness.refresh()
@@ -48,7 +56,7 @@ Column {
     }
     BText {
         width: parent.width
-        visible: Brightness.error !== ""
+        visible: Brightness.error !== "" && (controls.diagnostics || Brightness.available)
         text: Brightness.error
         wrapMode: Text.Wrap
         role: "caption"

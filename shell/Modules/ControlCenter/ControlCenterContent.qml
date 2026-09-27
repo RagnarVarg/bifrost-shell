@@ -330,8 +330,10 @@ Item {
             }
         }
 
+        // Only with a display whose brightness can be set.
         BrightnessControls {
             width: parent.width
+            compact: true
         }
 
         // Media
