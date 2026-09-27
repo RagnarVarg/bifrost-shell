@@ -26,6 +26,7 @@ import qs.Modules.Launcher.Providers
 import qs.Modules.Lock
 import qs.Modules.Notifications
 import qs.Modules.Overview
+import qs.Modules.WindowTransitions
 import qs.Modules.Osd
 import qs.Modules.PowerMenu
 import qs.Modules.Prompt
@@ -67,6 +68,8 @@ ShellRoot {
     Dock {}
 
     Overview {}
+
+    WindowTransitions {}
 
     Launcher {}
 

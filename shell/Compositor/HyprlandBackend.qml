@@ -58,7 +58,8 @@ CompositorBackend {
             windowCapture: true,
             minimizeWindow: true,
             restoreWindow: true,
-            minimizedWindowState: true
+            minimizedWindowState: true,
+            minimizeTransition: true
         })
 
     // ── Minimize ────────────────────────────────────────────────────────
@@ -76,7 +77,9 @@ CompositorBackend {
     property bool storeLoaded: false
     readonly property int minimizeGraceMs: 3000
 
-    function minimizeWindow(windowId) {
+    // options.quiet: without Hyprland's own fade (no_anim for the move,
+    // lifted again by an hl.timer), for a transition Bifrost draws itself.
+    function minimizeWindow(windowId, options) {
         const w = findWindow(windowId);
         if (!w)
             return false;
@@ -86,12 +89,15 @@ CompositorBackend {
         const t = Hyprland.toplevels.values.find(x => x.address === windowId);
         const pinned = !!(t && t.lastIpcObject && t.lastIpcObject.pinned);
         setMinimizedStore(Min.remember(minimizedStore, w, pinned, Date.now()));
-        const steps = [];
+        const quiet = !!(options && options.quiet);
+        const steps = quiet ? [quietStep(windowId, true)] : [];
         if (pinned)
             steps.push(["hl.dsp.window.pin({ action = \"unset\", window = " + lua(target(windowId)) + " })", "pin " + target(windowId)]);
         steps.push(["hl.dsp.window.move({ workspace = " + lua(minimizedWorkspace) + ", follow = false, window = " + lua(target(windowId)) + " })",
                 "movetoworkspacesilent " + minimizedWorkspace + "," + target(windowId)]);
         steps.push([releaseFocus(windowId, workspaceSelector(w.workspaceId, w.workspaceName)), "", true]);
+        if (quiet)
+            steps.push([quietStep(windowId, false)[0], "", true]);
         return runSteps(steps);
     }
 
@@ -107,11 +113,15 @@ CompositorBackend {
             "local best = nil; for _, x in ipairs(hl.get_workspace_windows(" + from + ") or {}) do " +
             "if x.address ~= " + addr + " and x.mapped and not x.hidden and (best == nil or x.focus_history_id < best.focus_history_id) then best = x end end; " +
             "if best then hl.dispatch(hl.dsp.focus({ window = \"address:\" .. best.address })) " +
-            (fromSelector.startsWith("special:") ? "" : "else hl.dispatch(hl.dsp.focus({ workspace = \"name:bifrost-refocus\" })); hl.dispatch(hl.dsp.focus({ workspace = " + from + " })) ") +
+            // The hop runs with animations off (and the user's setting back),
+            // or the screen would visibly slide to another workspace and back.
+            (fromSelector.startsWith("special:") ? "" : "else local anim = hl.get_config(\"animations.enabled\"); hl.config({ animations = { enabled = false } }); " +
+                "hl.dispatch(hl.dsp.focus({ workspace = \"name:bifrost-refocus\" })); hl.dispatch(hl.dsp.focus({ workspace = " + from + " })); " +
+                "hl.config({ animations = { enabled = anim ~= false } }) ") +
             "end end";
     }
 
-    function restoreWindow(windowId, workspaceId) {
+    function restoreWindow(windowId, workspaceId, options) {
         const w = findWindow(windowId);
         if (!w)
             return false;
@@ -129,7 +139,8 @@ CompositorBackend {
         if (!to)
             return false;
         const sel = workspaceSelector(to.workspaceId, to.workspaceName);
-        const steps = [];
+        const quiet = !!(options && options.quiet);
+        const steps = quiet ? [quietStep(windowId, true)] : [];
         // A workspace Hyprland dropped is created on the focused monitor:
         // focus the window's monitor first (the window takes focus anyway).
         if (to.create && to.monitor)
@@ -139,8 +150,18 @@ CompositorBackend {
         if (rec && rec.pinned)
             steps.push(["hl.dsp.window.pin({ action = \"set\", window = " + lua(target(windowId)) + " })", "pin " + target(windowId)]);
         steps.push(["hl.dsp.focus({ window = " + lua(target(windowId)) + " })", "focuswindow " + target(windowId)]);
+        if (quiet)
+            steps.push([quietStep(windowId, false)[0], "", true]);
         setMinimizedStore(Min.forget(minimizedStore, windowId));
         return runSteps(steps);
+    }
+
+    // on: no_anim for the window now (a dispatcher step); off: raw Lua that
+    // lifts it once the move is over (lifting it in the same run would let
+    // Hyprland start the fade after all).
+    function quietStep(windowId, on) {
+        const set = v => "hl.dsp.window.set_prop({ window = " + lua(target(windowId)) + ", prop = \"no_anim\", value = \"" + v + "\" })";
+        return on ? [set("on"), ""] : ["hl.timer(function() pcall(hl.dispatch, " + set("unset") + ") end, { timeout = 700, type = \"oneshot\" })", "", true];
     }
 
     // Hyprland workspace selector: special and named workspaces by name,

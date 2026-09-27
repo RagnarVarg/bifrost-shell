@@ -46,7 +46,10 @@ QtObject {
             // from compositor state (not geometry).
             minimizeWindow: false,
             restoreWindow: false,
-            minimizedWindowState: false
+            minimizedWindowState: false,
+            // minimize/restore can skip the compositor's own animation
+            // (options.quiet), so Bifrost can draw the transition itself.
+            minimizeTransition: false
         })
 
     property var workspaces: []
@@ -103,14 +106,15 @@ QtObject {
     }
 
     // Hides a window without closing it; it stays in `windows` with
-    // minimized: true and must not take focus.
-    function minimizeWindow(windowId) {
+    // minimized: true and must not take focus. options: { quiet } (see
+    // capabilities.minimizeTransition).
+    function minimizeWindow(windowId, options) {
         return unsupported("minimizeWindow");
     }
 
     // Brings a minimized window back (to `workspaceId` if given, else where
     // it was) and focuses it.
-    function restoreWindow(windowId, workspaceId) {
+    function restoreWindow(windowId, workspaceId, options) {
         return unsupported("restoreWindow");
     }
 

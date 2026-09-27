@@ -168,13 +168,40 @@ Singleton {
         return !!w && w.minimized === true;
     }
 
+    // Draws minimize/restore (a UI module registers itself here): every way
+    // to minimize or restore comes through the two functions below, so they
+    // all look the same. Contract:
+    //   minimize(window, hide): calls hide() once, when it can cover the window
+    //   restore(window, show):  calls show() once, when the window may appear
+    // Only used when the backend can skip its own animation (no double one).
+    property var windowTransitions: null
+
+    function transitionsFor(windowId: string): var {
+        return windowTransitions && supports("minimizeTransition") ? backend.findWindow(windowId) : null;
+    }
+
     function minimizeWindow(windowId: string): bool {
-        return backend && supports("minimizeWindow") ? backend.minimizeWindow(windowId) : false;
+        if (!backend || !supports("minimizeWindow"))
+            return false;
+        const w = transitionsFor(windowId);
+        if (w && !w.minimized) {
+            windowTransitions.minimize(w, () => backend.minimizeWindow(windowId, { quiet: true }));
+            return true;
+        }
+        return backend.minimizeWindow(windowId);
     }
 
     // Back where it was (or to `workspaceId`), focused.
     function restoreWindow(windowId: string, workspaceId: var): bool {
-        return backend && supports("restoreWindow") ? backend.restoreWindow(windowId, workspaceId === undefined ? null : workspaceId) : false;
+        if (!backend || !supports("restoreWindow"))
+            return false;
+        const ws = workspaceId === undefined ? null : workspaceId;
+        const w = transitionsFor(windowId);
+        if (w && w.minimized) {
+            windowTransitions.restore(w, () => backend.restoreWindow(windowId, ws, { quiet: true }));
+            return true;
+        }
+        return backend.restoreWindow(windowId, ws);
     }
 
     // An app's windows, activated from the dock: focus (cycling while the

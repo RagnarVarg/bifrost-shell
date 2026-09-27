@@ -524,7 +524,7 @@ ShellRoot {
             const c = Qt.createComponent(Qt.resolvedUrl(m + ".qml"));
             check("clock menu part compiles: " + m, c.status === Component.Ready, c.errorString());
         }
-        for (const m of ["Modules/Bar/Widgets/WorkspacePreview", "Compat/WindowCapture", "Modules/ControlCenter/ControlCenterContent", "Modules/ControlCenter/ControlCenter", "Modules/Dock/DockPanelHost", "Modules/Dock/Dock", "Modules/Bar/Widgets/ControlCenterWidget", "Modules/Launcher/LauncherContent", "Modules/Launcher/Launcher", "Modules/Bar/Widgets/LauncherWidget", "Modules/Bar/PanelMenu", "Modules/Notifications/NotificationCenterContent", "Modules/Notifications/NotificationCenter", "Modules/Bar/Widgets/NotificationsWidget", "Shared/AudioDevices", "Shared/WifiNetworks"]) {
+        for (const m of ["Modules/Bar/Widgets/WorkspacePreview", "Compat/WindowCapture", "Modules/WindowTransitions/WindowTransitions", "Modules/ControlCenter/ControlCenterContent", "Modules/ControlCenter/ControlCenter", "Modules/Dock/DockPanelHost", "Modules/Dock/Dock", "Modules/Bar/Widgets/ControlCenterWidget", "Modules/Launcher/LauncherContent", "Modules/Launcher/Launcher", "Modules/Bar/Widgets/LauncherWidget", "Modules/Bar/PanelMenu", "Modules/Notifications/NotificationCenterContent", "Modules/Notifications/NotificationCenter", "Modules/Bar/Widgets/NotificationsWidget", "Shared/AudioDevices", "Shared/WifiNetworks"]) {
             const c = Qt.createComponent(Qt.resolvedUrl(m + ".qml"));
             check("workspace preview part compiles: " + m, c.status === Component.Ready, c.errorString());
         }
