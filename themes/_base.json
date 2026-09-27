@@ -32,6 +32,7 @@
     "outerBorder": 0.5,
     "disabled": 0.38,
     "scrim": 0.45,
+    "overviewScrim": 0.72,
     "stateHover": 0.055,
     "statePressed": 0.1,
     "stateSelected": 0.14,
@@ -162,6 +163,10 @@
     "scrim": {
       "color": "@palette.void",
       "alpha": "@opacity.scrim"
+    },
+    "overviewScrim": {
+      "color": "@palette.void",
+      "alpha": "@opacity.overviewScrim"
     },
     "shadow": "@palette.void",
     "textOnGlass": "@palette.text",
@@ -487,6 +492,10 @@
     "controlCenterWidth": 392,
     "clockMenuWidth": 560,
     "workspacePreviewWidth": 440,
+    "_overview": "Overview (all windows): a picture is at most overviewTileHeight × the screen's height tall and overviewTileAspect × that wide (fewer windows never make them bigger), with overviewGap between them.",
+    "overviewTileHeight": 0.28,
+    "overviewTileAspect": 2.4,
+    "overviewGap": 44,
     "osdWidth": 300,
     "promptWidth": 400,
     "notificationWidth": 380,

@@ -576,6 +576,16 @@ ShellRoot {
             check("overview preserves proportions "+dimensions,boxes.every((b,i)=>Math.abs(b.width/b.height-testWins[i].width/testWins[i].height)<0.001));
             check("overview tiles never overlap "+dimensions,boxes.every((a,i)=>boxes.every((b,j)=>i===j || a.x+a.width<=b.x || b.x+b.width<=a.x || a.y+a.height+32<=b.y || b.y+b.height+32<=a.y)));
         }
+        // Few windows stay small (capped) and centred; an ultrawide area lays them out in one row.
+        const few=[{id:"a",width:2560,height:1440},{id:"b",width:1280,height:1400},{id:"c",width:5120,height:1400}];
+        const capped=OverviewLayout.layout(few,5000,1200,44,34,840,350);
+        check("overview caps picture size", capped.every(b=>b.height<=350.01 && b.width<=840.01), capped);
+        check("overview uses one row on an ultrawide screen", capped.every(b=>Math.abs(b.y+b.height/2-capped[0].y-capped[0].height/2)<0.01));
+        const left=Math.min(...capped.map(b=>b.x)), right=Math.max(...capped.map(b=>b.x+b.width));
+        check("overview centres the grid", Math.abs(left-(5000-right))<0.01 && Math.abs(capped[0].y+capped[0].height/2-(1200-34)/2)<1);
+        const one=OverviewLayout.layout([few[0]],5000,1200,44,34,840,350);
+        check("overview keeps a single window small", one[0].height<=350.01 && one[0].width<5000/4);
+        eq("overview short title drops the app suffix", [OverviewLayout.shortTitle("Inbox - Mail — Vivaldi","Vivaldi"), OverviewLayout.shortTitle("notes.txt - gedit","Text Editor"), OverviewLayout.shortTitle("","Kitty")], ["Inbox - Mail", "notes.txt - gedit", "Kitty"]);
         const dockApps = [{key:"a"},{key:"b"}];
         eq("dock ranks running apps without pins", DockModel.ordered(dockApps,["b","a"]).map(e=>e.key),["b","a"]);
         eq("dock drop moves forward",DockModel.dropOrder(["a","b","c"],"a","c"),["b","a","c"]);

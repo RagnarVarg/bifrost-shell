@@ -1615,7 +1615,7 @@ def blur_amount(x) -> float:
 
 
 # Bifrost's layer namespaces that get compositor blur (Glass & transparency).
-BLUR_NAMESPACES = ("bar", "dock", "launcher", "power", "controlcenter", "notifications", "notificationcenter", "prompt", "osd")
+BLUR_NAMESPACES = ("bar", "dock", "launcher", "power", "controlcenter", "notifications", "notificationcenter", "prompt", "osd", "overview")
 
 
 def theme_chain(cfg):

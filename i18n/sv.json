@@ -998,5 +998,6 @@
   "Off = Bifrost leaves gaps, borders, corners and blur to your own Hyprland config": "Av = Bifrost lämnar mellanrum, kanter, hörn och oskärpa åt din egen Hyprland-konfiguration",
   "One glass for every Bifrost surface: the bar, dock, menus, launcher, control center, notifications, OSD and Settings. Application windows are not affected.": "Ett glas för alla Bifrost-ytor: panelen, dockan, menyer, startmenyn, kontrollcentret, notiser, OSD och Inställningar. Programfönster påverkas inte.",
   "Refraction on hover, selection and active items. 0 = off, 1 = standard, 3 = strong": "Ljusbrytning vid hovring, markering och aktiva objekt. 0 = av, 1 = standard, 3 = stark",
-  "Settings for ordinary application windows, applied live to Hyprland through Bifrost's generated bifrost.lua. They never affect Bifrost's own panels (see Glass & transparency).": "Inställningar för vanliga programfönster, tillämpas direkt i Hyprland via Bifrosts genererade bifrost.lua. De påverkar aldrig Bifrosts egna paneler (se Glas & transparens)."
+  "Settings for ordinary application windows, applied live to Hyprland through Bifrost's generated bifrost.lua. They never affect Bifrost's own panels (see Glass & transparency).": "Inställningar för vanliga programfönster, tillämpas direkt i Hyprland via Bifrosts genererade bifrost.lua. De påverkar aldrig Bifrosts egna paneler (se Glas & transparens).",
+  "All": "Alla"
 }
