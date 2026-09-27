@@ -183,7 +183,6 @@ def main():
         print(f'  {repo["name"]}: {repo["url"]}')
     for command in commands:
         print('  sudo ' + shlex.join(command))
-    print('Only the listed packages are requested; DMS and its greeter are not installed.')
     if args.plan:
         return 0
     if not args.yes:
