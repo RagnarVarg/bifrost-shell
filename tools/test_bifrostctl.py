@@ -406,6 +406,9 @@ class BifrostctlTest(unittest.TestCase):
         self.assertIn("size = 13, passes = 3", text)          # all surfaces: 30
         self.assertIn("blur = true", rule(text, "dock"))
         self.assertIn("ignore_alpha = 0.01,", rule(text, "osd"))
+        ctl.main(["set", "materials.unlinked", '["dock"]'])   # dock keeps its own blur 0
+        self.assertIn("blur = false", rule(ctl.generate_hypr(ctl.Config(ctl.Schema())), "dock"))
+        ctl.main(["reset", "materials.unlinked"])
         # The Settings window is its glass: rounded like it.
         self.assertRegex(text, r'bifrost-settings".*rounding = %d, rounding_power = 2' % round(14 * 1))
         ctl.main(["set", "materials.all.radius", "32"])

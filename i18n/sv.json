@@ -397,8 +397,6 @@
   "Light bending along the bevelled edge, with a faint colour split. Simulated: the compositor doesn't let a panel read what is behind it": "Ljusbrytning längs den fasade kanten, med en svag färgdelning. Simulerad: compositorn låter inte en panel läsa det som ligger bakom den",
   "Light or dark": "Ljust eller mörkt",
   "Link all surfaces": "Länka alla ytor",
-  "Linked to All surfaces": "Länkad till Alla ytor",
-  "Linked: this surface uses All surfaces for every property. Its own values are kept and come back when Link all surfaces is turned off.": "Länkad: den här ytan använder Alla ytor för varje egenskap. Dess egna värden sparas och kommer tillbaka när Länka alla ytor slås av.",
   "Live window pictures": "Levande fönsterbilder",
   "Load": "Ladda",
   "Loading weather…": "Hämtar väder…",
@@ -975,5 +973,10 @@
   "Administrator authentication is required. Changes take effect after reboot. Switching off restores the previous login manager.": "Administratörsbehörighet krävs. Ändringen gäller efter omstart. Avstängning återställer den tidigare inloggningshanteraren.",
   "Login theme updated for the next reboot. Your current session stays open.": "Inloggningstemat har ändrats inför nästa omstart. Din nuvarande session hålls öppen.",
   "Per output: { width, height, refresh, x, y, scale, vrr, bitdepth, cm, sdrBrightness }. Written to bifrost.lua.": "Per bildskärm: { width, height, refresh, x, y, scale, vrr, bitdepth, cm, sdrBrightness }. Skrivs till bifrost.lua.",
-  "Login screen installation is incomplete. Run the Bifrost installer again.": "Installationen av inloggningsskärmen är ofullständig. Kör Bifrosts installationsprogram igen."
+  "Login screen installation is incomplete. Run the Bifrost installer again.": "Installationen av inloggningsskärmen är ofullständig. Kör Bifrosts installationsprogram igen.",
+  "Linked": "Länkad",
+  "Linked to All surfaces; changing it unlinks this surface": "Länkad till Alla ytor; ändrar du den avlänkas ytan",
+  "Linked: this surface uses All surfaces for every property. Changing a property unlinks it; switch Linked back on to make it follow All surfaces again.": "Länkad: den här ytan använder Alla ytor för varje egenskap. Ändrar du en egenskap avlänkas den; slå på Länkad igen så följer den Alla ytor igen.",
+  "Unlinked surfaces": "Avlänkade ytor",
+  "Surfaces that use their own values although Link all surfaces is on. Editing a linked surface adds it; its Linked switch removes it again": "Ytor som använder sina egna värden fast Länka alla ytor är på. Ändrar du en länkad yta läggs den till; dess Länkad-reglage tar bort den igen"
 }

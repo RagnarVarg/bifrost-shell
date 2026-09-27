@@ -293,6 +293,13 @@ ShellRoot {
         Theme.rebuild();
         check("link: every surface follows All surfaces", Theme.materials.bar.blur === 60 && Theme.materials.dock.borderWidth === 0 && Theme.materials.osd.glow === 0 && Theme.materials.dock.elevation.opacity === 0, [Theme.materials.bar.blur, Theme.materials.dock.borderWidth, Theme.materials.osd.glow]);
         check("link keeps own values", Config.get("materials.dock.borderWidth") === 3 && Config.get("materials.bar.blur") === 0);
+        // One surface unlinked: its own values again, the rest still linked.
+        Config.set("materials.unlinked", ["dock"]);
+        Theme.rebuild();
+        check("unlinked surface uses its own values while linked", Theme.materials.dock.borderWidth === 3 && Theme.materials.bar.blur === 60, [Theme.materials.dock.borderWidth, Theme.materials.bar.blur]);
+        Config.reset("materials.unlinked");
+        Theme.rebuild();
+        check("relinked surface follows All surfaces", Theme.materials.dock.borderWidth === 0);
         Config.set("materials.link", false);
         Theme.rebuild();
         check("unlinked: own values again", Theme.materials.bar.blur === 0 && Theme.materials.dock.borderWidth === 3 && Theme.materials.osd.glow === 0.5);

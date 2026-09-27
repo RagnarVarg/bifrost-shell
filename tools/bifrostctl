@@ -1545,10 +1545,16 @@ def output_mode(output):
     return f'{output["width"]}x{output["height"]}@{refresh:.5f}'
 
 
+def surface_linked(cfg, surface) -> bool:
+    """ThemeLogic.surfaceLinked: materials.link on and the surface not in materials.unlinked."""
+    unlinked = deep_get(cfg.values, "materials.unlinked")[0] or []
+    return deep_get(cfg.values, "materials.link")[0] is True and surface != "all" and surface not in unlinked
+
+
 def material_value(cfg, surface, prop, default=None):
     """A surface's material setting as it applies (ThemeLogic.materialValue):
-    its own value, else All surfaces'; materials.link = All surfaces only."""
-    link = deep_get(cfg.values, "materials.link")[0] is True
+    its own value, else All surfaces'; a linked surface = All surfaces only."""
+    link = surface_linked(cfg, surface)
     for x in ((None if link else deep_get(cfg.values, f"materials.{surface}.{prop}")[0]),
               deep_get(cfg.values, f"materials.all.{prop}")[0]):
         if x is not None:

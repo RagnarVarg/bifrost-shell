@@ -70,12 +70,18 @@ function stripMeta(node) {
     return node;
 }
 
-// A surface's setting as it applies: its own value, else All surfaces'. With
-// materials.link on, All surfaces decides everything (own values are kept in
-// the config but not used). Same in bifrostctl (material_value).
+// A surface follows All surfaces only (materials.link), unless it is one of
+// materials.unlinked. Same in bifrostctl (surface_linked).
+function surfaceLinked(materials, surface) {
+    return materials.link === true && surface !== "all" && (materials.unlinked || []).indexOf(surface) < 0;
+}
+
+// A surface's setting as it applies: its own value, else All surfaces'. A
+// linked surface gets All surfaces' (own values are kept in the config but
+// not used). Same in bifrostctl (material_value).
 function materialValue(materials, surface) {
     const all = materials.all || {};
-    const own = materials.link === true ? {} : (materials[surface] || {});
+    const own = surfaceLinked(materials, surface) ? {} : (materials[surface] || {});
     return p => own[p] !== null && own[p] !== undefined ? own[p] : all[p];
 }
 

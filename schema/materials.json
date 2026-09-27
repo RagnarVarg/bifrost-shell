@@ -217,6 +217,15 @@
       "label": "Link all surfaces",
       "description": "All surfaces sets every property for every surface. Each surface keeps its own values; they come back when this is turned off",
       "scope": "hyprland"
+    },
+    {
+      "key": "materials.unlinked",
+      "type": "list",
+      "default": [],
+      "label": "Unlinked surfaces",
+      "description": "Surfaces that use their own values although Link all surfaces is on. Editing a linked surface adds it; its Linked switch removes it again",
+      "scope": "hyprland",
+      "dependsOn": "materials.link"
     }
   ]
 }

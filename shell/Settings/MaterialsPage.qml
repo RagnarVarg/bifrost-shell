@@ -9,8 +9,10 @@ import qs.Components.Text
 // properties. "All surfaces" is the base; a surface's own value overrides it
 // (the chip on a row returns it to inheriting). Rows of an empty setting show
 // what it currently resolves to. With "Link all surfaces" every surface
-// follows All surfaces (ThemeLogic.materialValue): their rows show the
-// linked value, disabled, and their own values are kept for later.
+// follows All surfaces (ThemeLogic.surfaceLinked): their rows show the
+// linked value and their own values are kept for later. A surface can still
+// be changed: that unlinks it (materials.unlinked, SettingsRows), and its
+// Linked switch makes it follow All surfaces again.
 Flickable {
     id: page
 
@@ -29,13 +31,21 @@ Flickable {
     readonly property int surfaceModified: keys.filter(k => Config.isModified(k)).length
     readonly property bool blurSupported: Compositor.supports("surfaceBlur")
     readonly property bool linked: Config.values.materials.link === true
-    readonly property bool linkedSurface: linked && surface !== "all"
+    readonly property var unlinked: Config.values.materials.unlinked || []
+    readonly property bool linkedSurface: linked && surface !== "all" && unlinked.indexOf(surface) < 0
     // The compositor's one blur strength: the strongest surface (bifrostctl).
     readonly property real compositorBlur: Math.max(0, ...instances.map(i => (Theme.materials[materialOf[i.id]] || {}).blur || 0))
 
     contentHeight: column.implicitHeight + SettingsStyle.contentPadding * 2
     clip: true
     boundsBehavior: Flickable.StopAtBounds
+
+    // Linked switch of one surface (while Link all surfaces is on). Its own
+    // values stay stored either way.
+    function setSurfaceLinked(id, on) {
+        const rest = unlinked.filter(s => s !== id);
+        Config.set("materials.unlinked", on ? rest : rest.concat([id]));
+    }
 
     function modifiedIn(id) {
         return props.filter(p => Config.isModified("materials." + id + "." + p)).length;
@@ -79,7 +89,7 @@ Flickable {
                 delegate: BChip {
                     required property var modelData
 
-                    text: modelData.label + (page.linked && modelData.id !== "all" ? " · " + I18n.tr("linked") : page.modifiedIn(modelData.id) ? " · " + page.modifiedIn(modelData.id) : "")
+                    text: modelData.label + (page.linked && modelData.id !== "all" && page.unlinked.indexOf(modelData.id) < 0 ? " · " + I18n.tr("linked") : page.modifiedIn(modelData.id) ? " · " + page.modifiedIn(modelData.id) : "")
                     selected: page.surface === modelData.id
                     onClicked: page.surface = modelData.id
                 }
@@ -146,12 +156,12 @@ Flickable {
 
         Item {
             width: parent.width
-            height: Math.max(surfaceText.implicitHeight, resetSurface.height)
+            height: Math.max(surfaceText.implicitHeight, surfaceActions.height)
 
             Column {
                 id: surfaceText
 
-                width: parent.width - resetSurface.width - Theme.space.lg
+                width: parent.width - surfaceActions.width - Theme.space.lg
                 spacing: Theme.space.xxs
 
                 BText {
@@ -168,23 +178,46 @@ Flickable {
                 }
             }
 
-            BButton {
-                id: resetSurface
+            Row {
+                id: surfaceActions
 
                 anchors.right: parent.right
-                variant: "ghost"
-                size: "sm"
-                icon: "reset"
-                text: I18n.tr("Reset surface")
-                enabled: page.surfaceModified > 0
-                onClicked: Config.resetKeys(page.keys)
+                spacing: Theme.space.lg
+
+                Row {
+                    visible: page.linked && page.surface !== "all"
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.space.sm
+
+                    BText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: I18n.tr("Linked")
+                        role: "label"
+                    }
+
+                    BToggle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        checked: page.linkedSurface
+                        onToggled: c => page.setSurfaceLinked(page.surface, c)
+                    }
+                }
+
+                BButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    variant: "ghost"
+                    size: "sm"
+                    icon: "reset"
+                    text: I18n.tr("Reset surface")
+                    enabled: page.surfaceModified > 0
+                    onClicked: Config.resetKeys(page.keys)
+                }
             }
         }
 
         Banner {
             visible: page.linkedSurface
             tone: "info"
-            text: I18n.tr("Linked: this surface uses All surfaces for every property. Its own values are kept and come back when Link all surfaces is turned off.")
+            text: I18n.tr("Linked: this surface uses All surfaces for every property. Changing a property unlinks it; switch Linked back on to make it follow All surfaces again.")
         }
 
         Banner {
