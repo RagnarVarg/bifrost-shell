@@ -245,6 +245,22 @@
       }
     },
     {
+      "key": "bar.boxes.round",
+      "type": "bool",
+      "default": false,
+      "label": "Round boxes",
+      "description": "Fully rounded ends; a box around a single icon becomes a circle",
+      "group": "appearance",
+      "scope": "shell",
+      "apply": "live",
+      "dependsOnValue": {
+        "bar.widgetStyle": [
+          "boxed",
+          "grouped"
+        ]
+      }
+    },
+    {
       "key": "bar.boxes.blur",
       "type": "bool",
       "default": true,

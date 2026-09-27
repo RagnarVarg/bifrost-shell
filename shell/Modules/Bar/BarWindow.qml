@@ -65,7 +65,7 @@ PanelWindow {
     // lighter glass within glass without their own shadow on a panel.
     readonly property var boxes: cfg.boxes || ({})
     readonly property var shapeMaterial: {
-        const m = Object.assign({}, material, { radius: Math.min(material.radius, barHeight / 2) });
+        const m = Object.assign({}, material, { radius: boxes.round === true ? shapeHeight / 2 : Math.min(material.radius, barHeight / 2) });
         if (panel) {
             m.fill = Qt.alpha(material.tint, material.opacity * 0.45);
             m.elevation = { blur: 0, y: 0, spread: 0, opacity: 0 };
@@ -88,6 +88,7 @@ PanelWindow {
         return m;
     }
     readonly property real shapeInset: panel ? Theme.space.xs : 0
+    readonly property real shapeHeight: barHeight - shapeInset * 2
     readonly property real shadowRoom: Math.max((material.elevation.opacity || 0) > 0 ? material.elevation.blur + Math.abs(material.elevation.y) : 0, (material.glow || 0) > 0 ? Theme.space.xl * 2 : 0)
     readonly property var widgets: cfg.widgets || ({})
     // Input must end at the reserved/client boundary. Extra room for
@@ -323,10 +324,13 @@ PanelWindow {
                     property real sw: 0
 
                     attachment: menuHost.attachmentFor(shape)
-                    x: sx
+                    // Round boxes: at least as wide as tall, so a single
+                    // icon gets a circle (centred on its widget).
+                    readonly property real roundWidth: root.boxes.round === true ? Math.max(sw, height) : sw
+                    x: sx - (roundWidth - sw) / 2
                     y: root.shapeInset
-                    width: sw
-                    height: root.barHeight - root.shapeInset * 2
+                    width: roundWidth
+                    height: root.shapeHeight
                     material: root.shapeMaterial
                 }
 

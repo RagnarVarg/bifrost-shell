@@ -1037,5 +1037,7 @@
   "Box transparency": "Boxtransparens",
   "0 % = solid, 100 % = clear. Empty = like the rest of the glass": "0 % = helt täckande, 100 % = klart. Tomt = som resten av glaset",
   "Blur behind the boxes": "Oskärpa bakom boxarna",
-  "Blurs what is behind the widget boxes when the bar has no panel (strength: Glass & transparency)": "Gör det som ligger bakom widgetboxarna suddigt när panelen saknas (styrka: Glas & transparens)"
+  "Blurs what is behind the widget boxes when the bar has no panel (strength: Glass & transparency)": "Gör det som ligger bakom widgetboxarna suddigt när panelen saknas (styrka: Glas & transparens)",
+  "Round boxes": "Runda boxar",
+  "Fully rounded ends; a box around a single icon becomes a circle": "Helt rundade ändar; en box runt en enda ikon blir en cirkel"
 }
