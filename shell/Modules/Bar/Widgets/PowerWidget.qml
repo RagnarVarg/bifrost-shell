@@ -20,9 +20,9 @@ BarWidget {
         onClicked: menu.click()
 
         BIcon {
-            name: "power"
-            size: Theme.icon.size.md
-            color: Theme.color.text
+            source: "file://" + Paths.assetsDir + "/brand/bifrost-mark.svg"
+            size: Theme.icon.size.lg
+            color: "#FFFFFF"
         }
     }
 
