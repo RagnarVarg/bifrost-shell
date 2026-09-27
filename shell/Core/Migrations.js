@@ -213,6 +213,15 @@ const steps = {
         }
         doc.version = 9;
         return doc;
+    },
+    // 9 → 10: the control center's own glass group is gone: it grows out of
+    // its bar button and shares that glass. Same in bifrostctl.
+    9: function (doc) {
+        const m = (doc.values || {}).materials;
+        if (m && typeof m === "object")
+            delete m.controlCenter;
+        doc.version = 10;
+        return doc;
     }
 };
 

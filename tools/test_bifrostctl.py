@@ -482,12 +482,13 @@ class BifrostctlTest(unittest.TestCase):
         rule = lambda text, ns: re.search(r'bifrost-blur-%s".*' % ns, text).group(0)
         gen = lambda: ctl.generate_hypr(ctl.Config(ctl.Schema()))
         ctl.main(["set", "materials.blur", "40"])
-        ctl.main(["set", "materials.controlCenter.blur", "false"])
-        self.assertIn("blur = true,", rule(gen(), "controlcenter"))      # linked: ignored
+        ctl.main(["set", "materials.panels.blur", "false"])
+        self.assertIn("blur = true,", rule(gen(), "dock"))      # linked: ignored
         ctl.main(["set", "materials.linked", "false"])
         text = gen()
-        self.assertIn("blur = false,", rule(text, "controlcenter"))
-        self.assertIn("blur = true,", rule(text, "dock"))
+        self.assertIn("blur = false,", rule(text, "dock"))
+        self.assertIn("blur = false,", rule(text, "controlcenter"))   # a panel on its own
+        self.assertIn("blur = true,", rule(text, "bar"))
         ctl.main(["set", "bar.background", "none"])
         ctl.main(["set", "bar.widgetStyle", "boxed"])
         ctl.main(["set", "materials.widgets.blur", "false"])

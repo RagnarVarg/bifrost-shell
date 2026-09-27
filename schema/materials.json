@@ -2,7 +2,7 @@
   "section": "materials",
   "label": "Glass & transparency",
   "icon": "layers",
-  "description": "The glass of every Bifrost surface. With Same glass everywhere on, every part uses the values under All; switch it off to give the top bar, widgets, panels, control center and Bifrost windows their own. Application windows always have their own.",
+  "description": "The glass of every Bifrost surface. With Same glass everywhere on, every part uses the values under All; switch it off to give the top bar, widgets, panels, the control center's buttons and Bifrost windows their own. The control center grows out of its button and shares its glass. Application windows always have their own.",
   "settings": [
     {
       "key": "materials.transparency",
@@ -274,73 +274,6 @@
       "inherit": "materials.panel.tint"
     },
     {
-      "key": "materials.controlCenter.transparency",
-      "type": "int",
-      "default": null,
-      "nullable": true,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "label": "Transparency",
-      "description": "For the control center. Empty = the value under All",
-      "group": "controlCenter",
-      "nullLabel": "All",
-      "dependsOnValue": {
-        "materials.linked": false
-      },
-      "hideUnlessMet": true,
-      "inherit": "materials.controlCenter.transparency"
-    },
-    {
-      "key": "materials.controlCenter.blur",
-      "type": "bool",
-      "default": null,
-      "nullable": true,
-      "label": "Background blur",
-      "description": "Blur behind the control center (strength: under All). Empty = like All",
-      "group": "controlCenter",
-      "nullLabel": "All",
-      "scope": "hyprland",
-      "dependsOnValue": {
-        "materials.linked": false
-      },
-      "hideUnlessMet": true,
-      "requires": {
-        "capability": "surfaceBlur"
-      },
-      "inherit": "materials.controlCenter.blur"
-    },
-    {
-      "key": "materials.controlCenter.tint.light",
-      "type": "color",
-      "default": null,
-      "nullable": true,
-      "label": "Colour (light mode)",
-      "description": "For the control center in light mode. Empty = the colour under All",
-      "group": "controlCenter",
-      "nullLabel": "All",
-      "dependsOnValue": {
-        "materials.linked": false
-      },
-      "hideUnlessMet": true,
-      "inherit": "materials.controlCenter.tint"
-    },
-    {
-      "key": "materials.controlCenter.tint.dark",
-      "type": "color",
-      "default": null,
-      "nullable": true,
-      "label": "Colour (dark mode)",
-      "description": "For the control center in dark mode. Empty = the colour under All",
-      "group": "controlCenter",
-      "nullLabel": "All",
-      "dependsOnValue": {
-        "materials.linked": false
-      },
-      "hideUnlessMet": true,
-      "inherit": "materials.controlCenter.tint"
-    },
-    {
       "key": "materials.controlButtons.transparency",
       "type": "int",
       "default": null,
@@ -492,7 +425,6 @@
     "bar": "Top bar",
     "widgets": "Widgets",
     "panels": "Panels and menus",
-    "controlCenter": "Control center",
     "controlButtons": "Control center buttons",
     "windows": "Bifrost windows",
     "apps": "Application windows"

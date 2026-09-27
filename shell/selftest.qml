@@ -136,6 +136,7 @@ ShellRoot {
             settingsUI: { layout: "boxed" } } };
         const out9 = Migrations.migrate({ version: 8, values: { bar: { boxes: { transparency: 30, tint: { dark: "#112233" }, blur: false, round: true } } } }, Config.formatVersion).values;
         eq("8 → 9: the boxes' glass moves to the Widgets group, unlinked", [out9.bar.boxes, out9.materials], [{ round: true }, { widgets: { tint: { dark: "#112233" }, transparency: 30, blur: false }, linked: false }]);
+        eq("9 → 10: the control center's own glass group is dropped", Migrations.migrate({ version: 9, values: { materials: { linked: false, controlCenter: { transparency: 100 }, panels: { transparency: 46 } } } }, Config.formatVersion).values.materials, { linked: false, panels: { transparency: 46 } });
         eq("7 → 8: the faint bar panel becomes the panel", Migrations.migrate({ version: 7, values: { bar: { background: "subtle", height: 40 } } }, Config.formatVersion).values.bar, { background: "panel", height: 40 });
         const v6 = { version: 6, values: { appearance: { accent: "#123456" }, materials: { tint: "#0F1516", blur: 5 } } };
         const out7 = Migrations.migrate(v6, Config.formatVersion).values;
@@ -297,13 +298,13 @@ ShellRoot {
         Config.set("materials.blur", 40);
         Config.set("materials.transparency", 50);
         Config.set("materials.bar.transparency", 10);
-        Config.set("materials.controlCenter.blur", false);
+        Config.set("materials.panels.blur", false);
         Config.set("materials.controlButtons.tint.dark", "#223344");
         Theme.rebuild();
-        check("linked: own group values are ignored", Theme.materials.bar.transparency === 50 && Theme.materials.controlCenter.blur === 40 && !Theme.materials.bar.custom && Theme.materials.controlButtons.fill === Theme.color.controlFill);
+        check("linked: own group values are ignored", Theme.materials.bar.transparency === 50 && Theme.materials.launcher.blur === 40 && !Theme.materials.bar.custom && Theme.materials.controlButtons.fill === Theme.color.controlFill);
         Config.set("materials.linked", false);
         Theme.rebuild();
-        check("unlinked: each group its own, else the shared value", Theme.materials.bar.transparency === 10 && Theme.materials.bar.custom && Theme.materials.dock.transparency === 50 && Theme.materials.controlCenter.blur === 0 && Theme.materials.controlCenter.custom && Theme.materials.launcher.blur === 40, [Theme.materials.bar.transparency, Theme.materials.controlCenter.blur]);
+        check("unlinked: each group its own, else the shared value", Theme.materials.bar.transparency === 10 && Theme.materials.bar.custom && Theme.materials.dock.transparency === 50 && Theme.materials.controlCenter.blur === 0 && Theme.materials.launcher.blur === 0 && Theme.materials.widgets.blur === 40, [Theme.materials.bar.transparency, Theme.materials.controlCenter.blur]);
         check("control center buttons get their own fill", Theme.materials.controlButtons.custom && String(Theme.materials.controlButtons.fill).toUpperCase().endsWith("223344"), Theme.materials.controlButtons.fill);
         check("widgets start as the bar glass", Theme.materials.widgets.transparency === 50 && !Theme.materials.widgets.custom);
         Config.resetSection("materials");

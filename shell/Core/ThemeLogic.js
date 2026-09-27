@@ -83,8 +83,9 @@ function clamp(v, lo, hi) {
 const glassGroups = {
     bar: ["bar"],
     widgets: ["widgets"],
-    panels: ["panel", "dock", "popover", "tooltip", "osd", "lock", "launcher", "notifications"],
-    controlCenter: ["controlCenter"],
+    // The control center grows out of its bar button, so it has no glass
+    // group of its own (on its own it is a panel).
+    panels: ["panel", "dock", "popover", "tooltip", "osd", "lock", "launcher", "notifications", "controlCenter"],
     controlButtons: ["controlButtons"],
     windows: ["settings", "settingsGroups"]
 };

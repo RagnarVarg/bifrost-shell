@@ -48,7 +48,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-FORMAT_VERSION = 9
+FORMAT_VERSION = 10
 NULLABLE_TYPES = {"bool", "int", "real", "color", "string", "font", "icon", "path"}
 APPLY_MODES = {"live", "reload", "restart"}
 SCOPES = {"shell", "hyprland", "system"}
@@ -714,6 +714,12 @@ def migrate(doc):
     if v == 8:
         migrate_8(doc.setdefault("values", {}))
         v = 9
+    if v == 9:
+        # The control center's own glass group is gone (it grows out of its button).
+        m = doc.setdefault("values", {}).get("materials")
+        if isinstance(m, dict):
+            m.pop("controlCenter", None)
+        v = 10
     doc["version"] = v
     return doc
 
@@ -1665,9 +1671,9 @@ def blur_amount(x) -> float:
 
 # Bifrost's layer namespaces that get compositor blur, and the glass group
 # (Glass & transparency, ThemeLogic.glassGroups) whose blur each follows.
-BLUR_NAMESPACES = {"bar": "bar", "dock": "panels", "launcher": "panels", "power": "panels", "controlcenter": "controlCenter",
+BLUR_NAMESPACES = {"bar": "bar", "dock": "panels", "launcher": "panels", "power": "panels", "controlcenter": "panels",
                    "notifications": "panels", "notificationcenter": "panels", "prompt": "panels", "osd": "panels", "overview": "panels"}
-GLASS_GROUPS = ("bar", "widgets", "panels", "controlCenter", "controlButtons", "windows")
+GLASS_GROUPS = ("bar", "widgets", "panels", "controlButtons", "windows")
 
 
 def group_glass(cfg, group):

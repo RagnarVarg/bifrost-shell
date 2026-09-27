@@ -167,7 +167,7 @@ Item {
         const a = rectIn(m.anchorItem);
         // Centred: the middle of the band, which spans the monitor along the bar.
         const ax = m.centerOnScreen && band ? mapFromItem(band, band.width / 2, 0).x : a.x + a.width / 2;
-        let g = m.ownMaterial ? null : glassAt(ax);
+        let g = glassAt(ax);
         // It joins a glass only if it grows from it, else it floats.
         if (m.centerOnScreen && g && (ax < g.x || ax > g.x + g.width))
             g = null;
@@ -244,10 +244,6 @@ Item {
         function onMenuWidthChanged() {
             host.place(host.menu);
         }
-
-        function onOwnMaterialChanged() {
-            host.place(host.menu);
-        }
     }
 
     // No glass to grow from (no panel, integrated widgets): the menu gets
@@ -258,7 +254,7 @@ Item {
         y: area.y
         width: host.shapeWidth
         height: host.shapeHeight
-        material: host.menu && host.menu.ownMaterial ? host.menu.ownMaterial : host.bar && host.bar.material ? host.bar.material : Theme.materials.bar
+        material: host.bar && host.bar.material ? host.bar.material : Theme.materials.bar
     }
 
     // The menu area: hover source, clip for the reveal, input region.

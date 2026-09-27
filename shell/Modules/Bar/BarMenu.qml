@@ -32,10 +32,6 @@ Item {
     // Hover-leave closing then arms only once the pointer has been on the
     // menu itself, as the way there from the anchor crosses the screen.
     property bool centerOnScreen: false
-    // A glass of its own (e.g. the control center with its own values under
-    // Glass & transparency): the menu then floats below the bar instead of
-    // growing out of the glass it opens from.
-    property var ownMaterial: null
     property bool isOpen: false
     property bool openedByHover: false
     property real targetX: 0            // set by MenuHost
