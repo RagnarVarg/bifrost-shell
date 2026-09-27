@@ -67,8 +67,12 @@ Item {
         }
     }
 
+    // Set while the bar itself changes size (bar.width): the menu is placed
+    // again at once, so it stays put on the screen instead of sliding.
+    property bool followingBar: false
+
     Behavior on shapeX {
-        enabled: host.shapeHeight > 0
+        enabled: host.shapeHeight > 0 && !host.followingBar
 
         BNumberAnimation {
             speed: "normal"
@@ -77,7 +81,7 @@ Item {
     }
 
     Behavior on shapeWidth {
-        enabled: host.shapeHeight > 0
+        enabled: host.shapeHeight > 0 && !host.followingBar
 
         BNumberAnimation {
             speed: "normal"
@@ -90,6 +94,19 @@ Item {
     onShapeHeightChanged: if (shapeHeight === targetHeight)
         room = Math.max(standingRoom, targetHeight)
     onStandingRoomChanged: room = Math.max(standingRoom, targetHeight)
+
+    // The host is in bar coordinates: when the bar's width changes, the
+    // same screen position is a different x.
+    onWidthChanged: if (menu)
+        Qt.callLater(followBar)
+
+    function followBar() {
+        if (!menu)
+            return;
+        followingBar = true;
+        place(menu);
+        followingBar = false;
+    }
 
     function show(m) {
         if (menu === m)
@@ -159,7 +176,11 @@ Item {
         anchorStrip = Qt.rect(a.x, top, a.width, band ? band.height : height);
         const W = m.menuWidth;
         const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-        let x = clamp(ax - W / 2, 0, Math.max(0, width - W));
+        // Keep the menu on the screen (the band spans it), not inside the
+        // bar: a narrower bar (bar.width) must not move a wide menu.
+        const left = band ? mapFromItem(band, 0, 0).x : 0;
+        const right = band ? left + band.width : width;
+        let x = clamp(ax - W / 2, left, Math.max(left, right - W));
         if (g) {
             const r = Math.min(g.radius, g.height / 2);
             if (W <= g.width) {
@@ -173,7 +194,7 @@ Item {
                     x = g.x;
                 else if (x + W - g.x - g.width < menuRadius + fillet)
                     x = g.x + g.width - W;
-                x = clamp(x, 0, Math.max(0, width - W));
+                x = clamp(x, left, Math.max(left, right - W));
             }
         }
         m.targetX = x;
