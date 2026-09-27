@@ -19,8 +19,13 @@ Singleton {
 
     function add(text: string) {
         const t = text.trim();
-        if (t)
-            save(items.concat([{ id: String(Date.now()), text: t, done: false }]));
+        if (!t)
+            return;
+        // Unique even for two reminders made within the same millisecond.
+        let id = String(Date.now());
+        while (items.some(r => r.id === id))
+            id += "x";
+        save(items.concat([{ id: id, text: t, done: false }]));
     }
 
     function toggle(id: string) {
