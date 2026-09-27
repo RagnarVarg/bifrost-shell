@@ -163,6 +163,9 @@ Scope {
             width: Theme.layout.controlCenterWidth
             height: content.implicitHeight
             opacity: cc.open && cc.ownWindow ? 1 : 0
+            // Hidden, not just transparent, while closed: content that works
+            // only while shown (BrightnessControls polls DDC) goes idle.
+            visible: opacity > 0
 
             Behavior on opacity {
                 BNumberAnimation {}

@@ -72,7 +72,9 @@ Singleton {
             shellRunning = true;
             return;
         }
-        Exec.run(["kill", "-0", String(applied.pid)], code => root.shellRunning = code === 0);
+        // In-process: /proc/<pid> exists while it runs (no `kill -0` spawn).
+        procFile.path = "/proc/" + applied.pid + "/stat";
+        root.shellRunning = procFile.readFresh() !== null;
     }
 
     onAppliedChanged: {
@@ -83,8 +85,15 @@ Singleton {
     Timer {
         interval: 4000
         repeat: true
-        running: root.applied !== null
+        // Only another process's shell can go away (Settings watching it).
+        running: root.applied !== null && root.applied.pid !== Platform.processId
         onTriggered: root.checkAlive()
+    }
+
+    WatchedFile {
+        id: procFile
+
+        watch: false
     }
 
     Connections {
