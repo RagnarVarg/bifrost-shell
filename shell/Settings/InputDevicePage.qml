@@ -8,10 +8,13 @@ import qs.Components.Text
 PageBase {
     id: page
     required property string kind
-    title: kind === "keyboard" ? I18n.tr("Keyboard") : kind === "mouse" ? I18n.tr("Mouse") : I18n.tr("Trackpad")
+    title: kind === "keyboard" ? I18n.tr("Keyboard") : kind === "mouse" ? I18n.tr("Mouse") : kind === "gestures" ? I18n.tr("Gestures") : I18n.tr("Trackpad")
+    // "gestures": the trackpad gesture mappings on their own page (shared by
+    // every trackpad), choosing the trackpad whose finger count is shown.
+    readonly property string deviceKind: kind === "gestures" ? "trackpad" : kind
     property string selectedName: ""
     property bool retained: false
-    readonly property var available: InputDevices.devices.filter(d => d.kind === kind)
+    readonly property var available: InputDevices.devices.filter(d => d.kind === deviceKind)
     readonly property var device: available.find(d => d.name === selectedName) || available.find(d => d.main) || available[0] || null
     readonly property var layoutCodes: device ? String(InputDevices.value(device,"kb_layout") || "").split(",").filter(Boolean) : []
     function sync() {
@@ -151,15 +154,21 @@ PageBase {
         BText { text: I18n.tr("Test your keyboard"); role: "label" }
         BTextField { width: parent.width; placeholder: I18n.tr("Type here to test the selected layout") }
     }
+    // Window management shortcuts (minimize, restore, close …), edited like
+    // on the Shortcuts page.
+    KeybindGroupCard {
+        visible: page.kind === "keyboard"
+        group: "windows"
+    }
     Card {
-        visible: page.device !== null
+        visible: page.device !== null && page.kind !== "gestures"
         Repeater {
             model: InputDevices.fields.filter(f => ["kb_layout","kb_variant","kb_options"].indexOf(f.key) < 0 && InputDevices.supported(page.device,f))
             delegate: InputControl { required property var modelData; device: page.device; definition: modelData }
         }
     }
     InputGestures {
-        visible: page.kind === "trackpad" && page.device !== null && page.device.capabilities.gestures === true
+        visible: (page.kind === "trackpad" || page.kind === "gestures") && page.device !== null && page.device.capabilities.gestures === true
         device: page.device
     }
     Timer { id: activeRefresh; interval: 1200; onTriggered: InputDevices.refresh() }

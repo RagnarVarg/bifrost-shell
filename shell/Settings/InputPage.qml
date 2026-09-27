@@ -13,7 +13,7 @@ Item {
         BText { width: parent.width; text: I18n.tr("Choose an input device category."); tone: "muted"; wrapMode: Text.WordWrap }
         SettingsRows { keys: ["input.resizeOnBorder"] }
         Repeater {
-            model: [{kind:"keyboard",label:I18n.tr("Keyboard"),icon:"keyboard"},{kind:"mouse",label:I18n.tr("Mouse"),icon:"mouse"},{kind:"trackpad",label:I18n.tr("Trackpad"),icon:"trackpad"}]
+            model: [{kind:"keyboard",label:I18n.tr("Keyboard"),icon:"keyboard"},{kind:"gestures",label:I18n.tr("Gestures"),icon:"motion"},{kind:"mouse",label:I18n.tr("Mouse"),icon:"mouse"},{kind:"trackpad",label:I18n.tr("Trackpad"),icon:"trackpad"}]
             delegate: BButton {
                 required property var modelData
                 width: parent.width

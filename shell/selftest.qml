@@ -409,7 +409,7 @@ ShellRoot {
                 r.destroy();
             return ok;
         })());
-        for (const name of ["SettingsLayoutPage", "SettingsRows", "SettingsGroupSurface", "SettingsDivider", "Card", "SectionPage", "NetworkPage", "ThemeBrowserPage", "InputPage", "InputDevicePage", "InputControl", "InputGestures", "KeybindsPage", "KeybindRow", "KeyChips", "KeyCaptureField"]) {
+        for (const name of ["SettingsLayoutPage", "SettingsRows", "SettingsGroupSurface", "SettingsDivider", "Card", "SectionPage", "NetworkPage", "ThemeBrowserPage", "InputPage", "InputDevicePage", "InputControl", "InputGestures", "KeybindsPage", "KeybindRow", "KeybindGroupCard", "KeyChips", "KeyCaptureField"]) {
             const component = Qt.createComponent(Qt.resolvedUrl("Settings/" + name + ".qml"));
             check("settings page compiles: " + name, component.status === Component.Ready, component.errorString());
         }

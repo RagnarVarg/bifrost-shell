@@ -328,6 +328,12 @@
       "page": "InputPage"
     },
     {
+      "id": "input/gestures",
+      "label": "Gestures",
+      "icon": "motion",
+      "page": "InputPage"
+    },
+    {
       "id": "input/mouse",
       "label": "Mouse",
       "icon": "mouse",
