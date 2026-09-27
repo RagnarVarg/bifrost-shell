@@ -11,6 +11,9 @@ Singleton {
     id: root
     property var devices: []
     property var gestures: ({})
+    // What a gesture can do, from the central action catalogue
+    // (hypr/keybinds.json gestureActions via bifrostctl): [{ value, label }].
+    property var gestureActions: []
     property var catalog: ({layouts:[], options:[]})
     property string error: ""
     property var applyStatus: ({})
@@ -27,6 +30,7 @@ Singleton {
         Compositor.queryInput(data => {
             devices = data.devices || [];
             gestures = data.gestures || {};
+            gestureActions = data.gestureActions || [];
             catalog = data.catalog || {layouts:[],options:[]};
             error = data.error || "";
             loaded = true;

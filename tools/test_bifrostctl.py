@@ -415,6 +415,47 @@ class BifrostctlTest(unittest.TestCase):
         ctl.main(["set", "materials.all.radius", "32"])
         self.assertRegex(ctl.generate_hypr(ctl.Config(ctl.Schema())), r'bifrost-settings".*rounding = 20,')  # Hyprland's maximum
 
+    def test_gesture_actions_catalogue(self):
+        """Gesture actions come from one catalogue (keybinds.json): the schema
+        allows exactly its values, Bifrost actions reuse a bind's ipc, and the
+        generator runs them through bifrost-ipc (minimize = the SUPER+M bind)."""
+        acts = ctl.gesture_actions()
+        values = [a["value"] for a in acts]
+        self.assertEqual(sorted(values), sorted(self.schema.entries["input.gestures"]["valueOptions"]))
+        by = {a["value"]: a for a in acts}
+        binds = {b["id"]: b for b in ctl.keybind_defaults()["binds"]}
+        self.assertEqual(by["minimize"]["ipc"], binds["minimize"]["ipc"])
+        self.assertEqual(by["restore-minimized"]["ipc"], "wm restoreLast")
+        self.assertEqual(by["close"], {"value": "close", "label": "Close window", "native": "close"})
+        cfg = ctl.Config(ctl.Schema())
+        cfg.set("input.gestures", {"3:down": "minimize", "3:up": "restore-minimized", "4:horizontal": "workspace", "4:up": "launcher", "4:down": "none"})
+        cfg.save()
+        text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
+        self.assertIn('if pcall(hl.gesture, {fingers=3, direction="down", action=function() hl.exec_cmd(bin .. "bifrost-ipc wm minimizeActive") end}) then', text)
+        self.assertIn('if pcall(hl.gesture, {fingers=3, direction="up", action=function() hl.exec_cmd(bin .. "bifrost-ipc wm restoreLast") end}) then', text)
+        self.assertIn('if pcall(hl.gesture, {fingers=4, direction="horizontal", action="workspace"}) then', text)
+        self.assertIn('bifrost-ipc launcher toggle', text)
+        self.assertNotIn('direction="down", action="none"', text)
+        path = Path(self.tmp.name) / "gestures.lua"
+        path.write_text(text + "\n" + text)   # applied twice: no duplicate slots
+        ok, msg = ctl.verify_hypr(path)
+        self.assertTrue(ok, msg)
+
+    def test_shadowed_gesture_does_not_abort_binds(self):
+        """3:up with 3:swipe: Hyprland rejects a specific gesture after a
+        general one, so the specific one is registered first and both load
+        (and a rejected gesture would not stop the file, pcall)."""
+        cfg = ctl.Config(ctl.Schema())
+        cfg.set("input.gestures", {"3:swipe": "move", "3:up": "restore-minimized"})
+        cfg.save()
+        text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
+        self.assertLess(text.index('direction="up"'), text.index('direction="swipe"'))
+        self.assertLess(text.index("restoreLast\") end})"), text.index('bind("SUPER + M"'))
+        path = Path(self.tmp.name) / "shadowed.lua"
+        path.write_text(text)
+        ok, msg = ctl.verify_hypr(path)
+        self.assertTrue(ok, msg)
+
     def test_binds_call_the_installed_shell(self):
         """IPC binds run the install's bifrost-ipc (it reaches the session's
         shell), also when bifrostctl runs from a checkout next to a copied
@@ -468,6 +509,7 @@ class BifrostctlTest(unittest.TestCase):
         kb = json.loads((ctl.REPO / "hypr/keybinds.json").read_text())
         texts.update(kb["groups"].values())
         texts.update(b["description"] for b in kb["binds"] + kb["actions"])
+        texts.update(g["label"] for g in ctl.gesture_actions())
         texts.update(b.get("label", b["description"]) for b in ctl.default_keybinds(ctl.Config(ctl.Schema())))
         for f in (ctl.REPO / "shell").rglob("*.qml"):
             if f.name in ("selftest.qml", "I18n.qml"):

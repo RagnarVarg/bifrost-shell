@@ -294,6 +294,8 @@
         "float",
         "close",
         "fullscreen",
+        "minimize",
+        "restore-minimized",
         "launcher",
         "controlcenter",
         "notifications",

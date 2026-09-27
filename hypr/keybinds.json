@@ -10,7 +10,27 @@
   "actions": [
     { "id": "control-center", "ipc": "controlcenter toggle", "description": "Control center" },
     { "id": "clock-menu", "ipc": "bar statusMenu clock", "description": "Calendar & weather" },
-    { "id": "system-menu", "ipc": "bar statusMenu system", "description": "System menu" }
+    { "id": "system-menu", "ipc": "bar statusMenu system", "description": "System menu" },
+    { "id": "overview-open", "ipc": "overview open", "description": "Open overview" },
+    { "id": "overview-close", "ipc": "overview close", "description": "Close overview" }
+  ],
+  "_gestureActions": "What a trackpad gesture (input.gestures) can do, in the order Settings lists them. `native` is a Hyprland gesture action; `action` is the id of a bind or action above, run through its ipc. input.gestures values = these values (schema valueOptions, checked by a test).",
+  "gestureActions": [
+    { "value": "none", "native": "none", "label": "Disabled" },
+    { "value": "close", "native": "close", "label": "Close window" },
+    { "value": "float", "native": "float", "label": "Toggle floating" },
+    { "value": "fullscreen", "native": "fullscreen", "label": "Toggle fullscreen" },
+    { "value": "minimize", "action": "minimize" },
+    { "value": "restore-minimized", "action": "restore-minimized" },
+    { "value": "move", "native": "move", "label": "Move window" },
+    { "value": "resize", "native": "resize", "label": "Resize window" },
+    { "value": "workspace", "native": "workspace", "label": "Switch workspace" },
+    { "value": "overview", "action": "overview" },
+    { "value": "overview-open", "action": "overview-open" },
+    { "value": "overview-close", "action": "overview-close" },
+    { "value": "launcher", "action": "launcher" },
+    { "value": "controlcenter", "action": "control-center" },
+    { "value": "notifications", "action": "notifications" }
   ],
   "binds": [
     { "group": "shell", "id": "launcher", "keys": "SUPER + space", "ipc": "launcher toggle", "description": "Launcher" },

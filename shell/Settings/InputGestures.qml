@@ -10,7 +10,10 @@ Card {
     readonly property var saved: Config.get("input.gestures") || ({})
     readonly property var directions: ["swipe","horizontal","vertical","left","right","up","down","pinchin","pinchout"]
     readonly property var labels: [I18n.tr("Any swipe"),I18n.tr("Horizontal swipe"),I18n.tr("Vertical swipe"),I18n.tr("Swipe left"),I18n.tr("Swipe right"),I18n.tr("Swipe up"),I18n.tr("Swipe down"),I18n.tr("Pinch out"),I18n.tr("Pinch in")]
-    readonly property var actions: [{value:"overview",label:I18n.tr("Window overview")},{value:"overview-open",label:I18n.tr("Open overview")},{value:"overview-close",label:I18n.tr("Close overview")},{value:"none",label:I18n.tr("Disabled")},{value:"workspace",label:I18n.tr("Switch workspace")},{value:"move",label:I18n.tr("Move window")},{value:"resize",label:I18n.tr("Resize window")},{value:"float",label:I18n.tr("Toggle floating")},{value:"close",label:I18n.tr("Close window")},{value:"fullscreen",label:I18n.tr("Toggle fullscreen")},{value:"launcher",label:I18n.tr("Launcher")},{value:"controlcenter",label:I18n.tr("Control center")},{value:"notifications",label:I18n.tr("Notifications")}]
+    // The action picker lists the central catalogue (window actions, minimize
+    // and restore, workspace, overview, launcher…), so a new Bifrost action
+    // needs only a catalogue entry (hypr/keybinds.json gestureActions).
+    readonly property var actions: InputDevices.gestureActions.map(a => ({ value: a.value, label: I18n.tr(a.label) }))
     BText { text: I18n.tr("Gestures"); role: "heading" }
     BText {
         width: parent.width

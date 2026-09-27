@@ -1163,6 +1163,23 @@ def keybind_defaults():
     return json.loads((REPO / "hypr" / "keybinds.json").read_text())
 
 
+def gesture_actions():
+    """What a trackpad gesture can do (keybinds.json gestureActions), resolved:
+    [{value, label, native} | {value, label, ipc}] in Settings order. Bifrost
+    actions reuse a bind's or action's ipc and description, so a gesture and a
+    shortcut run the same thing."""
+    d = keybind_defaults()
+    known = {x["id"]: x for x in d.get("binds", []) + d.get("actions", [])}
+    out = []
+    for g in d.get("gestureActions", []):
+        if "native" in g:
+            out.append({"value": g["value"], "label": g["label"], "native": g["native"]})
+        elif g.get("action") in known and known[g["action"]].get("ipc"):
+            a = known[g["action"]]
+            out.append({"value": g["value"], "label": g.get("label", a.get("label", a["description"])), "ipc": a["ipc"]})
+    return out
+
+
 def parse_custom_bind(line: str):
     """'SUPER + X: ipc controlcenter toggle' | '…: run cmd' | '…: dispatch hl.dsp…'."""
     keys, _, action = line.partition(":")
@@ -1774,7 +1791,7 @@ def generate_hypr(cfg) -> str:
     for leaf in ("workspaces", "workspacesIn", "workspacesOut"):
         lines.append('hl.animation({leaf='+lua_str(leaf)+', enabled=true, speed='+str(v("workspaces.transitionSpeed") or 4)+', bezier="bifrost_workspace", style="slide"})')
     lines.append("hl.config({ general = { resize_on_border = " + str(bool(v("input.resizeOnBorder"))).lower() + " } })")
-    lines.append(input_backend.generate(v("input.devices") or {}, v("input.gestures") or {}, v("input.activeLayouts") or {}))
+    lines.append(input_backend.generate(v("input.devices") or {}, v("input.gestures") or {}, v("input.activeLayouts") or {}, gesture_actions()))
     binds = effective_keybinds(cfg)
     if binds:
         lines.append("-- Keybindings (hypr/keybinds.json + Settings → Keybindings)")
@@ -1987,7 +2004,9 @@ def main(argv=None):
         return 0 if res["ok"] else 1
     if args.cmd == "input":
         import input_backend
-        print(json.dumps(input_backend.query()))
+        res = input_backend.query()
+        res["gestureActions"] = [{"value": g["value"], "label": g["label"]} for g in gesture_actions()]
+        print(json.dumps(res))
         return 0
     if args.cmd == "hypr":
         cfg = Config(Schema())

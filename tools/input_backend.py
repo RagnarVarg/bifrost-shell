@@ -215,7 +215,7 @@ def lua(value):
     if isinstance(value,dict): return '{'+','.join('['+lua(k)+']='+lua(v) for k,v in value.items())+'}'
     raise ValueError('unsupported Lua value')
 
-def generate(devices,gestures,active_layouts=None):
+def generate(devices,gestures,active_layouts=None,gesture_actions=None):
     """Called only by the existing hypr generator, never a parallel apply path."""
     lines=['-- Per-device input (only explicitly edited fields)', 'state.input = state.input or {}', 'local next_input = '+lua(devices)]
     lines += ['for name, old in pairs(state.input) do', '  local next = next_input[name]', '  local restore = {name=name}', '  for key, value in pairs(old.original or {}) do', '    if not next or next.values[key] == nil then restore[key] = value end', '  end', '  hl.device(restore)', 'end', 'for name, device in pairs(next_input) do', '  local rule = {name=name}', '  for key, value in pairs(device.values) do rule[key] = value end', '  hl.device(rule)', 'end', 'state.input = next_input']
@@ -231,7 +231,7 @@ def generate(devices,gestures,active_layouts=None):
               '  local action = state.input_gesture_live[key]',
               '  if action and action ~= "none" then',
               '    local fingers, direction = key:match("^(%d+):(.+)$")',
-              '    hl.gesture({fingers=tonumber(fingers), direction=direction, action="unset"})',
+              '    pcall(hl.gesture, {fingers=tonumber(fingers), direction=direction, action="unset"})',
               '    state.input_gesture_live[key] = nil',
               '  end', 'end',
               'for key, _ in pairs(state.input_gestures) do remove_gesture(key) end',
@@ -242,16 +242,27 @@ def generate(devices,gestures,active_layouts=None):
               '    local fingers, direction = key:match("^(%d+):(.+)$")',
               '    hl.gesture({fingers=tonumber(fingers), direction=direction, action=original})',
               '    state.input_gesture_live[key] = original', '  end', 'end']
-    for key,action in gestures.items():
+    # gesture_actions (bifrostctl.gesture_actions): value -> a Hyprland
+    # gesture action (native) or a Bifrost action run through its ipc.
+    catalogue={g['value']:g for g in (gesture_actions or [])}
+    # Hyprland refuses a gesture that an earlier, more general one on the
+    # same fingers shadows (swipe > vertical/horizontal > up/down/left/right),
+    # but not the other way round: register the specific ones first, so e.g.
+    # 3:up and 3:swipe both work (up, and every other swipe).
+    rank={'up':0,'down':0,'left':0,'right':0,'vertical':1,'horizontal':1,'swipe':2}
+    for key,action in sorted(gestures.items(),key=lambda kv:(kv[0].split(':')[0],rank.get(kv[0].split(':')[1],3))):
         fingers,direction=key.split(':')
         spec='fingers='+fingers+', direction='+lua(direction)
-        if action=='none': continue
-        if action in ('launcher','controlcenter','notifications','overview','overview-open','overview-close'):
-            target, _, operation=action.partition('-')
-            command='bin .. '+lua('bifrost-ipc '+target+' '+(operation or 'toggle'))
-            lines.append('hl.gesture({'+spec+', action=function() hl.exec_cmd('+command+') end})')
-        else: lines.append('hl.gesture({'+spec+', action='+lua(action)+'})')
-        lines.append('state.input_gesture_live['+lua(key)+'] = '+lua(action))
+        entry=catalogue.get(action,{'native':action})
+        if entry.get('native')=='none': continue
+        # pcall: Hyprland rejects a gesture another one shadows (e.g. 3:up
+        # after 3:swipe); that must not abort the rest of the file (binds).
+        # Only a gesture Hyprland took is live (removed on the next run).
+        if 'ipc' in entry:
+            command='bin .. '+lua('bifrost-ipc '+entry['ipc'])
+            lines.append('if pcall(hl.gesture, {'+spec+', action=function() hl.exec_cmd('+command+') end}) then')
+        else: lines.append('if pcall(hl.gesture, {'+spec+', action='+lua(entry['native'])+'}) then')
+        lines.append('  state.input_gesture_live['+lua(key)+'] = '+lua(action)+' end')
     lines+=['state.input_gestures = next_gestures','state.input_layouts = state.input_layouts or {}']
     for name,index in (active_layouts or {}).items():
         command='hyprctl switchxkblayout '+shlex.quote(name)+' '+str(index)
