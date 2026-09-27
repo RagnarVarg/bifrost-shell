@@ -150,16 +150,15 @@ PanelWindow {
     // auto-hiding (continuous hover), otherwise just the glass or each island
     // so margins and island gaps stay click-through.
     mask: Region {
+        // Auto-hiding takes the whole band also without a panel: the pointer
+        // must stay "inside" on its way from the screen edge to a widget box,
+        // or the bar hides before the box can be clicked.
         MaskRect {
-            source: !root.revealed ? revealStrip : root.frame ? band : root.shapesOnly ? null : root.cfg.autohide.enabled ? band : content
+            source: !root.revealed ? revealStrip : root.frame || root.cfg.autohide.enabled ? band : root.shapesOnly ? null : content
         }
 
         MaskRect {
-            source: root.revealed && root.shapesOnly ? shapes : null
-        }
-
-        MaskRect {
-            source: root.revealed && root.shapesOnly && root.cfg.autohide.enabled ? revealStrip : null
+            source: root.revealed && root.shapesOnly && !root.cfg.autohide.enabled ? shapes : null
         }
 
         MaskRect {
