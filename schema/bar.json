@@ -163,16 +163,14 @@
       "default": "panel",
       "options": [
         "panel",
-        "subtle",
         "none"
       ],
       "optionLabels": {
-        "panel": "Full panel",
-        "subtle": "Faint panel",
-        "none": "No panel"
+        "panel": "Panel",
+        "none": "None: only the widgets"
       },
       "label": "Panel background",
-      "description": "The bar's own glass: full, a faint hint of glass, or none (widgets float on their own)",
+      "description": "The bar's own glass, or none: then only the widgets show, as islands when they are Boxed or Grouped",
       "group": "appearance"
     },
     {
@@ -192,6 +190,74 @@
       "label": "Widgets",
       "description": "Integrated = directly on the panel; Boxed = every widget in its own rounded glass bubble; Grouped = one bubble per side (left, centre, right)",
       "group": "appearance"
+    },
+    {
+      "key": "bar.boxes.tint.light",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Box colour (light mode)",
+      "description": "Colour of the widget boxes in light mode. Empty = the glass colour",
+      "group": "appearance",
+      "inherit": "materials.bar.tint",
+      "nullLabel": "Glass",
+      "dependsOnValue": {
+        "bar.widgetStyle": [
+          "boxed",
+          "grouped"
+        ]
+      }
+    },
+    {
+      "key": "bar.boxes.tint.dark",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "label": "Box colour (dark mode)",
+      "description": "Colour of the widget boxes in dark mode. Empty = the glass colour",
+      "group": "appearance",
+      "inherit": "materials.bar.tint",
+      "nullLabel": "Glass",
+      "dependsOnValue": {
+        "bar.widgetStyle": [
+          "boxed",
+          "grouped"
+        ]
+      }
+    },
+    {
+      "key": "bar.boxes.transparency",
+      "type": "int",
+      "default": null,
+      "nullable": true,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "label": "Box transparency",
+      "description": "0 % = solid, 100 % = clear. Empty = like the rest of the glass",
+      "group": "appearance",
+      "nullLabel": "Glass",
+      "dependsOnValue": {
+        "bar.widgetStyle": [
+          "boxed",
+          "grouped"
+        ]
+      }
+    },
+    {
+      "key": "bar.boxes.blur",
+      "type": "bool",
+      "default": true,
+      "label": "Blur behind the boxes",
+      "description": "Blurs what is behind the widget boxes when the bar has no panel (strength: Glass & transparency)",
+      "group": "appearance",
+      "scope": "hyprland",
+      "dependsOnValue": {
+        "bar.widgetStyle": [
+          "boxed",
+          "grouped"
+        ]
+      }
     },
     {
       "key": "bar.autohide.enabled",

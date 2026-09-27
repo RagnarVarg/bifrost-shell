@@ -134,6 +134,7 @@ ShellRoot {
             appearance: { prism: { enabled: false, intensity: 2 }, spacingScale: 1.5, radiusScale: 2 },
             hyprland: { windows: { activeTransparency: 10, inactiveTransparency: 20 }, gapsIn: 3 },
             settingsUI: { layout: "boxed" } } };
+        eq("7 → 8: the faint bar panel becomes the panel", Migrations.migrate({ version: 7, values: { bar: { background: "subtle", height: 40 } } }, Config.formatVersion).values.bar, { background: "panel", height: 40 });
         const v6 = { version: 6, values: { appearance: { accent: "#123456" }, materials: { tint: "#0F1516", blur: 5 } } };
         const out7 = Migrations.migrate(v6, Config.formatVersion).values;
         eq("6 → 7: one accent and tint become the same colour in light and dark", [out7.appearance.accent, out7.materials.tint], [{ light: "#123456", dark: "#123456" }, { light: "#0F1516", dark: "#0F1516" }]);

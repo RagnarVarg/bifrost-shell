@@ -39,9 +39,9 @@ PanelWindow {
     // The layout the band uses (see above): a left bar is laid out as a bottom bar.
     readonly property bool atBottom: edge === "bottom" || edge === "left"
     readonly property string style: cfg.style
-    // Panel background (full, faint, none) and widget style (integrated,
+    // Panel background (panel or none) and widget style (integrated,
     // boxed = a bubble per widget, grouped = a bubble per zone).
-    readonly property string background: cfg.background || "panel"
+    readonly property string background: cfg.background === "none" ? "none" : "panel"
     readonly property string widgetStyle: cfg.widgetStyle || "integrated"
     // Frame: the bar is one side of a glass frame around the whole screen.
     readonly property bool frame: Metrics.frame
@@ -59,28 +59,34 @@ PanelWindow {
             m.radius = 0;
         return m;
     }
-    // Faint panel: a hint of the bar glass, no shadow.
-    readonly property var panelMaterial: background !== "subtle" ? material : Object.assign({}, material, {
-            fill: Qt.alpha(material.tint, material.opacity * 0.28),
-            elevation: { blur: 0, y: 0, spread: 0, opacity: 0 },
-            depth: material.depth * 0.3,
-            density: 0,
-            bevelStrength: 0
-        })
-    // Bubbles and islands on top of a panel are glass within glass: lighter
-    // and without their own shadow; without a panel they are the bar glass.
-    readonly property var shapeMaterial: !panel ? Object.assign({}, material, {
-            radius: Math.min(material.radius, barHeight / 2),
+    readonly property var panelMaterial: material
+    // Bubbles and islands (bar.boxes.*: colour per light/dark mode,
+    // transparency). Unset, they are the bar glass without a panel, and a
+    // lighter glass within glass without their own shadow on a panel.
+    readonly property var boxes: cfg.boxes || ({})
+    readonly property var shapeMaterial: {
+        const m = Object.assign({}, material, { radius: Math.min(material.radius, barHeight / 2) });
+        if (panel) {
+            m.fill = Qt.alpha(material.tint, material.opacity * 0.45);
+            m.elevation = { blur: 0, y: 0, spread: 0, opacity: 0 };
+            m.depth = material.depth * 0.5;
+            m.density = 0;
+        } else if (bubbles) {
             // Neighbouring bubbles are close: a short, centred shadow keeps
             // the gaps between them clean.
-            elevation: bubbles ? { blur: (material.elevation.blur || 0) * 0.5, y: 0, spread: 0, opacity: (material.elevation.opacity || 0) * 0.6 } : material.elevation
-        }) : Object.assign({}, material, {
-            radius: Math.min(material.radius, barHeight / 2),
-            fill: Qt.alpha(material.tint, material.opacity * 0.45),
-            elevation: { blur: 0, y: 0, spread: 0, opacity: 0 },
-            depth: material.depth * 0.5,
-            density: 0
-        })
+            m.elevation = { blur: (material.elevation.blur || 0) * 0.5, y: 0, spread: 0, opacity: (material.elevation.opacity || 0) * 0.6 };
+        }
+        const tint = (boxes.tint || {})[Theme.variant];
+        const custom = typeof tint === "string" && /^#[0-9a-fA-F]{6}$/.test(tint);
+        if (custom)
+            m.tint = tint;
+        if (typeof boxes.transparency === "number" || custom) {
+            const opacity = typeof boxes.transparency === "number" ? 1 - Math.max(0, Math.min(100, boxes.transparency)) / 100 : material.opacity;
+            m.opacity = opacity;
+            m.fill = Qt.alpha(m.tint, opacity);
+        }
+        return m;
+    }
     readonly property real shapeInset: panel ? Theme.space.xs : 0
     readonly property real shadowRoom: Math.max((material.elevation.opacity || 0) > 0 ? material.elevation.blur + Math.abs(material.elevation.y) : 0, (material.glow || 0) > 0 ? Theme.space.xl * 2 : 0)
     readonly property var widgets: cfg.widgets || ({})

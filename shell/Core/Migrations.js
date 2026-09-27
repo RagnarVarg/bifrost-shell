@@ -176,6 +176,15 @@ const steps = {
         }
         doc.version = 7;
         return doc;
+    },
+    // 7 → 8: the faint bar panel is gone (it only repeated the glass's
+    // transparency); it becomes the panel. Same in bifrostctl.
+    7: function (doc) {
+        const bar = (doc.values || {}).bar;
+        if (bar && bar.background === "subtle")
+            bar.background = "panel";
+        doc.version = 8;
+        return doc;
     }
 };
 

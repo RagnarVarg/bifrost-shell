@@ -48,7 +48,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-FORMAT_VERSION = 7
+FORMAT_VERSION = 8
 NULLABLE_TYPES = {"bool", "int", "real", "color", "string", "font", "icon", "path"}
 APPLY_MODES = {"live", "reload", "restart"}
 SCOPES = {"shell", "hyprland", "system"}
@@ -706,6 +706,11 @@ def migrate(doc):
     if v == 6:
         migrate_6(doc.setdefault("values", {}))
         v = 7
+    if v == 7:
+        bar = doc.setdefault("values", {}).get("bar")
+        if isinstance(bar, dict) and bar.get("background") == "subtle":
+            bar["background"] = "panel"
+        v = 8
     doc["version"] = v
     return doc
 
@@ -1795,8 +1800,11 @@ def generate_hypr(cfg) -> str:
             "end",
             'layer_rule("bifrost-noanim", { match = { namespace = "^bifrost:.*" }, no_anim = true })',
         ]
+        # A bar without a panel is only its widget boxes: they choose (bar.boxes.blur).
+        boxes_only = v("bar.background") == "none" and v("bar.widgetStyle") in ("boxed", "grouped")
         for ns in BLUR_NAMESPACES:
-            lines.append(f'layer_rule("bifrost-blur-{ns}", {{ match = {{ namespace = "^bifrost:{ns}$" }}, blur = {blur}, ignore_alpha = {mask:g}, blur_popups = {blur} }})')
+            b = str(strength > 0 and v("bar.boxes.blur") is not False).lower() if ns == "bar" and boxes_only else blur
+            lines.append(f'layer_rule("bifrost-blur-{ns}", {{ match = {{ namespace = "^bifrost:{ns}$" }}, blur = {b}, ignore_alpha = {mask:g}, blur_popups = {blur} }})')
         lines.append("")
     layout = json.loads((REPO / "themes/_base.json").read_text())["layout"]
     w, h = layout["settingsWidth"], layout["settingsHeight"]

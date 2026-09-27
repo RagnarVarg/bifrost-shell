@@ -18,8 +18,9 @@ Item {
     readonly property var def: Schema.def(key) || ({})
     readonly property bool modified: Config.isModified(key)
     // dependsOn: a bool setting that must be on; dependsOnValue: { key: value }
-    // settings that must have exactly that value (e.g. only in frame layout).
-    readonly property bool dependencyMet: (!def.dependsOn || Config.get(def.dependsOn) === true) && Object.keys(def.dependsOnValue || {}).every(k => Config.get(k) === def.dependsOnValue[k])
+    // settings that must have exactly that value (e.g. only in frame layout),
+    // or one of a list of values.
+    readonly property bool dependencyMet: (!def.dependsOn || Config.get(def.dependsOn) === true) && Object.keys(def.dependsOnValue || {}).every(k => Array.isArray(def.dependsOnValue[k]) ? def.dependsOnValue[k].indexOf(Config.get(k)) >= 0 : Config.get(k) === def.dependsOnValue[k])
     readonly property string pending: ApplyState.status(key)
     readonly property string editorName: {
         if (def.editor)

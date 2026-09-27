@@ -472,6 +472,24 @@ class BifrostctlTest(unittest.TestCase):
         self.assertEqual(v["hyprland"], {"gapsIn": 3})
         self.assertNotIn("settingsUI", v)
 
+    def test_migrate_7_to_8_faint_panel(self):
+        doc = {"version": 7, "values": {"bar": {"background": "subtle", "height": 40}}}
+        self.assertEqual(ctl.migrate(doc)["values"]["bar"], {"background": "panel", "height": 40})
+
+    def test_bar_without_panel_blurs_by_its_boxes(self):
+        rule = lambda: re.search(r'bifrost-blur-bar".*', ctl.generate_hypr(ctl.Config(ctl.Schema()))).group(0)
+        ctl.main(["set", "materials.blur", "40"])
+        self.assertIn("blur = true,", rule())
+        ctl.main(["set", "bar.background", "none"])
+        ctl.main(["set", "bar.widgetStyle", "boxed"])
+        ctl.main(["set", "bar.boxes.blur", "false"])
+        self.assertIn("blur = false,", rule())
+        ctl.main(["set", "bar.boxes.blur", "true"])
+        self.assertIn("blur = true,", rule())
+        ctl.main(["set", "bar.background", "panel"])
+        ctl.main(["set", "bar.boxes.blur", "false"])
+        self.assertIn("blur = true,", rule())   # the panel decides
+
     def test_migrate_6_to_7_colours_per_mode(self):
         doc = {"version": 6, "values": {"appearance": {"accent": "#123456"}, "materials": {"tint": "#0F1516", "blur": 5}}}
         v = ctl.migrate(doc)["values"]
