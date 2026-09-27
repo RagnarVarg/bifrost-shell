@@ -1,34 +1,63 @@
 # Bifrost Shell
 
-Ett eget Hyprland-shell byggt på Quickshell med top bar, Dock, launcher,
-fönsteröversikt, inställningar, notiser och låsskärm. Niri-stöd är planerat.
-Aktuellt läge och återstående arbete finns i `docs/HANDOFF.md`.
+A custom Hyprland shell built with Quickshell, featuring a top bar, dock, launcher,
+window overview, settings, notifications, and lock screen. Niri support is planned.
+
+Current status and remaining work are documented in `docs/HANDOFF.md`.
 
 ## Installation
 
-Fedora 44 och Ubuntu 26.04 LTS har paketplaner för sina beroenden:
+### Fedora 44 / Ubuntu 26.04 LTS
+
+Clone the repository:
+
+```sh
+git clone https://github.com/RagnarVarg/bifrost-shell.git
+cd bifrost-shell
+```
+
+Preview the dependency plan without making any changes:
 
 ```sh
 ./install.sh --deps-plan
+```
+
+Install the required dependencies and Bifrost:
+
+```sh
 ./install.sh --install-deps
 ```
 
-Kör som vanlig användare. Paketsteget visar vilka externa paketkällor som läggs
-till och använder sudo efter godkännande. Med beroendena redan installerade,
-inklusive på Arch/CachyOS, räcker `./install.sh`.
+Run the installer as your normal user. The dependency step shows which external
+package repositories will be added and uses sudo only when required.
 
-Se [installationsguiden](docs/INSTALL.md) för första inloggning, befintlig
-Hyprland-konfiguration och vad som faktiskt har testats. Full grafisk
-Fedora/Ubuntu-inloggning återstår att verifiera.
-
-## Utveckling
+If all required dependencies are already installed, including on Arch/CachyOS,
+you can simply run:
 
 ```sh
-scripts/dev.sh              # overlay-läge
-scripts/selftest.sh         # tester
-tools/bifrostctl doctor     # beroenden och miljö
-tools/bifrostctl list bar   # inställningar
+./install.sh
 ```
 
-Arkitektur: `docs/ARCHITECTURE.md`. Externa API:er: `docs/EXTERNAL-APIS.md`.
-Bifrost har inget runtime-beroende på DMS eller Noctalia.
+After installation, verify the setup:
+
+```sh
+~/.local/bin/bifrostctl doctor
+~/.local/bin/bifrostctl validate
+```
+
+Then reboot and choose **Hyprland** from your login screen.
+
+For more details about first login, existing Hyprland configurations, supported
+distributions, and verification status, see [docs/INSTALL.md](docs/INSTALL.md).
+
+## Development
+
+```sh
+scripts/dev.sh              # run in overlay/development mode
+scripts/selftest.sh         # run tests
+tools/bifrostctl doctor     # check dependencies and environment
+tools/bifrostctl list bar   # inspect bar settings
+```
+
+Architecture: `docs/ARCHITECTURE.md`  
+External APIs: `docs/EXTERNAL-APIS.md`
