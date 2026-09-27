@@ -9,7 +9,8 @@ import qs.Services
 import qs.Shared
 
 // The clock's menu: time, date and week, weather (Weather service, with its
-// unavailable states spelled out), a month calendar, what is playing with
+// unavailable states spelled out), a month calendar with today's events and
+// reminders under it (DayPanel), what is playing with
 // media controls, and a way to the clock settings. Grows out of the bar
 // like every BarMenu.
 BarMenu {
@@ -45,7 +46,7 @@ BarMenu {
             Column {
                 id: info
 
-                width: parent.width - calendar.width - parent.spacing
+                width: parent.width - dayColumn.width - parent.spacing
                 spacing: Theme.space.xs
 
                 BText {
@@ -91,12 +92,28 @@ BarMenu {
                 }
             }
 
-            MonthCalendar {
-                id: calendar
+            // The calendar on top, today's events and reminders under it.
+            Column {
+                id: dayColumn
 
-                WheelHandler {
-                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-                    onWheel: e => calendar.shift(e.angleDelta.y > 0 ? -1 : 1)
+                width: Math.max(calendar.width, Theme.layout.dayPanelWidth)
+                spacing: Theme.space.xl
+
+                MonthCalendar {
+                    id: calendar
+
+                    anchors.horizontalCenter: parent.horizontalCenter
+
+                    WheelHandler {
+                        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                        onWheel: e => calendar.shift(e.angleDelta.y > 0 ? -1 : 1)
+                    }
+                }
+
+                DayPanel {
+                    width: parent.width
+                    active: menu.isOpen
+                    timeFormat: menu.timeFormat
                 }
             }
         }

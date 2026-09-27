@@ -492,10 +492,24 @@ ShellRoot {
             h.destroy();
             return ok;
         })());
-        for (const m of ["Modules/Bar/Widgets/ClockMenu", "Shared/MonthCalendar"]) {
+        for (const m of ["Modules/Bar/Widgets/ClockMenu", "Shared/MonthCalendar", "Shared/DayPanel"]) {
             const c = Qt.createComponent(Qt.resolvedUrl(m + ".qml"));
             check("clock menu part compiles: " + m, c.status === Component.Ready, c.errorString());
         }
+        // Reminders: made, checked off and cleared in the clock menu; kept in Store.
+        const keptReminders = Store.get("reminders");
+        Store.set("reminders", []);
+        Reminders.add("  Köp mjölk  ");
+        Reminders.add("   ");
+        Reminders.add("Ring tandläkaren");
+        eq("reminders: added, trimmed, blank ignored", Reminders.items.map(r => [r.text, r.done]), [["Köp mjölk", false], ["Ring tandläkaren", false]]);
+        Reminders.toggle(Reminders.items[0].id);
+        eq("reminders: checked off and stored", [Reminders.doneCount, Store.get("reminders")[0].done], [1, true]);
+        Reminders.clearDone();
+        eq("reminders: clear done keeps the rest", Reminders.items.map(r => r.text), ["Ring tandläkaren"]);
+        Reminders.remove(Reminders.items[0].id);
+        eq("reminders: removed", Reminders.items.length, 0);
+        Store.set("reminders", keptReminders);
         for (const m of ["Modules/Bar/Widgets/WorkspacePreview", "Compat/WindowCapture", "Modules/WindowTransitions/WindowTransitions", "Modules/ControlCenter/ControlCenterContent", "Modules/ControlCenter/ControlCenter", "Modules/Dock/DockPanelHost", "Modules/Dock/Dock", "Modules/Bar/Widgets/ControlCenterWidget", "Modules/Launcher/LauncherContent", "Modules/Launcher/Launcher", "Modules/Bar/Widgets/LauncherWidget", "Modules/Bar/PanelMenu", "Modules/Notifications/NotificationCenterContent", "Modules/Notifications/NotificationCenter", "Modules/Bar/Widgets/NotificationsWidget", "Shared/AudioDevices", "Shared/WifiNetworks"]) {
             const c = Qt.createComponent(Qt.resolvedUrl(m + ".qml"));
             check("workspace preview part compiles: " + m, c.status === Component.Ready, c.errorString());

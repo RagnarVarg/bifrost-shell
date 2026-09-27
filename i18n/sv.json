@@ -1010,5 +1010,21 @@
   "Colour of the glass in dark mode. Empty = the theme's colour": "Glasets färg i mörkt läge. Tomt = temats färg",
   "0 % = solid, 100 % = fully clear (only the border and blur remain). Standard = the theme's glass, tuned per surface and for light and dark": "0 % = helt täckande, 100 % = helt genomskinligt (bara kanten och oskärpan blir kvar). Standard = temats glas, anpassat per yta och för ljust och mörkt",
   "Width": "Bredd",
-  "How much of the screen edge the bar covers, centred. 100 % = the full width. It never gets narrower than its widgets need. For a side bar this is its length": "Hur stor del av skärmkanten panelen täcker, centrerad. 100 % = hela bredden. Den blir aldrig smalare än widgetarna behöver. För en sidopanel är det dess längd"
+  "How much of the screen edge the bar covers, centred. 100 % = the full width. It never gets narrower than its widgets need. For a side bar this is its length": "Hur stor del av skärmkanten panelen täcker, centrerad. 100 % = hela bredden. Den blir aldrig smalare än widgetarna behöver. För en sidopanel är det dess längd",
+  "Today's events": "Dagens händelser",
+  "No calendar connected": "Ingen kalender ansluten",
+  "No events today": "Inga händelser i dag",
+  "All day": "Heldag",
+  "(No title)": "(Ingen titel)",
+  "Now": "Nu",
+  "Next": "Nästa",
+  "until %1": "till %1",
+  "Reminders": "Påminnelser",
+  "Clear done": "Rensa klara",
+  "Add a reminder": "Lägg till påminnelse",
+  "No reminders": "Inga påminnelser",
+  "Evolution Data Server is not installed": "Evolution Data Server är inte installerat",
+  "No calendar is set up": "Ingen kalender är konfigurerad",
+  "The calendars could not be opened": "Kalendrarna kunde inte öppnas",
+  "The calendar could not be read": "Kalendern kunde inte läsas"
 }

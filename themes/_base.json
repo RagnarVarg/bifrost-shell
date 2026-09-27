@@ -491,6 +491,7 @@
     "launcherHeight": 620,
     "controlCenterWidth": 392,
     "clockMenuWidth": 560,
+    "dayPanelWidth": 320,
     "workspacePreviewWidth": 440,
     "_overview": "Overview (all windows): a picture is at most overviewTileHeight × the screen's height tall and overviewTileAspect × that wide (fewer windows never make them bigger), with overviewGap between them.",
     "overviewTileHeight": 0.28,
