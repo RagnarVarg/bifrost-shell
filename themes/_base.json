@@ -32,7 +32,7 @@
     "outerBorder": 0.5,
     "disabled": 0.38,
     "scrim": 0.45,
-    "overviewScrim": 0.72,
+    "overviewScrim": 0.86,
     "stateHover": 0.055,
     "statePressed": 0.1,
     "stateSelected": 0.14,

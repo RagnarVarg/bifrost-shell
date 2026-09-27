@@ -934,3 +934,20 @@ Validation: 535 QML, 46 CLI tests including HDR/hdredid/SDR persistence and gene
 - **App CSD minimize buttons (−):** Hyprland 0.56.2 ignores xdg_toplevel.set_minimized and emits no event for it
   (no socket2 event, no Lua event; tested with a GTK window) — Bifrost cannot hear those clicks. Bifrost has no
   window buttons of its own; GTK button layout here is appmenu:close.
+
+## 2026-09-27 kväll: förenklat glas/utseende, Settings layout borttagen, ny overview
+- `e2b5c822` **Glas & transparens = fyra globala val**: `materials.transparency` (null = temats glas per yta), `materials.blur`,
+  `materials.tint`, `materials.border`. Borttaget: per-yta-värden, Link all surfaces/unlinked, tjocklek, grain, refraktion,
+  glöd, kantbredd/-opacitet/-färg, radie, skugga, `appearance.prism.enabled` (intensitet 0 = av), `appearance.spacingScale`
+  (täthet täcker det), `hyprland.windows.*Transparency` (appfönster alltid opaka), sidan Settings layout (`settingsUI`,
+  SettingsStyle har fasta temavärden). MaterialsPage borttagen – vanlig schemasida. Config **format 6**: Migrations.js
+  steg 5 ↔ `bifrostctl migrate_5` behåller All surfaces-värdena, prism av → intensitet 0, spacingScale ≥ 1,2 → spacious /
+  ≤ 0,85 → compact. En blur för alla lager (`BLUR_NAMESPACES`) och Settings-fönstret.
+  Användarens config migrerad live (backup `backups/config.v5.*.json`).
+- `df688e76` + scrim-justering **Overview**: små förhandsvisningar med tak (`layout.overviewTileHeight` 0,28 × skärmhöjd,
+  `overviewTileAspect` 2,4, `overviewGap` 44), centrerade rader, rutnätet väljs efter skärmens form (ultrabred → breda rader),
+  ikon + kort titel (`OverviewLayout.shortTitle`), mörk bakgrund `color.overviewScrim` (void, 0,86) + compositor-blur
+  (`bifrost:overview`), kompakt arbetsytepiller (Alla · Minimerade · nummer; aktiv fylld, visad med ring).
+- Produktion är **inte** längre en --link-installation: kör `./install.sh --no-hypr --no-greeter` + restart efter ändringar.
+- **Greetern**: installerad kopia (`/usr/share/bifrost-greeter`) har format 5 och vägrar synkad v6-config (visar
+  standardutseende). Användaren behöver köra `sudo greeter/install-greeter.sh` igen.
