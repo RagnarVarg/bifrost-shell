@@ -32,10 +32,13 @@ BarWidget {
                 ShellState.toggleLauncher(widget.screenName);
         }
 
-        BIcon {
-            source: "file://" + Paths.assetsDir + "/brand/bifrost-mark.svg"
-            size: Theme.icon.size.lg
-            color: "#FFFFFF"
+        Image {
+            width: Theme.icon.size.lg
+            height: Theme.icon.size.lg
+            source: "file://" + Paths.assetsDir + "/brand/bifrost-mark-white.png"
+            sourceSize: Qt.size(Theme.icon.size.lg * 2, Theme.icon.size.lg * 2)
+            fillMode: Image.PreserveAspectFit
+            smooth: true
         }
     }
 

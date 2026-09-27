@@ -1,7 +1,7 @@
 # Bifrost Shell
 
 <p align="center">
-  <img src="assets/brand/bifrost-logo.svg" alt="Bifrost logo" width="180">
+  <img src="assets/brand/bifrost-logo-color.png" alt="Bifrost logo" width="180">
 </p>
 
 A custom Hyprland shell built with Quickshell, featuring a top bar, dock, launcher,
