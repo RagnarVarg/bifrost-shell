@@ -701,11 +701,13 @@ ShellRoot {
             host.destroy();
             return a ? { ext: [a.ext.x, a.ext.y, a.ext.width, a.ext.height], bridge: [a.bridge.x, a.bridge.y, a.bridge.width, a.bridge.height], radii: a.radii, extRadii: a.extRadii, fillets: a.fillets } : null;
         };
-        const R = Theme.radius.lg;
-        eq("menu shape: centred under the bar", shape(topBar, glass, 400, 200, 100), { ext: [400, 38, 200, 100], bridge: [400, 19, 200, 38], radii: [10, 10, 10, 10], extRadii: [R, 0, R, 0], fillets: [[400, 38, -R, R], [600, 38, R, R]] });
-        eq("menu shape: flush with the bar edge", shape(topBar, glass, 0, 200, 100), { ext: [0, 38, 200, 100], bridge: [0, 19, 200, 38], radii: [10, 10, 0, 10], extRadii: [R, 0, R, 0], fillets: [[200, 38, R, R]] });
-        eq("menu shape: wider than its island", shape(topBar, island, 100, 280, 100), { ext: [0, 38, 280, 100], bridge: [0, 19, 40, 38], radii: [0, 10, 0, 10], extRadii: [R, R, R, 0], fillets: [[40, 38, R, -R]] });
-        eq("menu shape: bar at the bottom", shape(bottomBar, glass, 400, 200, 100), { ext: [400, -100, 200, 100], bridge: [400, -19, 200, 38], radii: [10, 10, 10, 10], extRadii: [0, R, 0, R], fillets: [[400, 0, -R, -R], [600, 0, R, -R]] });
+        const R = Theme.radius.lg;      // concave joins (fillet)
+        const M = Theme.radius.menu;    // the menus' outer corners
+        check("bar menus use the theme's menu radius", M === 22);
+        eq("menu shape: centred under the bar", shape(topBar, glass, 400, 200, 100), { ext: [400, 38, 200, 100], bridge: [400, 19, 200, 38], radii: [10, 10, 10, 10], extRadii: [M, 0, M, 0], fillets: [[400, 38, -R, R], [600, 38, R, R]] });
+        eq("menu shape: flush with the bar edge", shape(topBar, glass, 0, 200, 100), { ext: [0, 38, 200, 100], bridge: [0, 19, 200, 38], radii: [10, 10, 0, 10], extRadii: [M, 0, M, 0], fillets: [[200, 38, R, R]] });
+        eq("menu shape: wider than its island", shape(topBar, island, 100, 280, 100), { ext: [0, 38, 280, 100], bridge: [0, 19, 40, 38], radii: [0, 10, 0, 10], extRadii: [M, M, M, 0], fillets: [[40, 38, R, -R]] });
+        eq("menu shape: bar at the bottom", shape(bottomBar, glass, 400, 200, 100), { ext: [400, -100, 200, 100], bridge: [400, -19, 200, 38], radii: [10, 10, 10, 10], extRadii: [0, M, 0, M], fillets: [[400, 0, -R, -R], [600, 0, R, -R]] });
         eq("menu shape: other glass untouched", shape(topBar, glass, 400, 200, 0), null);
         const frameTop = Qt.createQmlObject("import QtQuick; Item { x: -6; width: 1000; height: 800; property real radius: 10; property real stripY: 0; property real stripHeight: 38; property rect hole: Qt.rect(6, 38, 988, 756) }", test);
         const ft = shape(topBar, frameTop, 400, 200, 100);

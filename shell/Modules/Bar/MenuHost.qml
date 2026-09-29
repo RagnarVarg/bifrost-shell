@@ -28,7 +28,9 @@ Item {
 
     readonly property bool down: !bar.atBottom
     readonly property real fillet: Theme.radius.lg
-    readonly property real menuRadius: Theme.radius.lg
+    // Outer corners of every menu that grows out of the bar (Theme.radius.menu);
+    // the concave corners where it joins the bar keep `fillet`.
+    readonly property real menuRadius: Theme.radius.menu ?? Theme.radius.lg
 
     property var menu: null             // the open menu
     property Item hostGlass: null
@@ -255,6 +257,7 @@ Item {
         width: host.shapeWidth
         height: host.shapeHeight
         material: host.bar && host.bar.material ? host.bar.material : Theme.materials.bar
+        radius: host.menuRadius
     }
 
     // The menu area: hover source, clip for the reveal, input region.
