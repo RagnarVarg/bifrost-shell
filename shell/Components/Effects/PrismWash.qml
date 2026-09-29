@@ -10,6 +10,8 @@ Rectangle {
 
     property real strength: 0.1
     property real saturation: 0.2
+    // Fade out at both ends (when the shape runs on into other glass).
+    property bool fadeEnds: false
     readonly property var stops: Theme.effects.prism || []
 
     visible: strength > 0 && stops.length >= 3
@@ -20,6 +22,10 @@ Rectangle {
 
         GradientStop {
             position: 0
+            color: wash.visible ? FX.tone(wash.stops[0], wash.saturation, wash.fadeEnds ? 0 : 1) : "transparent"
+        }
+        GradientStop {
+            position: wash.fadeEnds ? 0.15 : 0
             color: wash.visible ? FX.tone(wash.stops[0], wash.saturation, 1) : "transparent"
         }
         GradientStop {
@@ -27,8 +33,12 @@ Rectangle {
             color: wash.visible ? FX.tone(wash.stops[1], wash.saturation, 1) : "transparent"
         }
         GradientStop {
-            position: 1
+            position: wash.fadeEnds ? 0.85 : 1
             color: wash.visible ? FX.tone(wash.stops[2], wash.saturation, 1) : "transparent"
+        }
+        GradientStop {
+            position: 1
+            color: wash.visible ? FX.tone(wash.stops[2], wash.saturation, wash.fadeEnds ? 0 : 1) : "transparent"
         }
     }
 }

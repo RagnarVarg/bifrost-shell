@@ -912,8 +912,10 @@ Validation: 535 QML, 46 CLI tests including HDR/hdredid/SDR persistence and gene
 - New section Settings → Appearance → **Bifrost Effects** (`schema/effects.json`, keys `effects.bar.*` and
   `effects.windows.*`), colours and geometry in `themes/_base.json → effects` (`Theme.effects`): prism stops
   cyan → blue → violet, highlight = `@glass.highlightColor`, edge = `@palette.void`, divider = `@color.text`.
-- Top bar (`Modules/Bar/BarEffects.qml`, between the panel glass and the zones; floating/attached panel only, not
-  the frame layout): reusable `Components/Effects/` — `EffectLine` (1 px line, faded ends, gap where a menu's
+- Top bar (`Modules/Bar/BarEffects.qml`, between the panel glass and the zones; floating/attached panel and the
+  frame layout's bar strip — there the prism fades out toward the frame sides, the inner line stops at the hole's
+  corner radius and the light-to-dark gradient is off; edges are bar-relative: highlight outer, dark line toward
+  the windows): reusable `Components/Effects/` — `EffectLine` (1 px line, faded ends, gap where a menu's
   bridge joins the glass), `PrismWash`, `ShadeGradient`, `GlassCapsule`, `SectionDivider`, helpers in `Effects.js`.
   All plain Rectangle gradients inside Loaders (off = not created); no shader, no extra blur. Capsule and dividers
   only with Integrated widgets. `qs.Components.Effects` is imported by shell.qml and selftest.qml (entry files).

@@ -312,6 +312,7 @@ PanelWindow {
                     anchors.fill: parent
                     bar: root
                     glass: barGlass
+                    frameSurface: frameGlass
                     leftZone: left
                     centerZone: center
                     rightZone: right
