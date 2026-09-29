@@ -1898,7 +1898,7 @@ def generate_hypr(cfg) -> str:
         lines.append("local apply_output = (function()\n" + (REPO / "shell/Compat/MonitorApply.lua").read_text() + "\nend)()")
         lines.append("-- Displays (Settings → System → Displays)")
         for name, o in outputs.items():
-            lines.append(f'apply_output({{ output = {lua_str(name)}, mode = "{output_mode(o)}", position = "{o["x"]}x{o["y"]}", scale = {o["scale"]}, vrr = {1 if o.get("vrr") else 0}, bitdepth = {o.get("bitdepth", 8)}' + (f', cm = {lua_str(o["cm"])}' if o.get("cm") else "") + (f', sdrbrightness = {max(0.5, min(15, float(o["sdrBrightness"])))}' if "sdrBrightness" in o else "") + ' })')
+            lines.append(f'apply_output({{ output = {lua_str(name)}, mode = "{output_mode(o)}", position = "{o["x"]}x{o["y"]}", scale = {o["scale"]}, vrr = {1 if o.get("vrr") else 0}, bitdepth = {o.get("bitdepth", 8)}' + (f', cm = {lua_str(o["cm"])}' if o.get("cm") else "") + (f', sdrbrightness = {max(0.5, min(15, float(o["sdrBrightness"])))}' if "sdrBrightness" in o else "") + (f', sdrsaturation = {max(0.5, min(2, float(o["sdrSaturation"])))}' if "sdrSaturation" in o else "") + ' })')
         lines.append("")
     if v("hyprland.layerRules"):
         mask = glass_tokens.get("blurMaskShadowed", 0.12)

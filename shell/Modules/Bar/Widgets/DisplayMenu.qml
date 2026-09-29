@@ -23,7 +23,7 @@ StatusMenu {
     }
 
     function current(o) {
-        return { name: o.name, width: o.width, height: o.height, refresh: o.refreshRate, x: o.x, y: o.y, scale: o.scale, vrr: o.vrr, bitdepth: o.bitdepth, cm: o.cm };
+        return { name: o.name, width: o.width, height: o.height, refresh: o.refreshRate, x: o.x, y: o.y, scale: o.scale, vrr: o.vrr, bitdepth: o.bitdepth, cm: o.cm, sdrBrightness: o.sdrBrightness, sdrSaturation: o.sdrSaturation };
     }
 
     function setHdr(o, on) {
@@ -42,7 +42,7 @@ StatusMenu {
 
     function save(o) {
         const saved = Object.assign({}, Config.get("displays.outputs") || {});
-        saved[o.name] = { width: o.width, height: o.height, refresh: o.refresh, x: o.x, y: o.y, scale: o.scale, vrr: o.vrr, bitdepth: o.bitdepth, cm: o.cm };
+        saved[o.name] = Object.assign({}, saved[o.name] || {}, { width: o.width, height: o.height, refresh: o.refresh, x: o.x, y: o.y, scale: o.scale, vrr: o.vrr, bitdepth: o.bitdepth, cm: o.cm, sdrBrightness: o.sdrBrightness, sdrSaturation: o.sdrSaturation });
         Config.set("displays.outputs", saved);
         Ctl.run(["hypr", "generate", "--write"], null, menu);
     }

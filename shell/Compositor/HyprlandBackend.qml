@@ -298,6 +298,7 @@ CompositorBackend {
                             bitdepth: String(m.currentFormat || "").indexOf("2101010") >= 0 ? 10 : 8,
                             cm: m.colorManagementPreset || "srgb",
                             sdrBrightness: m.sdrBrightness === undefined ? 1 : Number(m.sdrBrightness),
+                            sdrSaturation: m.sdrSaturation === undefined ? 1 : Number(m.sdrSaturation),
                             modes: (m.availableModes || []).map(s => {
                                     const r = s.match(/(\d+)x(\d+)@([\d.]+)/);
                                     return r ? { width: Number(r[1]), height: Number(r[2]), refresh: Number(r[3]) } : null;
@@ -327,6 +328,8 @@ CompositorBackend {
         };
         if (o.sdrBrightness !== undefined)
             rule.sdrbrightness = Math.max(0.5, Math.min(15, Number(o.sdrBrightness) || 1));
+        if (o.sdrSaturation !== undefined)
+            rule.sdrsaturation = Math.max(0.5, Math.min(2, Number(o.sdrSaturation) || 1));
         if (o.cm)
             rule.cm = o.cm;
         if (o.cm === "hdr" || o.cm === "hdredid")

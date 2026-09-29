@@ -8,7 +8,8 @@ import qs.Components.Text
 // Displays: resolution, refresh rate, scale, position, VRR and HDR. Changes apply at
 // once and revert after a countdown unless kept; kept settings are stored in
 // Bifrost's config (displays.outputs) and written into bifrost.lua. The
-// user's own Hyprland files are never touched.
+// user's own Hyprland files are never touched. SDR saturation is the
+// exception: it applies live while its slider moves and is saved at once.
 PageBase {
     id: page
 
@@ -38,7 +39,7 @@ PageBase {
     function keep() {
         const saved = Object.assign({}, Config.get("displays.outputs") || {});
         const n = pending.next;
-        saved[n.name] = Object.assign({}, saved[n.name] || {}, { width: n.width, height: n.height, refresh: n.refresh, x: n.x, y: n.y, scale: n.scale, vrr: n.vrr, bitdepth: n.bitdepth, cm: n.cm, sdrBrightness: n.sdrBrightness });
+        saved[n.name] = Object.assign({}, saved[n.name] || {}, { width: n.width, height: n.height, refresh: n.refresh, x: n.x, y: n.y, scale: n.scale, vrr: n.vrr, bitdepth: n.bitdepth, cm: n.cm, sdrBrightness: n.sdrBrightness, sdrSaturation: n.sdrSaturation });
         Config.set("displays.outputs", saved);
         Ctl.run(["hypr", "generate", "--write"], null, page);
         pending = null;
@@ -54,7 +55,66 @@ PageBase {
         revertLoad.restart();
     }
 
+    // SDR saturation: output name → value not yet applied/saved.
+    property var saturation: ({})
+
+    function setSaturation(name, value) {
+        const next = Object.assign({}, saturation);
+        next[name] = Math.round(value * 100) / 100;
+        saturation = next;
+        if (!saturationApply.running)
+            saturationApply.start();
+        saturationSave.restart();
+    }
+
+    // Each step starts from a fresh query of the output, so its other live
+    // values (mode, HDR, SDR brightness) are carried over unchanged. Saving
+    // stores that same live state, as the saved rule replaces the live one.
+    function flushSaturation(save) {
+        const wanted = saturation;
+        Compositor.queryOutputs(list => {
+            const saved = Object.assign({}, Config.get("displays.outputs") || {});
+            let changed = false;
+            list.forEach(o => {
+                if (wanted[o.name] === undefined)
+                    return;
+                const next = { name: o.name, width: o.width, height: o.height, refresh: Math.round(o.refreshRate * 1000) / 1000, x: o.x, y: o.y, scale: o.scale, vrr: o.vrr, bitdepth: o.bitdepth, cm: o.cm, sdrBrightness: o.sdrBrightness, sdrSaturation: wanted[o.name] };
+                if (Math.abs(o.sdrSaturation - next.sdrSaturation) > 0.001)
+                    Compositor.applyOutput(next);
+                if (save) {
+                    const entry = Object.assign({}, saved[o.name] || {}, next);
+                    delete entry.name;
+                    saved[o.name] = entry;
+                    changed = true;
+                }
+            });
+            if (!changed)
+                return;
+            Config.set("displays.outputs", saved);
+            Ctl.run(["hypr", "generate", "--write"], null, page);
+            const rest = Object.assign({}, page.saturation);
+            for (const name in wanted)
+                if (rest[name] === wanted[name])
+                    delete rest[name];
+            page.saturation = rest;
+        });
+    }
+
     Component.onCompleted: load()
+
+    Timer {
+        id: saturationApply
+
+        interval: 80
+        onTriggered: page.flushSaturation(false)
+    }
+
+    Timer {
+        id: saturationSave
+
+        interval: 700
+        onTriggered: page.flushSaturation(true)
+    }
 
     Timer {
         id: tick
@@ -131,7 +191,8 @@ PageBase {
                     vrr: output.vrr,
                     bitdepth: output.bitdepth,
                     cm: output.cm,
-                    sdrBrightness: output.sdrBrightness === undefined ? 1 : output.sdrBrightness
+                    sdrBrightness: output.sdrBrightness === undefined ? 1 : output.sdrBrightness,
+                    sdrSaturation: output.sdrSaturation === undefined ? 1 : output.sdrSaturation
                 })
             readonly property var resolutions: {
                 const seen = {};
@@ -308,6 +369,40 @@ PageBase {
                 wrapMode: Text.WordWrap
             }
 
+            Field {
+                label: I18n.tr("SDR Saturation")
+                enabled: card.draft.cm === "hdr" || card.draft.cm === "hdredid"
+                BSlider {
+                    anchors.left: parent.left
+                    anchors.right: saturationValue.left
+                    anchors.rightMargin: Theme.space.md
+                    anchors.verticalCenter: parent.verticalCenter
+                    from: 0.5
+                    to: 2
+                    stepSize: 0.05
+                    value: card.draft.sdrSaturation
+                    onMoved: v => {
+                        card.set("sdrSaturation", Math.round(v * 100) / 100);
+                        page.setSaturation(card.output.name, v);
+                    }
+                }
+                BText {
+                    id: saturationValue
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Number(card.draft.sdrSaturation).toFixed(2)
+                    role: "mono"
+                }
+            }
+
+            BText {
+                width: parent.width
+                text: I18n.tr("Adjusts the colour saturation of desktop and SDR content while HDR is enabled. Applies and is saved at once; 1.00 is the default.")
+                role: "caption"
+                tone: "muted"
+                wrapMode: Text.WordWrap
+            }
+
             BText {
                 width: parent.width
                 text: I18n.tr("Requires an HDR-capable display. Choose Apply to test, then Keep to save.")
@@ -334,7 +429,9 @@ PageBase {
                         vrr: card.output.vrr,
                         bitdepth: card.output.bitdepth,
                         cm: card.output.cm,
-                        sdrBrightness: card.output.sdrBrightness === undefined ? 1 : card.output.sdrBrightness
+                        sdrBrightness: card.output.sdrBrightness === undefined ? 1 : card.output.sdrBrightness,
+                        // Saturation is live already: reverting keeps it.
+                        sdrSaturation: card.draft.sdrSaturation
                     }, card.draft)
                 }
 

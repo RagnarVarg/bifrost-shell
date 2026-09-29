@@ -12,7 +12,7 @@
       "label": "Display configuration",
       "scope": "hyprland",
       "advanced": true,
-      "description": "Per output: { width, height, refresh, x, y, scale, vrr, bitdepth, cm, sdrBrightness }. Written to bifrost.lua."
+      "description": "Per output: { width, height, refresh, x, y, scale, vrr, bitdepth, cm, sdrBrightness, sdrSaturation }. Written to bifrost.lua."
     }
   ]
 }
