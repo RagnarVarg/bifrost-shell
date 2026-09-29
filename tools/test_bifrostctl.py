@@ -201,6 +201,19 @@ class BifrostctlTest(unittest.TestCase):
         with patch.object(brightness.Path, "glob", return_value=[]), patch.object(brightness, "run", return_value=(1, detected)), patch.object(brightness, "read_ddc", side_effect=lambda d: dict(d, value=0.5)):
             self.assertEqual(brightness.discover()[0]["id"], "ddc:7")
 
+    def test_brightness_probes_invalid_ddc_display_and_preserves_timeout_output(self):
+        detected = "Invalid display\n I2C bus: /dev/i2c-9\n Monitor: SAM:LC49G95T\n"
+        self.assertEqual(brightness.ddc_devices(detected), [{"id": "ddc:9", "name": "SAM:LC49G95T"}])
+        import subprocess
+        with patch.object(brightness.subprocess, "run", side_effect=subprocess.TimeoutExpired("ddcutil", 20, output=detected.encode())):
+            code, output = brightness.run(["ddcutil", "detect"], timeout=20)
+            self.assertEqual(code, 124)
+            self.assertIn("LC49G95T", output)
+        errors = []
+        with patch.object(brightness, "run", return_value=(1, "Permission denied")):
+            self.assertIsNone(brightness.read_ddc({"id": "ddc:9", "name": "Samsung"}, errors))
+        self.assertIn("Permission denied", errors[0])
+
     def test_physical_brightness_display_identity_and_raw_maximum(self):
         devices = brightness.ddc_devices("Display 1\n I2C bus: /dev/i2c-7\n Monitor: DEL:Panel A:123\nDisplay 2\n I2C bus: /dev/i2c-9\n Monitor: ACR:Panel B:456\n")
         self.assertEqual([d["id"] for d in devices], ["ddc:7", "ddc:9"])

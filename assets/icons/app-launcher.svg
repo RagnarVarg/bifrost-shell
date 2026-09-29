@@ -1,77 +1,15 @@
-<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="tileGrad" x1="20" y1="18" x2="108" y2="110" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#A5E4FF"></stop>
-      <stop offset="0.45" stop-color="#74B7FF"></stop>
-      <stop offset="1" stop-color="#8A7CFF"></stop>
-    </linearGradient>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <g fill="#F2F8FF">
+    <rect x="5"  y="5"  width="10" height="10" rx="3"/>
+    <rect x="19" y="5"  width="10" height="10" rx="3"/>
+    <rect x="33" y="5"  width="10" height="10" rx="3"/>
 
-    <linearGradient id="tileShine" x1="26" y1="20" x2="54" y2="52" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="white" stop-opacity="0.78"></stop>
-      <stop offset="1" stop-color="white" stop-opacity="0"></stop>
-    </linearGradient>
+    <rect x="5"  y="19" width="10" height="10" rx="3"/>
+    <rect x="19" y="19" width="10" height="10" rx="3"/>
+    <rect x="33" y="19" width="10" height="10" rx="3"/>
 
-    <filter id="shadow" x="0" y="0" width="128" height="128" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1E2148" flood-opacity="0.28"></feDropShadow>
-    </filter>
-  </defs>
-
-  <g filter="url(#shadow)">
-    <!-- Row 1 -->
-    <g>
-      <rect x="18" y="18" width="26" height="26" rx="8" fill="url(#tileGrad)"></rect>
-      <rect x="18.75" y="18.75" width="24.5" height="24.5" rx="7.25" stroke="white" stroke-opacity="0.45" stroke-width="1.5"></rect>
-      <path d="M22 21C22 19.3431 23.3431 18 25 18H38C35 21 31 25 29 29C27.5 31.5 26.2 35 25.5 44H22V21Z" fill="url(#tileShine)"></path>
-    </g>
-
-    <g>
-      <rect x="51" y="18" width="26" height="26" rx="8" fill="url(#tileGrad)"></rect>
-      <rect x="51.75" y="18.75" width="24.5" height="24.5" rx="7.25" stroke="white" stroke-opacity="0.45" stroke-width="1.5"></rect>
-      <path d="M55 21C55 19.3431 56.3431 18 58 18H71C68 21 64 25 62 29C60.5 31.5 59.2 35 58.5 44H55V21Z" fill="url(#tileShine)"></path>
-    </g>
-
-    <g>
-      <rect x="84" y="18" width="26" height="26" rx="8" fill="url(#tileGrad)"></rect>
-      <rect x="84.75" y="18.75" width="24.5" height="24.5" rx="7.25" stroke="white" stroke-opacity="0.45" stroke-width="1.5"></rect>
-      <path d="M88 21C88 19.3431 89.3431 18 91 18H104C101 21 97 25 95 29C93.5 31.5 92.2 35 91.5 44H88V21Z" fill="url(#tileShine)"></path>
-    </g>
-
-    <!-- Row 2 -->
-    <g>
-      <rect x="18" y="51" width="26" height="26" rx="8" fill="url(#tileGrad)"></rect>
-      <rect x="18.75" y="51.75" width="24.5" height="24.5" rx="7.25" stroke="white" stroke-opacity="0.45" stroke-width="1.5"></rect>
-      <path d="M22 54C22 52.3431 23.3431 51 25 51H38C35 54 31 58 29 62C27.5 64.5 26.2 68 25.5 77H22V54Z" fill="url(#tileShine)"></path>
-    </g>
-
-    <g>
-      <rect x="51" y="51" width="26" height="26" rx="8" fill="url(#tileGrad)"></rect>
-      <rect x="51.75" y="51.75" width="24.5" height="24.5" rx="7.25" stroke="white" stroke-opacity="0.45" stroke-width="1.5"></rect>
-      <path d="M55 54C55 52.3431 56.3431 51 58 51H71C68 54 64 58 62 62C60.5 64.5 59.2 68 58.5 77H55V54Z" fill="url(#tileShine)"></path>
-    </g>
-
-    <g>
-      <rect x="84" y="51" width="26" height="26" rx="8" fill="url(#tileGrad)"></rect>
-      <rect x="84.75" y="51.75" width="24.5" height="24.5" rx="7.25" stroke="white" stroke-opacity="0.45" stroke-width="1.5"></rect>
-      <path d="M88 54C88 52.3431 89.3431 51 91 51H104C101 54 97 58 95 62C93.5 64.5 92.2 68 91.5 77H88V54Z" fill="url(#tileShine)"></path>
-    </g>
-
-    <!-- Row 3 -->
-    <g>
-      <rect x="18" y="84" width="26" height="26" rx="8" fill="url(#tileGrad)"></rect>
-      <rect x="18.75" y="84.75" width="24.5" height="24.5" rx="7.25" stroke="white" stroke-opacity="0.45" stroke-width="1.5"></rect>
-      <path d="M22 87C22 85.3431 23.3431 84 25 84H38C35 87 31 91 29 95C27.5 97.5 26.2 101 25.5 110H22V87Z" fill="url(#tileShine)"></path>
-    </g>
-
-    <g>
-      <rect x="51" y="84" width="26" height="26" rx="8" fill="url(#tileGrad)"></rect>
-      <rect x="51.75" y="84.75" width="24.5" height="24.5" rx="7.25" stroke="white" stroke-opacity="0.45" stroke-width="1.5"></rect>
-      <path d="M55 87C55 85.3431 56.3431 84 58 84H71C68 87 64 91 62 95C60.5 97.5 59.2 101 58.5 110H55V87Z" fill="url(#tileShine)"></path>
-    </g>
-
-    <g>
-      <rect x="84" y="84" width="26" height="26" rx="8" fill="url(#tileGrad)"></rect>
-      <rect x="84.75" y="84.75" width="24.5" height="24.5" rx="7.25" stroke="white" stroke-opacity="0.45" stroke-width="1.5"></rect>
-      <path d="M88 87C88 85.3431 89.3431 84 91 84H104C101 87 97 91 95 95C93.5 97.5 92.2 101 91.5 110H88V87Z" fill="url(#tileShine)"></path>
-    </g>
+    <rect x="5"  y="33" width="10" height="10" rx="3"/>
+    <rect x="19" y="33" width="10" height="10" rx="3"/>
+    <rect x="33" y="33" width="10" height="10" rx="3"/>
   </g>
 </svg>

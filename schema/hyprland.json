@@ -6,7 +6,7 @@
   "groups": {
     "general": "General",
     "layout": "Layout",
-    "decoration": "Border & corners",
+    "decoration": "Border & corners (colours for the mode you're in)",
     "integration": "Integration"
   },
   "requires": {
@@ -71,7 +71,8 @@
       "description": "Colour of the focused application window border. Empty = theme accent.",
       "group": "decoration",
       "scope": "hyprland",
-      "dependsOn": "hyprland.manage"
+      "dependsOn": "hyprland.manage",
+      "perMode": true
     },
     {
       "key": "hyprland.inactiveBorderColor",
@@ -83,7 +84,8 @@
       "description": "Colour of unfocused application window borders. Empty = theme default.",
       "group": "decoration",
       "scope": "hyprland",
-      "dependsOn": "hyprland.manage"
+      "dependsOn": "hyprland.manage",
+      "perMode": true
     },
     {
       "key": "hyprland.rounding",

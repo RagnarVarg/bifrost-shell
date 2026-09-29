@@ -306,6 +306,7 @@ PanelWindow {
                     attachment: menuHost.attachmentFor(barGlass)
                 }
 
+
                 // Grouped: one glass per non-empty zone. Boxed: one per widget.
                 // Without a panel they are the bar and menus grow out of them.
                 component Shape: GlassSurface {

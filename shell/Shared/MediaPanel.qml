@@ -7,6 +7,8 @@ import qs.Components.Text
 
 Item {
     id: panel
+    property bool expanded: false
+
     implicitHeight: mediaRow.y + mediaRow.implicitHeight + Theme.space.md
 
     Rectangle {
@@ -37,7 +39,7 @@ Item {
         Item {
             id: cover
 
-            width: Theme.control.height.lg + Theme.space.md
+            width: panel.expanded ? Math.min(144, panel.width * 0.2) : Theme.control.height.lg + Theme.space.md
             height: width
 
             Rectangle {
@@ -70,22 +72,30 @@ Item {
         Column {
             width: parent.width - cover.width - controls.width - parent.spacing * 2
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Theme.space.xxs
+            spacing: panel.expanded ? Theme.space.sm : Theme.space.xxs
+
+            BText {
+                visible: panel.expanded
+                text: Media.available ? (Media.playing ? I18n.tr("Now playing") : I18n.tr("Paused")) : I18n.tr("Music & media")
+                role: "overline"
+                tone: "muted"
+            }
 
             BText {
                 width: parent.width
-                text: Media.title
-                role: "label"
+                text: Media.available ? Media.title : I18n.tr("Nothing playing yet")
+                role: panel.expanded ? "heading" : "label"
                 elide: Text.ElideRight
             }
 
             BText {
                 width: parent.width
                 visible: text !== ""
-                text: Media.artist
+                text: Media.available ? Media.artist : I18n.tr("Start music or a podcast in your favourite player")
                 role: "caption"
                 tone: "muted"
-                elide: Text.ElideRight
+                elide: panel.expanded ? Text.ElideNone : Text.ElideRight
+                wrapMode: panel.expanded ? Text.WordWrap : Text.NoWrap
             }
 
             Item {
@@ -133,6 +143,8 @@ Item {
 
         Row {
             id: controls
+            visible: Media.available
+            width: visible ? implicitWidth : 0
 
             anchors.verticalCenter: parent.verticalCenter
             spacing: Theme.space.xxs

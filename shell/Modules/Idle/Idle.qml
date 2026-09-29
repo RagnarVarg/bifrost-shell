@@ -28,9 +28,24 @@ Scope {
     function setScreensOff(off: bool) {
         if (off === screensOff)
             return;
+
         screensOff = off;
         console.info("[bifrost] idle: screens", off ? "off" : "on");
         Compositor.setDisplaysPower(!off);
+
+        if (!off)
+            wakeRetry.restart();
+    }
+
+    Timer {
+        id: wakeRetry
+        interval: 700
+        repeat: false
+
+        onTriggered: {
+            console.info("[bifrost] idle: retrying display wake");
+            Compositor.setDisplaysPower(true);
+        }
     }
 
     // Quickshell's IdleMonitor keeps the timeout it started with, so a

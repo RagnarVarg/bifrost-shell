@@ -124,6 +124,34 @@ Singleton {
         return out;
     }
 
+    // Same as bifrostctl expand_per_mode: a "perMode" setting is kept once
+    // for light and once for dark mode (<key>.light / <key>.dark, `mode`);
+    // Settings shows the row of the mode in use, so a change applies to it.
+    function expandPerMode(list) {
+        const out = [];
+        for (const raw of list) {
+            if (!raw.perMode) {
+                out.push(raw);
+                continue;
+            }
+            for (const mode of ["light", "dark"]) {
+                const d = Object.assign({}, raw);
+                delete d.perMode;
+                d.key = raw.key + "." + mode;
+                d.mode = mode;
+                d.base = raw.key;
+                out.push(d);
+            }
+        }
+        return out;
+    }
+
+    // Is a setting shown now? Per-mode rows only in their mode.
+    function inMode(key: string): bool {
+        const d = entries[key];
+        return !d || !d.mode || d.mode === ThemeMode.variant;
+    }
+
     // Schema texts are English; shown in the system language (I18n).
     function localize(sec) {
         const t = v => typeof v === "string" && v !== "" ? I18n.tr(v) : v;
@@ -168,7 +196,7 @@ Singleton {
             localize(sec);
             sec.category = ref.category || sec.category || "shell";
             const settings = [];
-            for (const raw of (sec.settings || []).concat(expandTemplate(sec.template))) {
+            for (const raw of expandPerMode((sec.settings || []).concat(expandTemplate(sec.template)))) {
                 const d = Object.assign({ scope: "shell", apply: "live", advanced: false, nullable: false }, raw);
                 d.section = sec.section;
                 if (!d.requires && sec.requires)

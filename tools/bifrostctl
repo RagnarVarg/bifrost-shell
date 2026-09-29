@@ -48,7 +48,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-FORMAT_VERSION = 10
+FORMAT_VERSION = 11
 NULLABLE_TYPES = {"bool", "int", "real", "color", "string", "font", "icon", "path"}
 APPLY_MODES = {"live", "reload", "restart"}
 SCOPES = {"shell", "hyprland", "system"}
@@ -247,6 +247,21 @@ def expand_template(t):
     return out
 
 
+def expand_per_mode(settings):
+    """Same as Schema.qml expandPerMode: a "perMode" setting is kept once for
+    light and once for dark mode (<key>.light / <key>.dark)."""
+    out = []
+    for raw in settings:
+        if not raw.get("perMode"):
+            out.append(raw)
+            continue
+        for mode in ("light", "dark"):
+            d = {k: v for k, v in raw.items() if k != "perMode"}
+            d.update(key=f"{raw['key']}.{mode}", mode=mode, base=raw["key"])
+            out.append(d)
+    return out
+
+
 class Schema:
     def __init__(self, schema_dir: Path = REPO / "schema"):
         self.errors: list[str] = []
@@ -263,7 +278,7 @@ class Schema:
                 self.errors.append(f"{ref['file']}: {e}")
                 continue
             settings = []
-            for raw in sec.get("settings", []) + expand_template(sec.get("template")):
+            for raw in expand_per_mode(sec.get("settings", []) + expand_template(sec.get("template"))):
                 d = {"scope": "shell", "apply": "live", "advanced": False, "nullable": False, **raw}
                 d["section"] = sec["section"]
                 if "requires" not in d and "requires" in sec:
@@ -720,6 +735,9 @@ def migrate(doc):
         if isinstance(m, dict):
             m.pop("controlCenter", None)
         v = 10
+    if v == 10:
+        migrate_10(doc.setdefault("values", {}))
+        v = 11
     doc["version"] = v
     return doc
 
@@ -798,6 +816,26 @@ def migrate_8(vals):
         m = vals.setdefault("materials", {})
         m["widgets"] = own
         m["linked"] = False
+
+
+# Settings that became perMode in format 11 (Migrations.js step 10).
+PER_MODE_11 = ["materials.transparency", "materials.blur", "materials.apps.transparency", "materials.apps.blur",
+               "hyprland.activeBorderColor", "hyprland.inactiveBorderColor"] + \
+              [f"materials.{g}.{p}" for g in ("bar", "widgets", "panels", "controlButtons", "windows") for p in ("transparency", "blur")]
+
+
+def migrate_10(vals):
+    """10 → 11: transparency, blur and window border colours are kept per
+    light/dark mode; one value becomes the same value in each."""
+    for key in PER_MODE_11:
+        parent_key, _, leaf = key.rpartition(".")
+        parent = deep_get(vals, parent_key)[0]
+        if isinstance(parent, dict) and leaf in parent:
+            x = parent[leaf]
+            if x is None:
+                del parent[leaf]
+            elif not isinstance(x, dict):
+                parent[leaf] = {"light": x, "dark": x}
 
 
 class Config:
@@ -1676,15 +1714,24 @@ BLUR_NAMESPACES = {"bar": "bar", "dock": "panels", "launcher": "panels", "power"
 GLASS_GROUPS = ("bar", "widgets", "panels", "controlButtons", "windows")
 
 
-def group_glass(cfg, group):
-    """ThemeLogic.groupGlass: a group's transparency and blur amount — the
-    shared values while materials.linked is on, else its own where set."""
-    v = lambda k: deep_get(cfg.values, k)[0]
-    own = (v(f"materials.{group}") or {}) if v("materials.linked") is False else {}
+def per_mode(x, variant):
+    """A perMode value ({light, dark}) for one mode; plain values as they are."""
+    return x.get(variant) if isinstance(x, dict) else x
+
+
+def group_glass(cfg, group, variant=None):
+    """ThemeLogic.groupGlass: a group's transparency and blur amount in the
+    mode shown — the shared values while materials.linked is on, else its
+    own where set."""
+    variant = variant or effective_variant(cfg)
+    v = lambda k: per_mode(deep_get(cfg.values, k)[0], variant)
+    linked = deep_get(cfg.values, "materials.linked")[0] is not False
+    own_t = None if linked else v(f"materials.{group}.transparency")
+    own_b = None if linked else v(f"materials.{group}.blur")
     shared = blur_amount(v("materials.blur"))
-    blur = 0 if own.get("blur") is False else (shared if shared > 0 else 20) if own.get("blur") is True else shared
-    t = own.get("transparency")
-    return {"transparency": t if isinstance(t, (int, float)) and not isinstance(t, bool) else v("materials.transparency"), "blur": blur}
+    blur = 0 if own_b is False else (shared if shared > 0 else 20) if own_b is True else shared
+    t = own_t if isinstance(own_t, (int, float)) and not isinstance(own_t, bool) else v("materials.transparency")
+    return {"transparency": t, "blur": blur}
 
 
 def theme_chain(cfg):
@@ -1786,11 +1833,13 @@ def generate_hypr(cfg) -> str:
     glass_tokens = json.loads((REPO / "themes/_base.json").read_text())["glass"]
     # One blur strength (the shared amount under Glass & transparency); each
     # glass group and application windows turn it on or off for themselves.
-    shared_blur = blur_amount(v("materials.blur"))
+    variant = effective_variant(cfg)
+    mv = lambda k: per_mode(v(k), variant)   # perMode settings, in the mode shown
+    shared_blur = blur_amount(mv("materials.blur"))
     strength = shared_blur if shared_blur > 0 else 20
-    group_blur = {g: group_glass(cfg, g)["blur"] > 0 for g in GLASS_GROUPS}
-    apps_t = max(0, min(90, v("materials.apps.transparency") or 0))
-    apps_blur = v("materials.apps.blur") is not False
+    group_blur = {g: group_glass(cfg, g, variant)["blur"] > 0 for g in GLASS_GROUPS}
+    apps_t = max(0, min(90, mv("materials.apps.transparency") or 0))
+    apps_blur = mv("materials.apps.blur") is not False
     blur_on = any(group_blur.values()) or (apps_blur and apps_t > 0)
     blur_size = max(1, round(1 + strength * 0.39))
     blur_passes = 2 if strength < 10 else min(6, 2 + round((strength - 10) / 22.5))
@@ -1803,10 +1852,10 @@ def generate_hypr(cfg) -> str:
         accent = v(f"appearance.accent.{effective_variant(cfg)}")
         if accent:
             active = accent.lstrip("#").lower()
-        if v("hyprland.activeBorderColor"):
-            active = v("hyprland.activeBorderColor").lstrip("#").lower()
-        if v("hyprland.inactiveBorderColor"):
-            inactive = v("hyprland.inactiveBorderColor").lstrip("#").lower()
+        if mv("hyprland.activeBorderColor"):
+            active = mv("hyprland.activeBorderColor").lstrip("#").lower()
+        if mv("hyprland.inactiveBorderColor"):
+            inactive = mv("hyprland.inactiveBorderColor").lstrip("#").lower()
         shadow_base = base["elevation"]["mid"]
         shadow_range = max(1, round(shadow_base["blur"]))
         shadow_rgb = (pal.get("void") or "#000000").lstrip("#")

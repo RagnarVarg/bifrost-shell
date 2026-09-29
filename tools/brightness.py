@@ -10,13 +10,18 @@ import subprocess
 import sys
 
 
-def run(args):
+def run(args, timeout=6):
     try:
-        result = subprocess.run(args, capture_output=True, text=True, timeout=6,
+        result = subprocess.run(args, capture_output=True, text=True, timeout=timeout,
                                 env=dict(os.environ, LC_ALL='C'))
-        return result.returncode, result.stdout
-    except (OSError, subprocess.TimeoutExpired):
-        return 1, ''
+        return result.returncode, result.stdout + ("\n" + result.stderr if result.returncode else "")
+    except subprocess.TimeoutExpired as error:
+        output = error.stdout or b''
+        if isinstance(output, bytes):
+            output = output.decode(errors='replace')
+        return 124, output + '\nDisplay detection timed out'
+    except OSError as error:
+        return 1, str(error)
 
 
 def vcp(text):
@@ -28,7 +33,7 @@ def vcp(text):
 
 def ddc_devices(text):
     result = []
-    for block in re.split(r'(?m)^\s*Display \d+\s*$', text)[1:]:
+    for block in re.split(r'(?m)^\s*(?:Display \d+|Invalid display)\s*$', text)[1:]:
         bus = re.search(r'I2C bus:\s*/dev/i2c-(\d+)', block)
         name = re.search(r'Monitor:\s*(.+)', block)
         if bus:
@@ -36,18 +41,22 @@ def ddc_devices(text):
     return result
 
 
-def read_ddc(device):
+def read_ddc(device, errors=None):
     code, text = run(['ddcutil', '--bus', device['id'].split(':')[1], 'getvcp', '10', '--brief'])
     if code:
+        if errors is not None:
+            errors.append(device['name'] + ": " + (text.strip() or "Brightness read failed"))
         return None
     try:
         value, maximum = vcp(text)
         return dict(device, value=value / maximum, maximum=maximum, provider='ddc')
-    except ValueError:
+    except ValueError as error:
+        if errors is not None:
+            errors.append(device['name'] + ": " + str(error))
         return None
 
 
-def discover():
+def discover(errors=None, unavailable=None):
     devices = []
     for path in Path('/sys/class/backlight').glob('*'):
         try:
@@ -58,11 +67,17 @@ def discover():
                                     value=value / maximum, maximum=maximum, provider='backlight'))
         except (OSError, ValueError):
             continue
-    code, text = run(['ddcutil', 'detect', '--brief'])
+    code, text = run(['ddcutil', 'detect', '--brief'], timeout=20)
+    if code and errors is not None:
+        errors.append(text.strip() or "Display detection failed")
     # A bad second monitor can make detect fail while valid displays remain.
     if text:
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-            devices += [d for d in pool.map(read_ddc, ddc_devices(text)[:16]) if d]
+            candidates = ddc_devices(text)[:16]
+            results = list(pool.map(read_ddc if errors is None else lambda d: read_ddc(d, errors), candidates))
+            devices += [d for d in results if d]
+            if unavailable is not None:
+                unavailable.extend(d for d, result in zip(candidates, results) if result is None)
     return devices
 
 
@@ -91,7 +106,10 @@ if __name__ == '__main__':
             set_value(sys.argv[2], float(sys.argv[3]))
             print(json.dumps({'ok': True}))
         elif sys.argv[1:] == ['list']:
-            print(json.dumps({'displays': discover()}))
+            errors = []
+            unavailable = []
+            displays = discover(errors, unavailable)
+            print(json.dumps({'displays': displays, 'unavailable': unavailable, 'error': '\n'.join(errors)}))
         else:
             raise ValueError('Expected list or set DISPLAY FRACTION')
     except (ValueError, OSError) as error:

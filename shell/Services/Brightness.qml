@@ -8,6 +8,7 @@ import qs.Core
 Singleton {
     id: root
     property var displays: []
+    property var unavailableDisplays: []
     property var pending: ({})
     property var inFlight: null
     property bool busy: false
@@ -31,10 +32,19 @@ Singleton {
             busy = false;
             probed = true;
             if (code === 0) {
-                try { displays = JSON.parse(out).displays || []; } catch (e) {}
+                try {
+                    const result = JSON.parse(out);
+                    displays = result.displays || [];
+                    unavailableDisplays = result.unavailable || [];
+                    error = result.error || "";
+                } catch (e) {
+                    error = I18n.tr("Could not read display detection results");
+                }
+            } else {
+                error = code === 124 ? I18n.tr("Display detection timed out. Try again.") : I18n.tr("Could not detect brightness controls");
             }
             if (Object.keys(pending).length) applyTimer.restart();
-        }, 30000, root);
+        }, 50000, root);
     }
     function setDisplay(id: string, v: real) {
         if (!displays.some(d => d.id === id) || !isFinite(v)) return;

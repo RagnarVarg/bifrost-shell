@@ -9,6 +9,8 @@ import qs.Components.Text
 Item {
     id: app
 
+    property bool embedded: false
+
     signal closeRequested
 
     function focusSearch() {
@@ -20,6 +22,7 @@ Item {
 
         anchors.fill: parent
         material: Theme.materials.settings
+        paintEnabled: !app.embedded
 
         Sidebar {
             id: sidebar

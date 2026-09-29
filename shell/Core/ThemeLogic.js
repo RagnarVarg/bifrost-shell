@@ -102,20 +102,24 @@ function groupOf(material) {
 // strength is always the shared amount. `custom` = it differs from the
 // shared glass (it then has its own shape where it would join another).
 // Same in bifrostctl (group_glass).
-function groupGlass(s, group) {
+function groupGlass(s, group, variant) {
     s = s || {};
+    // Transparency, blur and colours are kept per light/dark mode (perMode).
+    const pick = x => x !== null && typeof x === "object" ? x[variant] : x;
     const own = s.linked === false ? (s[group] || {}) : {};
-    const shared = typeof s.blur === "number" ? s.blur : 20;
+    const sharedBlur = pick(s.blur);
+    const shared = typeof sharedBlur === "number" ? sharedBlur : 20;
+    const ownT = pick(own.transparency), ownB = pick(own.blur);
     const tint = Object.assign({}, s.tint || {});
     for (const v of ["light", "dark"])
         if (own.tint && typeof own.tint[v] === "string")
             tint[v] = own.tint[v];
     return {
-        transparency: typeof own.transparency === "number" ? own.transparency : s.transparency,
-        blur: own.blur === false ? 0 : own.blur === true ? (shared > 0 ? shared : 20) : shared,
+        transparency: typeof ownT === "number" ? ownT : pick(s.transparency),
+        blur: ownB === false ? 0 : ownB === true ? (shared > 0 ? shared : 20) : shared,
         tint: tint,
         border: s.border,
-        custom: typeof own.transparency === "number" || typeof own.blur === "boolean" || Object.keys(own.tint || {}).some(v => typeof own.tint[v] === "string")
+        custom: typeof ownT === "number" || typeof ownB === "boolean" || (own.tint && typeof own.tint[variant] === "string") === true
     };
 }
 
@@ -264,7 +268,7 @@ function build(chain, variant, app, materials) {
     t.materials.widgets = L.clone(t.materials.bar);
     t.materials.controlButtons = L.clone(t.materials.panel);
     for (const k in t.materials) {
-        const g = groupGlass(materials, groupOf(k));
+        const g = groupGlass(materials, groupOf(k), variant);
         applyMaterial(t.materials[k], g, t.glass, k, variant);
         t.materials[k].custom = g.custom;
     }

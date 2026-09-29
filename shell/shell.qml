@@ -33,6 +33,8 @@ import qs.Modules.Prompt
 import qs.Modules.Wallpaper
 import qs.Services
 import qs.Shared
+import qs.Settings
+import qs.Settings.Editors
 
 // Bifrost Shell entrypoint:  qs -p <repo>/shell
 // Modules: top bar (phase 4); launcher, control center, dock, OSD (phase 5);

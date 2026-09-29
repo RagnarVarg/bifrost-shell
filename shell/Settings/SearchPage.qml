@@ -9,7 +9,7 @@ Flickable {
 
     SettingsScroll { id: wheelScroll; flickable: page }
 
-    readonly property var results: Schema.search(SettingsNav.query).filter(r => Schema.isSupported(r.key))
+    readonly property var results: Schema.search(SettingsNav.query).filter(r => Schema.isSupported(r.key) && Schema.inMode(r.key))
 
     contentHeight: column.implicitHeight + Theme.space.xxxl * 2
     clip: true

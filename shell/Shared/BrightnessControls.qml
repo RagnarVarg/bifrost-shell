@@ -37,6 +37,17 @@ Column {
         role: "caption"
         tone: "muted"
     }
+    Repeater {
+        model: controls.diagnostics ? Brightness.unavailableDisplays : []
+        delegate: BText {
+            required property var modelData
+            width: controls.width
+            text: modelData.name + " · " + I18n.tr("Brightness control unavailable over DDC/CI")
+            wrapMode: Text.Wrap
+            role: "caption"
+            tone: "muted"
+        }
+    }
     BButton {
         visible: controls.diagnostics && !Brightness.available
         text: I18n.tr("Detect displays again")

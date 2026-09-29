@@ -81,12 +81,54 @@ Singleton {
     }
 
     function toggle() {
-        if (!provider || busy || (provider === "nm" && NetworkStatus.managementBusy)) return;
+        if (busy)
+            return;
+
+        // Om PIA ännu inte identifierats, prova piactl direkt.
+        if (!provider) {
+            busy = true;
+            Exec.runOptional(["piactl", "get", "connectionstate"], (code, out) => {
+                if (code === 0) {
+                    provider = "pia";
+                    applyPia(out);
+
+                    Exec.runOptional(
+                        ["piactl", connected ? "disconnect" : "connect"],
+                        () => {
+                            busy = false;
+                            root.refresh();
+                        }
+                    );
+                } else {
+                    busy = false;
+                    root.refreshNm();
+                }
+            }, 4000);
+            return;
+        }
+
+        if (provider === "nm" && NetworkStatus.managementBusy)
+            return;
+
         busy = true;
-        if (provider === "pia")
-            Exec.runOptional(["piactl", connected ? "disconnect" : "connect"], () => root.refresh());
-        else if (provider === "nm")
-            NetworkStatus.manage(["connection", connected ? "down" : "up", "uuid", nmConnection], () => root.refresh());
+
+        if (provider === "pia") {
+            Exec.runOptional(
+                ["piactl", connected ? "disconnect" : "connect"],
+                () => {
+                    busy = false;
+                    root.refresh();
+                }
+            );
+        } else if (provider === "nm") {
+            NetworkStatus.manage(
+                ["connection", connected ? "down" : "up", "uuid", nmConnection],
+                () => {
+                    busy = false;
+                    root.refresh();
+                }
+            );
+        }
     }
 
     LineWatcher {

@@ -1,16 +1,16 @@
 import QtQuick
 import qs.Compat
+import qs.Services
 import qs.Core
 import qs.Components.Controls
 import qs.Components.State
 import qs.Components.Text
 
-// Thumbnails of the images in wallpaper.directory; click to choose.
+// Uses the same discovery service as the clock menu.
 EditorBase {
     id: editor
 
-    property var images: []
-    readonly property string directory: Platform.expandHome(Config.values.wallpaper.directory || "")
+    readonly property var images: Wallpapers.images
     readonly property real thumbWidth: Theme.space.xxxl * 4
     readonly property real thumbHeight: thumbWidth * 9 / 16
 
@@ -18,20 +18,14 @@ EditorBase {
     implicitWidth: Theme.layout.pageMaxWidth
     implicitHeight: images.length ? grid.implicitHeight : empty.implicitHeight
 
-    function scan() {
-        Exec.run(["find", directory, "-maxdepth", "1", "-type", "f", "(", "-iname", "*.jpg", "-o", "-iname", "*.jpeg", "-o", "-iname", "*.png", "-o", "-iname", "*.webp", ")"], (code, out) => {
-            editor.images = out.split("\n").filter(f => f).sort();
-        }, 5000, editor);
-    }
-
-    onDirectoryChanged: scan()
-    Component.onCompleted: scan()
+    Component.onCompleted: Wallpapers.retain()
+    Component.onDestruction: Wallpapers.release()
 
     BText {
         id: empty
 
         visible: editor.images.length === 0
-        text: I18n.tr("No images in %1").arg(editor.directory)
+        text: Wallpapers.scanError || (Wallpapers.scanning ? I18n.tr("Loading wallpapers…") : I18n.tr("No wallpapers found"))
         role: "caption"
         tone: "muted"
     }
@@ -57,7 +51,7 @@ EditorBase {
                 Image {
                     anchors.fill: parent
                     anchors.margins: Theme.space.xxs
-                    source: "file://" + thumb.modelData
+                    source: Wallpapers.fileUrl(thumb.modelData)
                     sourceSize: Qt.size(width * 2, height * 2)
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true

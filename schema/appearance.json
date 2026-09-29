@@ -5,7 +5,7 @@
   "groups": {
     "theme": "Theme",
     "location": "Location for automatic mode",
-    "colors": "Colours",
+    "colors": "Colours (for the light or dark mode you're in)",
     "shape": "Shape",
     "identity": "Bifrost identity"
   },
@@ -78,48 +78,28 @@
       "nullLabel": "From time zone"
     },
     {
-      "key": "appearance.accent.light",
+      "key": "appearance.accent",
       "type": "color",
       "default": null,
       "nullable": true,
-      "label": "Accent colour (light mode)",
-      "description": "Selection, sliders, focus rings and window borders in light mode. Empty = the theme's accent",
+      "label": "Accent colour",
+      "description": "Selection, sliders, focus rings and window borders. Empty = the theme's accent",
       "group": "colors",
       "inherit": "palette.accent",
-      "nullLabel": "Bifrost default"
+      "nullLabel": "Bifrost default",
+      "perMode": true
     },
     {
-      "key": "appearance.accent.dark",
+      "key": "appearance.foreground",
       "type": "color",
       "default": null,
       "nullable": true,
-      "label": "Accent colour (dark mode)",
-      "description": "Selection, sliders, focus rings and window borders in dark mode. Empty = the theme's accent",
-      "group": "colors",
-      "inherit": "palette.accent",
-      "nullLabel": "Bifrost default"
-    },
-    {
-      "key": "appearance.foreground.light",
-      "type": "color",
-      "default": null,
-      "nullable": true,
-      "label": "Text and icons (light mode)",
+      "label": "Text and icons",
       "description": "Shell text and monochrome icons, including the top panel. Empty uses the theme colour.",
       "group": "colors",
       "inherit": "palette.text",
-      "nullLabel": "Theme"
-    },
-    {
-      "key": "appearance.foreground.dark",
-      "type": "color",
-      "default": null,
-      "nullable": true,
-      "label": "Text and icons (dark mode)",
-      "description": "Shell text and monochrome icons, including the top panel. Empty uses the theme colour.",
-      "group": "colors",
-      "inherit": "palette.text",
-      "nullLabel": "Theme"
+      "nullLabel": "Theme",
+      "perMode": true
     },
     {
       "key": "appearance.density",
