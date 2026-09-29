@@ -172,14 +172,16 @@
     },
     {
       "id": "font-noto-runic",
-      "level": "optional",
+      "level": "recommended",
       "purpose": "Rune labels for workspaces (workspaces.labels = runes)",
       "check": {
         "type": "font",
         "family": "Noto Sans Runic"
       },
       "install": {
-        "arch": "pacman -S noto-fonts"
+        "arch": "pacman -S noto-fonts",
+        "fedora": "dnf install google-noto-sans-runic-fonts",
+        "ubuntu": "apt install fonts-noto-core"
       }
     },
     {
@@ -198,6 +200,22 @@
         "arch": "pacman -S fontconfig",
         "fedora": "dnf install fontconfig",
         "ubuntu": "apt install fontconfig"
+      }
+    },
+    {
+      "id": "xdg-user-dirs",
+      "level": "recommended",
+      "purpose": "Resolves the user's Pictures directory for Bifrost screenshots",
+      "check": {
+        "type": "executable",
+        "cmd": [
+          "xdg-user-dir"
+        ]
+      },
+      "install": {
+        "arch": "pacman -S xdg-user-dirs",
+        "fedora": "dnf install xdg-user-dirs",
+        "ubuntu": "apt install xdg-user-dirs"
       }
     },
     {
@@ -269,6 +287,22 @@
       }
     },
     {
+      "id": "nm-connection-editor",
+      "level": "optional",
+      "purpose": "Advanced NetworkManager connection editor launched from Bifrost network settings",
+      "check": {
+        "type": "executable",
+        "cmd": [
+          "nm-connection-editor"
+        ]
+      },
+      "install": {
+        "arch": "pacman -S nm-connection-editor",
+        "fedora": "dnf install nm-connection-editor",
+        "ubuntu": "apt install nm-connection-editor"
+      }
+    },
+    {
       "id": "nvidia-smi",
       "level": "optional",
       "purpose": "NVIDIA GPU temperature/usage for the GPU widget",
@@ -300,6 +334,24 @@
         "arch": "pacman -S power-profiles-daemon",
         "fedora": "dnf install power-profiles-daemon",
         "ubuntu": "apt install power-profiles-daemon"
+      }
+    },
+    {
+      "id": "upower",
+      "level": "recommended",
+      "purpose": "Battery and AC status for the battery widget and power UI",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "upower",
+          "--version"
+        ],
+        "regex": "(\\d+\\.\\d+(?:\\.\\d+)?)"
+      },
+      "install": {
+        "arch": "pacman -S upower",
+        "fedora": "dnf install upower",
+        "ubuntu": "apt install upower"
       }
     },
     {
@@ -352,6 +404,24 @@
         "arch": "pacman -S wireplumber",
         "fedora": "dnf install wireplumber",
         "ubuntu": "apt install wireplumber"
+      }
+    },
+    {
+      "id": "pactl",
+      "level": "recommended",
+      "purpose": "Bluetooth audio profile switching (A2DP / headset) in Bifrost audio controls",
+      "check": {
+        "type": "command",
+        "cmd": [
+          "pactl",
+          "--version"
+        ],
+        "regex": "(\\d+\\.\\d+(?:\\.\\d+)?)"
+      },
+      "install": {
+        "arch": "pacman -S libpulse",
+        "fedora": "dnf install pulseaudio-utils",
+        "ubuntu": "apt install pulseaudio-utils"
       }
     },
     {
@@ -510,7 +580,14 @@
         "kitty",
         "greetd",
         "greetd-selinux",
-        "acl"
+        "acl",
+        "pulseaudio-utils",
+        "nm-connection-editor",
+        "xdg-user-dirs",
+        "upower",
+        "ddcutil",
+        "power-profiles-daemon",
+        "google-noto-sans-runic-fonts"
       ],
       "greeterPackages": [
         "greetd",
@@ -607,7 +684,14 @@
         "kitty",
         "greetd",
         "acl",
-        "pkexec"
+        "pkexec",
+        "pulseaudio-utils",
+        "nm-connection-editor",
+        "xdg-user-dirs",
+        "upower",
+        "ddcutil",
+        "power-profiles-daemon",
+        "fonts-noto-core"
       ],
       "greeterPackages": [
         "greetd",
