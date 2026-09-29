@@ -10,9 +10,28 @@ import qs.Shared
 // Status icons: network, VPN, Bluetooth, volume. Each opens its own menu
 // under the icon; the wheel over the volume icon changes the volume. The
 // control center has its own button.
+// `parts` picks the icons: the combined `status` widget shows all of them,
+// the single `network`/`vpn`/`bluetooth`/`audio` widgets one each (WidgetHost).
 BarWidget {
     id: widget
 
+    property var parts: ["network", "vpn", "bluetooth", "audio"]
+    // The combined widget leaves out the parts that sit on the same bar as
+    // their own widget, so no icon shows twice.
+    readonly property var placedAlone: {
+        if (!bar || !entry || entry.id !== "status")
+            return [];
+        const zones = bar.widgets || {};
+        return Object.keys(zones).reduce((ids, zone) => ids.concat((zones[zone] || []).map(e => e.id)), []);
+    }
+    readonly property var activeParts: parts.filter(p => !placedAlone.includes(p))
+    // Computed from state, not from the icons' `visible` (that follows the host).
+    readonly property bool hasNetwork: activeParts.includes("network")
+    readonly property bool hasVpn: activeParts.includes("vpn") && Vpn.available
+    readonly property bool hasBluetooth: activeParts.includes("bluetooth") && BluetoothStatus.available
+    readonly property bool hasAudio: activeParts.includes("audio")
+
+    shown: hasNetwork || hasVpn || hasBluetooth || hasAudio
     implicitWidth: row.implicitWidth
     implicitHeight: row.implicitHeight
 
@@ -90,6 +109,7 @@ BarWidget {
         StatusIcon {
             id: net
 
+            visible: widget.hasNetwork
             icon: NetworkStatus.kind === "wired" ? "ethernet" : "wifi"
             dim: !NetworkStatus.connected
             interactive: true
@@ -100,7 +120,7 @@ BarWidget {
         StatusIcon {
             id: vpn
 
-            visible: Vpn.available
+            visible: widget.hasVpn
             // Connected: a solid shield in full text colour.
             icon: Vpn.phase === "on" ? "shield-filled" : "shield"
             dim: Vpn.phase === "off"
@@ -114,7 +134,7 @@ BarWidget {
         StatusIcon {
             id: bt
 
-            visible: BluetoothStatus.available
+            visible: widget.hasBluetooth
             icon: "bluetooth"
             dim: !BluetoothStatus.enabled
             interactive: true
@@ -125,6 +145,7 @@ BarWidget {
         StatusIcon {
             id: vol
 
+            visible: widget.hasAudio
             icon: Audio.muted || Audio.volume === 0 ? "volume-off" : "volume"
             interactive: true
             selected: audioMenu.isOpen
@@ -140,7 +161,7 @@ BarWidget {
             if (!widget.bar || screen !== widget.bar.modelData.name)
                 return;
             const target = ({ network: netMenu, vpn: vpnMenu, bluetooth: btMenu, audio: audioMenu })[menu];
-            if (target)
+            if (target && widget.activeParts.includes(menu))
                 target.toggle();
         }
     }

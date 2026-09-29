@@ -63,6 +63,26 @@
       "icon": "wifi"
     },
     {
+      "id": "network",
+      "label": "Network",
+      "icon": "wifi"
+    },
+    {
+      "id": "vpn",
+      "label": "VPN",
+      "icon": "shield"
+    },
+    {
+      "id": "bluetooth",
+      "label": "Bluetooth",
+      "icon": "bluetooth"
+    },
+    {
+      "id": "audio",
+      "label": "Sound",
+      "icon": "volume"
+    },
+    {
       "id": "controlCenter",
       "label": "Control center",
       "icon": "toggles"

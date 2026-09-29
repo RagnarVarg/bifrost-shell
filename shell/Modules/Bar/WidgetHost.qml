@@ -32,6 +32,10 @@ Item {
             settings: settings,
             controlCenter: controlCenter,
             status: status,
+            network: network,
+            vpn: vpn,
+            bluetooth: bluetooth,
+            audio: audio,
             display: display,
             notifications: notifications,
             power: power,
@@ -139,6 +143,39 @@ Item {
         id: status
 
         StatusWidget {}
+    }
+
+    // The status icons one by one, so each can be placed on its own.
+    Component {
+        id: network
+
+        StatusWidget {
+            parts: ["network"]
+        }
+    }
+
+    Component {
+        id: vpn
+
+        StatusWidget {
+            parts: ["vpn"]
+        }
+    }
+
+    Component {
+        id: bluetooth
+
+        StatusWidget {
+            parts: ["bluetooth"]
+        }
+    }
+
+    Component {
+        id: audio
+
+        StatusWidget {
+            parts: ["audio"]
+        }
     }
 
     Component {

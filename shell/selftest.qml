@@ -525,6 +525,22 @@ ShellRoot {
                     o.destroy();
             }
         }
+        const single = Qt.createComponent(Qt.resolvedUrl("Modules/Bar/Widgets/StatusWidget.qml"));
+        for (const part of ["network", "audio"]) {
+            const o = single.createObject(test, { entry: { id: part }, parts: [part] });
+            check("single status widget shows only its part: " + part, o !== null && o.shown
+                && o.hasNetwork === (part === "network") && o.hasAudio === (part === "audio") && !o.hasVpn);
+            if (o)
+                o.destroy();
+        }
+        const combined = single.createObject(test, {
+            entry: { id: "status" },
+            bar: { widgets: { right: [{ id: "status" }, { id: "bluetooth" }, { id: "audio" }] } }
+        });
+        check("combined status leaves out parts placed as their own widget", combined !== null
+            && combined.hasNetwork && !combined.hasBluetooth && !combined.hasAudio);
+        if (combined)
+            combined.destroy();
         const reg = reader.read(Paths.schemaDir + "/widgets.json");
         check("widget registry lists default widgets", reg.ok && Object.values(Config.get("bar.widgets")).every(zone => zone.every(e => reg.data.widgets.some(w => w.id === e.id))));
         const host = Qt.createComponent(Qt.resolvedUrl("Modules/Bar/WidgetHost.qml"));
