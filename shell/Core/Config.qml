@@ -20,7 +20,7 @@ import "Migrations.js" as Migrations
 Singleton {
     id: root
 
-    readonly property int formatVersion: 10
+    readonly property int formatVersion: 11
     readonly property int writeDelayMs: 80
 
     property bool ready: false

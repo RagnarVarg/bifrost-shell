@@ -126,25 +126,27 @@ ShellRoot {
         eq("migrated version", out.version, Config.formatVersion);
         eq("variant → mode", out.values.appearance.mode, "light");
         check("stray top-level appearance dropped", out.appearance === undefined);
-        eq("old glass settings → one glass (blur off and border off kept)", out.values.materials, { blur: 0, border: false });
+        eq("old glass settings → one glass (blur off and border off kept)", out.values.materials, { blur: { light: 0, dark: 0 }, border: false });
         const v4 = { version: 4, values: { materials: { blurStrength: 49, bar: { blur: true }, dock: { blur: false }, osd: { transparency: 10 } } } };
-        eq("4 → 6: the old blur strength becomes the one blur", Migrations.migrate(v4, Config.formatVersion).values.materials, { blur: 49 });
+        eq("4 → 6: the old blur strength becomes the one blur", Migrations.migrate(v4, Config.formatVersion).values.materials, { blur: { light: 49, dark: 49 } });
         const v5 = { version: 5, values: {
             materials: { link: true, unlinked: ["dock"], all: { transparency: 44, blur: 22, tint: "#0F1516", thickness: 0, glow: 0.25, borderWidth: 0.5 }, dock: { transparency: 100 } },
             appearance: { prism: { enabled: false, intensity: 2 }, spacingScale: 1.5, radiusScale: 2 },
             hyprland: { windows: { activeTransparency: 10, inactiveTransparency: 20 }, gapsIn: 3 },
             settingsUI: { layout: "boxed" } } };
         const out9 = Migrations.migrate({ version: 8, values: { bar: { boxes: { transparency: 30, tint: { dark: "#112233" }, blur: false, round: true } } } }, Config.formatVersion).values;
-        eq("8 → 9: the boxes' glass moves to the Widgets group, unlinked", [out9.bar.boxes, out9.materials], [{ round: true }, { widgets: { tint: { dark: "#112233" }, transparency: 30, blur: false }, linked: false }]);
-        eq("9 → 10: the control center's own glass group is dropped", Migrations.migrate({ version: 9, values: { materials: { linked: false, controlCenter: { transparency: 100 }, panels: { transparency: 46 } } } }, Config.formatVersion).values.materials, { linked: false, panels: { transparency: 46 } });
+        eq("8 → 9: the boxes' glass moves to the Widgets group, unlinked", [out9.bar.boxes, out9.materials], [{ round: true }, { widgets: { tint: { dark: "#112233" }, transparency: { light: 30, dark: 30 }, blur: { light: false, dark: false } }, linked: false }]);
+        eq("9 → 10: the control center's own glass group is dropped", Migrations.migrate({ version: 9, values: { materials: { linked: false, controlCenter: { transparency: 100 }, panels: { transparency: 46 } } } }, Config.formatVersion).values.materials, { linked: false, panels: { transparency: { light: 46, dark: 46 } } });
         eq("7 → 8: the faint bar panel becomes the panel", Migrations.migrate({ version: 7, values: { bar: { background: "subtle", height: 40 } } }, Config.formatVersion).values.bar, { background: "panel", height: 40 });
         const v6 = { version: 6, values: { appearance: { accent: "#123456" }, materials: { tint: "#0F1516", blur: 5 } } };
         const out7 = Migrations.migrate(v6, Config.formatVersion).values;
         eq("6 → 7: one accent and tint become the same colour in light and dark", [out7.appearance.accent, out7.materials.tint], [{ light: "#123456", dark: "#123456" }, { light: "#0F1516", dark: "#0F1516" }]);
         const out6 = Migrations.migrate(v5, Config.formatVersion).values;
-        eq("5 → 6: All surfaces' glass is kept, per-surface and link settings are dropped", out6.materials, { transparency: 44, blur: 22, tint: { light: "#0F1516", dark: "#0F1516" } });
+        eq("5 → 6: All surfaces' glass is kept, per-surface and link settings are dropped", out6.materials, { transparency: { light: 44, dark: 44 }, blur: { light: 22, dark: 22 }, tint: { light: "#0F1516", dark: "#0F1516" } });
         eq("5 → 6: prism switch off → intensity 0; spacing scale → density", [out6.appearance.prism, out6.appearance.density, out6.appearance.spacingScale, out6.appearance.radiusScale], [{ intensity: 0 }, "spacious", undefined, 2]);
         eq("5 → 6: app window transparency and the Settings layout page removed", [out6.hyprland, out6.settingsUI], [{ gapsIn: 3 }, undefined]);
+        const out11 = Migrations.migrate({ version: 10, values: { materials: { transparency: null, blur: { light: 10, dark: 20 }, apps: { blur: false } }, hyprland: { activeBorderColor: "#39424C" } } }, Config.formatVersion).values;
+        eq("10 → 11: glass and border colours become light/dark pairs", [out11.materials, out11.hyprland], [{ blur: { light: 10, dark: 20 }, apps: { blur: { light: false, dark: false } } }, { activeBorderColor: { light: "#39424C", dark: "#39424C" } }]);
         check("old keys removed", out.values.appearance.transparency === undefined && out.values.bar.radius === undefined && out.values.hyprland.blur === undefined && out.values.hyprland.gapsIn === 4);
     }
 

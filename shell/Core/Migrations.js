@@ -222,6 +222,33 @@ const steps = {
             delete m.controlCenter;
         doc.version = 10;
         return doc;
+    },
+    // 10 → 11: transparency, blur and window border colours are kept per
+    // light/dark mode; one value becomes the same value in each. Same keys
+    // as bifrostctl PER_MODE_11.
+    10: function (doc) {
+        const vals = doc.values || {};
+        const keys = ["materials.transparency", "materials.blur", "materials.apps.transparency", "materials.apps.blur",
+                      "hyprland.activeBorderColor", "hyprland.inactiveBorderColor"];
+        for (const g of ["bar", "widgets", "panels", "controlButtons", "windows"])
+            for (const p of ["transparency", "blur"])
+                keys.push("materials." + g + "." + p);
+        for (const key of keys) {
+            const parts = key.split(".");
+            const leaf = parts.pop();
+            let parent = vals;
+            for (const p of parts)
+                parent = parent && typeof parent === "object" ? parent[p] : undefined;
+            if (!parent || typeof parent !== "object" || !(leaf in parent))
+                continue;
+            const x = parent[leaf];
+            if (x === null)
+                delete parent[leaf];
+            else if (typeof x !== "object")
+                parent[leaf] = { light: x, dark: x };
+        }
+        doc.version = 11;
+        return doc;
     }
 };
 
