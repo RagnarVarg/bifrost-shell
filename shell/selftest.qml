@@ -539,6 +539,7 @@ ShellRoot {
         });
         check("combined status leaves out parts placed as their own widget", combined !== null
             && combined.hasNetwork && !combined.hasBluetooth && !combined.hasAudio);
+        check("combined status never shows VPN (only its own widget does)", combined !== null && !combined.activeParts.includes("vpn"));
         if (combined)
             combined.destroy();
         const reg = reader.read(Paths.schemaDir + "/widgets.json");

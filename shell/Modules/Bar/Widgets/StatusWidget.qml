@@ -10,12 +10,13 @@ import qs.Shared
 // Status icons: network, VPN, Bluetooth, volume. Each opens its own menu
 // under the icon; the wheel over the volume icon changes the volume. The
 // control center has its own button.
-// `parts` picks the icons: the combined `status` widget shows all of them,
-// the single `network`/`vpn`/`bluetooth`/`audio` widgets one each (WidgetHost).
+// `parts` picks the icons: the combined `status` widget shows network,
+// Bluetooth and sound, the single `network`/`vpn`/`bluetooth`/`audio`
+// widgets one each (WidgetHost). VPN only shows as its own widget.
 BarWidget {
     id: widget
 
-    property var parts: ["network", "vpn", "bluetooth", "audio"]
+    property var parts: ["network", "bluetooth", "audio"]
     // The combined widget leaves out the parts that sit on the same bar as
     // their own widget, so no icon shows twice.
     readonly property var placedAlone: {
@@ -31,9 +32,14 @@ BarWidget {
     readonly property bool hasBluetooth: activeParts.includes("bluetooth") && BluetoothStatus.available
     readonly property bool hasAudio: activeParts.includes("audio")
 
-    shown: hasNetwork || hasVpn || hasBluetooth || hasAudio
-    implicitWidth: row.implicitWidth
-    implicitHeight: row.implicitHeight
+    shown: iconCount > 0
+    // Size from the state, not from the row: the host stays hidden while the
+    // length is 0, and a Grid inside a hidden item doesn't lay out again, so
+    // a part that becomes available later (Bluetooth, VPN) would never show.
+    readonly property int iconCount: [hasNetwork, hasVpn, hasBluetooth, hasAudio].filter(Boolean).length
+    readonly property real iconsLength: iconCount > 0 ? iconCount * Theme.control.height.sm + (iconCount - 1) * row.spacing : 0
+    implicitWidth: vertical ? Theme.control.height.sm : iconsLength
+    implicitHeight: vertical ? iconsLength : Theme.control.height.sm
 
     component StatusIcon: Item {
         id: status
