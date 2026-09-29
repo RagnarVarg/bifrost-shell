@@ -356,6 +356,22 @@
       "density": "@glass.density"
     }
   },
+  "effects": {
+    "_comment": "Bifrost Effects (Settings → Appearance → Bifrost Effects). Colours and fixed geometry for the optional top-bar and window-frame effects; their strengths and on/off switches are settings (effects.*). prism = the cyan → blue → violet wash, lowered further by Prism Saturation. Everything is plain gradients and 1 px lines: no extra shader or blur. windowInnerRange = Hyprland inner-glow width (px) for the inner highlight; inactiveShare = how much of an active-window effect an inactive window keeps.",
+    "prism": ["#5CC8DC", "#6A8BEE", "#9B7DE6"],
+    "highlightColor": "@glass.highlightColor",
+    "edgeColor": "@palette.void",
+    "dividerColor": "@color.text",
+    "dividerOpacity": 0.14,
+    "dividerLength": 0.42,
+    "lineWidth": 1,
+    "lineFade": 0.12,
+    "capsuleFill": 0.05,
+    "capsuleBorder": 0.1,
+    "capsulePadding": "@space.sm",
+    "windowInnerRange": 3,
+    "inactiveShare": 0.35
+  },
   "prism": {
     "_comment": "Bifrost refraction look for selected/active/focus. tint = how far the fill leans toward the aurora stops, caustic = soft split-light line under the top edge, edge = rim strength, dispersion = how much the rim hue shifts around the perimeter, driftSeconds = slow hue drift period (0 = static).",
     "enabled": true,

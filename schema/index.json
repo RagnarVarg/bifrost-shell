@@ -89,6 +89,10 @@
       "category": "appearance"
     },
     {
+      "file": "effects.json",
+      "category": "appearance"
+    },
+    {
       "file": "typography.json",
       "category": "appearance"
     },

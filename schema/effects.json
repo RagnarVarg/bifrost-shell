@@ -1,0 +1,240 @@
+{
+  "section": "effects",
+  "label": "Bifrost Effects",
+  "icon": "palette",
+  "description": "Subtle light, edge and prism effects for the top bar and application windows. Each effect has its own switch.",
+  "groups": {
+    "bar": "Top bar",
+    "windows": "Window frame"
+  },
+  "settings": [
+    {
+      "key": "effects.bar.highlight",
+      "type": "bool",
+      "default": true,
+      "label": "Glass highlight",
+      "description": "A 1 px light line along the inside of the bar's top edge",
+      "group": "bar"
+    },
+    {
+      "key": "effects.bar.highlightStrength",
+      "type": "real",
+      "default": 0.18,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "label": "Highlight strength",
+      "group": "bar",
+      "dependsOn": "effects.bar.highlight"
+    },
+    {
+      "key": "effects.bar.bottomEdge",
+      "type": "bool",
+      "default": true,
+      "label": "Bottom edge",
+      "description": "A very thin dark line along the bottom of the bar",
+      "group": "bar"
+    },
+    {
+      "key": "effects.bar.bottomEdgeOpacity",
+      "type": "real",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "label": "Bottom edge opacity",
+      "group": "bar",
+      "dependsOn": "effects.bar.bottomEdge"
+    },
+    {
+      "key": "effects.bar.prism",
+      "type": "bool",
+      "default": true,
+      "label": "Prism effect",
+      "description": "A faint cyan → blue → violet wash across the bar",
+      "group": "bar"
+    },
+    {
+      "key": "effects.bar.prismStrength",
+      "type": "real",
+      "default": 0.1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "label": "Prism strength",
+      "group": "bar",
+      "dependsOn": "effects.bar.prism"
+    },
+    {
+      "key": "effects.bar.prismSaturation",
+      "type": "real",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "label": "Prism saturation",
+      "description": "0 = grey, 1 = the full prism colours",
+      "group": "bar",
+      "dependsOn": "effects.bar.prism"
+    },
+    {
+      "key": "effects.bar.gradient",
+      "type": "bool",
+      "default": true,
+      "label": "Bar gradient",
+      "description": "Slightly lighter at the top and darker at the bottom",
+      "group": "bar"
+    },
+    {
+      "key": "effects.bar.gradientStrength",
+      "type": "real",
+      "default": 0.08,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "label": "Gradient strength",
+      "group": "bar",
+      "dependsOn": "effects.bar.gradient"
+    },
+    {
+      "key": "effects.bar.capsule",
+      "type": "bool",
+      "default": true,
+      "label": "Centre capsule",
+      "description": "A discreet glass capsule behind the centre widgets (with Integrated widgets)",
+      "group": "bar"
+    },
+    {
+      "key": "effects.bar.dividers",
+      "type": "bool",
+      "default": true,
+      "label": "Section dividers",
+      "description": "Short, thin lines between the left, centre and right widgets (with Integrated widgets)",
+      "group": "bar"
+    },
+    {
+      "key": "effects.windows.enabled",
+      "type": "bool",
+      "default": true,
+      "label": "Active frame effect",
+      "description": "Thin frame, inner highlight, glow and prism on application windows. Off = the plain border from Windows & compositor",
+      "group": "windows",
+      "scope": "hyprland",
+      "dependsOn": "hyprland.manage"
+    },
+    {
+      "key": "effects.windows.frameOpacity",
+      "type": "real",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "label": "Frame opacity",
+      "description": "Opacity of the thin outer frame; inactive windows get a fainter one",
+      "group": "windows",
+      "scope": "hyprland",
+      "dependsOn": "effects.windows.enabled"
+    },
+    {
+      "key": "effects.windows.innerHighlight",
+      "type": "bool",
+      "default": true,
+      "label": "Inner highlight",
+      "description": "A thin light edge just inside the window",
+      "group": "windows",
+      "scope": "hyprland",
+      "dependsOn": "effects.windows.enabled"
+    },
+    {
+      "key": "effects.windows.innerHighlightStrength",
+      "type": "real",
+      "default": 0.15,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "label": "Inner highlight strength",
+      "group": "windows",
+      "scope": "hyprland",
+      "dependsOnValue": {
+        "effects.windows.enabled": true,
+        "effects.windows.innerHighlight": true
+      }
+    },
+    {
+      "key": "effects.windows.glow",
+      "type": "bool",
+      "default": true,
+      "label": "Active glow",
+      "description": "A subtle blue glow around the focused window only",
+      "group": "windows",
+      "scope": "hyprland",
+      "dependsOn": "effects.windows.enabled"
+    },
+    {
+      "key": "effects.windows.glowStrength",
+      "type": "real",
+      "default": 0.08,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "label": "Glow strength",
+      "group": "windows",
+      "scope": "hyprland",
+      "dependsOnValue": {
+        "effects.windows.enabled": true,
+        "effects.windows.glow": true
+      }
+    },
+    {
+      "key": "effects.windows.prism",
+      "type": "bool",
+      "default": true,
+      "label": "Prism frame",
+      "description": "A subtle cyan → blue → violet gradient along the top of the focused window",
+      "group": "windows",
+      "scope": "hyprland",
+      "dependsOn": "effects.windows.enabled"
+    },
+    {
+      "key": "effects.windows.prismStrength",
+      "type": "real",
+      "default": 0.12,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "label": "Prism strength",
+      "group": "windows",
+      "scope": "hyprland",
+      "dependsOnValue": {
+        "effects.windows.enabled": true,
+        "effects.windows.prism": true
+      }
+    },
+    {
+      "key": "effects.windows.focusAnimation",
+      "type": "bool",
+      "default": true,
+      "label": "Focus animation",
+      "description": "The frame, highlight and glow fade when focus moves",
+      "group": "windows",
+      "scope": "hyprland",
+      "dependsOn": "effects.windows.enabled"
+    },
+    {
+      "key": "effects.windows.focusDuration",
+      "type": "int",
+      "default": 150,
+      "min": 80,
+      "max": 300,
+      "step": 10,
+      "unit": "ms",
+      "label": "Focus animation duration",
+      "group": "windows",
+      "scope": "hyprland",
+      "dependsOnValue": {
+        "effects.windows.enabled": true,
+        "effects.windows.focusAnimation": true
+      }
+    }
+  ]
+}

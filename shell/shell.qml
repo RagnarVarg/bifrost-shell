@@ -8,6 +8,7 @@ import qs.Compositor
 // Quickshell only registers qs.* modules reachable from the entry file's
 // imports; list every module used by dynamically created components.
 import qs.Components.Controls
+import qs.Components.Effects
 import qs.Components.Glass
 import qs.Components.Icons
 import qs.Components.Motion

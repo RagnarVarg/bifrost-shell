@@ -45,6 +45,8 @@ Singleton {
     readonly property var glass: tokens.glass || ({})
     readonly property var materials: tokens.materials || ({})
     readonly property var prism: tokens.prism || ({})
+    // Bifrost Effects colours and geometry (Components/Effects).
+    readonly property var effects: tokens.effects || ({})
     readonly property var states: tokens.states || ({})
     readonly property var typography: tokens.typography || ({})
     readonly property var icon: tokens.icon || ({})

@@ -9,6 +9,7 @@ import qs.Core
 // Quickshell only registers qs.* modules that the entry file imports, so every
 // module used by dynamically created components must be listed here.
 import qs.Components.Controls
+import qs.Components.Effects
 import qs.Components.Glass
 import qs.Components.Icons
 import qs.Components.Motion
@@ -38,6 +39,7 @@ import qs.Settings.Editors
 import "Core/ConfigLogic.js" as L
 import "Core/ThemeLogic.js" as ThemeLogic
 import "Compat/Version.js" as V
+import "Components/Effects/Effects.js" as FX
 import "Core/Sun.js" as Sun
 import "Core/Migrations.js" as Migrations
 import "Shared/WorkspaceMap.js" as WorkspaceMap
@@ -338,7 +340,8 @@ ShellRoot {
         const files = ["Glass/GlassSurface", "State/StateFill", "State/StateLayer", "Text/BText", "Icons/BIcon",
             "Motion/BNumberAnimation", "Motion/BColorAnimation", "Controls/BButton", "Controls/BIconButton",
             "Controls/BToggle", "Controls/BSlider", "Controls/BSegmented", "Controls/BListRow",
-            "Controls/BTextField", "Controls/BChip", "Controls/BDivider"];
+            "Controls/BTextField", "Controls/BChip", "Controls/BDivider",
+            "Effects/EffectLine", "Effects/PrismWash", "Effects/ShadeGradient", "Effects/GlassCapsule", "Effects/SectionDivider"];
         for (const f of files) {
             const c = Qt.createComponent(Qt.resolvedUrl("Components/" + f + ".qml"));
             check("component loads: " + f, c.status === Component.Ready, c.errorString());
@@ -349,6 +352,19 @@ ShellRoot {
                     o.destroy();
             }
         }
+    }
+
+    function testEffects() {
+        eq("effect line: whole length without a gap", FX.segments(100, 0, 0), [[0, 100]]);
+        eq("effect line: a menu gap splits it", FX.segments(100, 40, 20), [[0, 40], [60, 100]]);
+        eq("effect line: a gap at the start", FX.segments(100, -10, 30), [[20, 100]]);
+        eq("effect line: a gap past the end", FX.segments(100, 120, 30), [[0, 100]]);
+        const grey = FX.tone(Qt.color("#6A8BEE"), 0, 1);
+        check("prism saturation 0 is grey", Math.abs(grey.hslSaturation) < 0.01 && grey.a === 1);
+        const full = FX.tone(Qt.color("#6A8BEE"), 1, 0.5);
+        check("prism saturation 1 keeps the colour", Math.abs(full.hslSaturation - Qt.color("#6A8BEE").hslSaturation) < 0.01 && Math.abs(full.a - 0.5) < 0.01);
+        check("theme has three prism stops", (Theme.effects.prism || []).length === 3);
+        eq("effects defaults are cautious", [Config.values.effects.bar.highlightStrength, Config.values.effects.bar.prismStrength, Config.values.effects.windows.glowStrength, Config.values.effects.windows.focusDuration], [0.18, 0.1, 0.08, 150]);
     }
 
     // Each Settings editor bound to a real key must read and write through Config.
@@ -665,7 +681,7 @@ ShellRoot {
         const freeDock = DockGeometry.rect("free",800,600,300,60,inset,0,2,-1);
         check("free dock clamps drag position", freeDock.x+freeDock.width === 788 && freeDock.y === 38);
 
-        for (const m of ["BarWindow", "BarMenu", "MenuHost", "MenuItem", "SystemStatusPopup", "Widgets/SystemMenu", "Widgets/StatusMenu", "Widgets/TrayMenu"]) {
+        for (const m of ["BarWindow", "BarEffects", "BarMenu", "MenuHost", "MenuItem", "SystemStatusPopup", "Widgets/SystemMenu", "Widgets/StatusMenu", "Widgets/TrayMenu"]) {
             const c = Qt.createComponent(Qt.resolvedUrl("Modules/Bar/" + m + ".qml"));
             check("bar menu part compiles: " + m, c.status === Component.Ready, c.errorString());
         }
@@ -1229,6 +1245,7 @@ ShellRoot {
             test.testGroupedSettings();
             test.testEditors();
             test.prepareRowLayoutTests();
+            test.testEffects();
             test.testBar();
             test.testBarMenus();
             test.testPhase5();

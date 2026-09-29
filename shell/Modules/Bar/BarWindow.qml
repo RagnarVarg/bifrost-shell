@@ -306,6 +306,17 @@ PanelWindow {
                     attachment: menuHost.attachmentFor(barGlass)
                 }
 
+                // Bifrost Effects: highlight, edge, prism, gradient, capsule,
+                // dividers (Settings → Appearance → Bifrost Effects).
+                BarEffects {
+                    anchors.fill: parent
+                    bar: root
+                    glass: barGlass
+                    leftZone: left
+                    centerZone: center
+                    rightZone: right
+                }
+
 
                 // Grouped: one glass per non-empty zone. Boxed: one per widget.
                 // Without a panel they are the bar and menus grow out of them.
