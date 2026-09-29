@@ -39,6 +39,13 @@ class BifrostctlTest(unittest.TestCase):
     def file(self):
         return json.loads((Path(self.tmp.name) / "config.json").read_text())
 
+    @staticmethod
+    def set_modes(key, value):
+        """A perMode setting (<key>.light / <key>.dark): the same value in
+        both modes, as one value migrates (migrate_10)."""
+        for mode in ("light", "dark"):
+            ctl.main(["set", f"{key}.{mode}", value])
+
     def test_input_schema_per_device_roundtrip_and_rejection(self):
         d = self.schema.entries["input.devices"]
         value = {"test-keyboard": {"kind":"keyboard", "values":{"kb_layout":"se,us", "kb_options":"grp:alt_shift_toggle,compose:ralt", "repeat_rate":31}, "original":{"kb_layout":"se"}}}
@@ -408,7 +415,7 @@ class BifrostctlTest(unittest.TestCase):
 
     def test_settings_window_blur_follows_the_one_blur(self):
         for amount, disabled in [("30", "false"), ("0", "true")]:
-            ctl.main(["set", "materials.blur", amount])
+            self.set_modes("materials.blur", amount)
             text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
             rule = next(line for line in text.splitlines() if 'window_rule("bifrost-settings"' in line)
             self.assertIn("no_blur = " + disabled, rule)
@@ -433,15 +440,18 @@ class BifrostctlTest(unittest.TestCase):
         self.assertNotIn("active_opacity", text)
 
     def test_window_border_colours_override_and_restore_theme(self):
+        # The plain border; Bifrost Effects' window frame (on by default)
+        # draws its own and is tested in test_window_frame_effects_*.
+        ctl.main(["set", "effects.windows.enabled", "false"])
         ctl.main(["set", "appearance.mode", "dark"])
         ctl.main(["set", "appearance.accent.dark", "#112233"])
         ctl.main(["set", "appearance.accent.light", "#445566"])
-        ctl.main(["set", "hyprland.activeBorderColor", "#ABCDEF"])
-        ctl.main(["set", "hyprland.inactiveBorderColor", "#123456"])
+        self.set_modes("hyprland.activeBorderColor", "#ABCDEF")
+        self.set_modes("hyprland.inactiveBorderColor", "#123456")
         text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
         self.assertIn('active_border = "rgb(abcdef)"', text)
         self.assertIn('inactive_border = "rgb(123456)"', text)
-        ctl.main(["set", "hyprland.activeBorderColor", "null"])
+        self.set_modes("hyprland.activeBorderColor", "null")
         text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
         self.assertIn('active_border = "rgb(112233)"', text)
         self.assertIn('inactive_border = "rgb(123456)"', text)
@@ -450,12 +460,12 @@ class BifrostctlTest(unittest.TestCase):
         """One blur amount: the compositor strength and every Bifrost layer
         follow materials.blur (ThemeLogic does the same)."""
         rule = lambda text, ns: re.search(r'bifrost-blur-%s".*' % ns, text).group(0)
-        ctl.main(["set", "materials.blur", "80"])
+        self.set_modes("materials.blur", "80")
         text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
         self.assertIn("size = 32, passes = 5", text)          # 80 → round(1 + 80 * 0.39), passes
         for ns in ctl.BLUR_NAMESPACES:
             self.assertIn("blur = true, ignore_alpha = 0.12, blur_popups = true", rule(text, ns))
-        ctl.main(["set", "materials.blur", "0"])
+        self.set_modes("materials.blur", "0")
         text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
         self.assertIn("blur = { enabled = false", text)
         self.assertIn("blur = false", rule(text, "dock"))
@@ -522,7 +532,7 @@ class BifrostctlTest(unittest.TestCase):
 
     def test_migrate_4_to_6_blur_amounts(self):
         doc = {"version": 4, "values": {"materials": {"blurStrength": 49, "bar": {"blur": True}, "dock": {"blur": False}}}}
-        self.assertEqual(ctl.migrate(doc)["values"]["materials"], {"blur": 49})
+        self.assertEqual(ctl.migrate(doc)["values"]["materials"], {"blur": {"light": 49, "dark": 49}})
 
     def test_migrate_5_to_6_one_glass(self):
         """Same as Migrations.js step 5 (selftest testMigrations)."""
@@ -534,7 +544,7 @@ class BifrostctlTest(unittest.TestCase):
         out = ctl.migrate(doc)
         self.assertEqual(out["version"], ctl.FORMAT_VERSION)
         v = out["values"]
-        self.assertEqual(v["materials"], {"transparency": 44, "blur": 22, "tint": {"light": "#0F1516", "dark": "#0F1516"}})
+        self.assertEqual(v["materials"], {"transparency": {"light": 44, "dark": 44}, "blur": {"light": 22, "dark": 22}, "tint": {"light": "#0F1516", "dark": "#0F1516"}})
         self.assertEqual(v["appearance"], {"prism": {"intensity": 0}, "radiusScale": 2, "density": "spacious"})
         self.assertEqual(v["hyprland"], {"gapsIn": 3})
         self.assertNotIn("settingsUI", v)
@@ -548,8 +558,8 @@ class BifrostctlTest(unittest.TestCase):
         (and a panel-less bar's widget boxes) turns it on or off."""
         rule = lambda text, ns: re.search(r'bifrost-blur-%s".*' % ns, text).group(0)
         gen = lambda: ctl.generate_hypr(ctl.Config(ctl.Schema()))
-        ctl.main(["set", "materials.blur", "40"])
-        ctl.main(["set", "materials.panels.blur", "false"])
+        self.set_modes("materials.blur", "40")
+        self.set_modes("materials.panels.blur", "false")
         self.assertIn("blur = true,", rule(gen(), "dock"))      # linked: ignored
         ctl.main(["set", "materials.linked", "false"])
         text = gen()
@@ -558,24 +568,24 @@ class BifrostctlTest(unittest.TestCase):
         self.assertIn("blur = true,", rule(text, "bar"))
         ctl.main(["set", "bar.background", "none"])
         ctl.main(["set", "bar.widgetStyle", "boxed"])
-        ctl.main(["set", "materials.widgets.blur", "false"])
+        self.set_modes("materials.widgets.blur", "false")
         self.assertIn("blur = false,", rule(gen(), "bar"))
-        ctl.main(["set", "materials.windows.blur", "false"])
+        self.set_modes("materials.windows.blur", "false")
         self.assertRegex(gen(), r'bifrost-settings".*no_blur = true')
 
     def test_application_windows(self):
-        ctl.main(["set", "materials.apps.transparency", "20"])
+        self.set_modes("materials.apps.transparency", "20")
         text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
         self.assertIn("active_opacity = 0.8, inactive_opacity = 0.8,", text)
         self.assertRegex(text, r'bifrost-settings".*opacity = "1.0 override"')   # Bifrost's own window keeps its glass
         self.assertNotIn('window_rule("bifrost-apps-noblur"', text)
-        ctl.main(["set", "materials.apps.blur", "false"])
+        self.set_modes("materials.apps.blur", "false")
         self.assertIn('window_rule("bifrost-apps-noblur", { match = { class = ".*" }, no_blur = true })', ctl.generate_hypr(ctl.Config(ctl.Schema())))
 
     def test_migrate_8_to_9_boxes_to_widgets(self):
         doc = {"version": 8, "values": {"bar": {"boxes": {"transparency": 30, "tint": {"dark": "#112233"}, "blur": False, "round": True}}}}
         v = ctl.migrate(doc)["values"]
-        self.assertEqual((v["bar"]["boxes"], v["materials"]), ({"round": True}, {"widgets": {"tint": {"dark": "#112233"}, "transparency": 30, "blur": False}, "linked": False}))
+        self.assertEqual((v["bar"]["boxes"], v["materials"]), ({"round": True}, {"widgets": {"tint": {"dark": "#112233"}, "transparency": {"light": 30, "dark": 30}, "blur": {"light": False, "dark": False}}, "linked": False}))
 
     def test_migrate_6_to_7_colours_per_mode(self):
         doc = {"version": 6, "values": {"appearance": {"accent": "#123456"}, "materials": {"tint": "#0F1516", "blur": 5}}}

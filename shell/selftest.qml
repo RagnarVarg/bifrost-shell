@@ -78,6 +78,22 @@ ShellRoot {
         check(name, L.equals(actual, expected), { actual: actual, expected: expected });
     }
 
+    // Per-mode glass settings (<key>.light / <key>.dark): the same value in
+    // both modes, as one value migrates. A rejected key fails loudly instead
+    // of leaving the defaults in place.
+    function setGlass(key, value) {
+        for (const mode of ["light", "dark"]) {
+            const err = Config.set(key + "." + mode, value);
+            if (err)
+                check("set " + key + "." + mode, false, err);
+        }
+    }
+
+    function resetGlass(key) {
+        for (const mode of ["light", "dark"])
+            Config.reset(key + "." + mode);
+    }
+
     function readConfigFile() {
         Config.flush();
         const res = reader.read(Paths.configFile);
@@ -270,13 +286,13 @@ ShellRoot {
         Config.set("appearance.prism.intensity", 0);
         Theme.rebuild();
         eq("prism intensity 0 falls back to solid", Theme.states.selected.fill, "solid");
-        Config.set("materials.transparency", 25);
+        setGlass("materials.transparency", 25);
         Theme.rebuild();
         check("one transparency reaches every surface", ["bar", "dock", "panel", "popover", "osd", "launcher", "controlCenter", "notifications", "settings", "settingsGroups"].every(k => Math.abs(Theme.materials[k].opacity - 0.75) < 1e-9 && Theme.materials[k].transparency === 25));
-        Config.set("materials.transparency", 0);
+        setGlass("materials.transparency", 0);
         Theme.rebuild();
         check("transparency 0 % makes the glass solid", Theme.materials.bar.opacity === 1 && Theme.materials.bar.fill.substring(1, 3).toLowerCase() === "ff", Theme.materials.bar.fill);
-        Config.reset("materials.transparency");
+        resetGlass("materials.transparency");
         Theme.rebuild();
         check("standard transparency keeps the theme glass per surface", Theme.materials.dock.opacity > 0.4 && Theme.materials.dock.opacity < 1 && Theme.materials.popover.opacity !== Theme.materials.dock.opacity && Theme.materials.lock.opacity < 1);
         Config.set("materials.tint.dark", "#112233");
@@ -284,25 +300,25 @@ ShellRoot {
         Config.set("materials.border", false);
         Theme.rebuild();
         check("tint and border reach every surface", Theme.materials.osd.tint === "#112233" && Theme.materials.bar.borderWidth === 0 && Theme.materials.settings.borderWidth === 0);
-        Config.set("materials.transparency", 100);
+        setGlass("materials.transparency", 100);
         Theme.rebuild();
         check("100 % transparency is fully clear", ["bar", "dock", "popover", "launcher", "settings"].every(k => { const m = Theme.materials[k]; return m.opacity === 0 && m.density === 0 && m.depth === 0 && m.highlight === 0 && m.sheen === 0 && m.bevelStrength === 0 && m.elevation.opacity === 0; }));
-        Config.reset("materials.transparency");
+        resetGlass("materials.transparency");
         Theme.rebuild();
         check("standard transparency keeps the glass body", Theme.materials.dock.density > 0 && Theme.materials.dock.elevation.opacity > 0);
-        Config.set("materials.blur", 60);
+        setGlass("materials.blur", 60);
         Theme.rebuild();
         check("one blur amount for every surface", Theme.materials.launcher.blur === 60 && Theme.materials.bar.blur === 60 && Theme.materials.tooltip.blur === 0);
         check("blur mask: layers masked, window surfaces none", Theme.materials.launcher.blurMask === Theme.glass.blurMaskShadowed && Theme.materials.settings.blurMask === 0 && Theme.materials.settingsGroups.blurMask === 0);
-        Config.set("materials.blur", 0);
+        setGlass("materials.blur", 0);
         Theme.rebuild();
         check("blur 0 turns blur off everywhere", Theme.materials.launcher.blur === 0 && Theme.materials.launcher.blurMask === 0);
         // Glass groups: linked (default) = the shared values everywhere;
         // unlinked, a group's own values where set.
-        Config.set("materials.blur", 40);
-        Config.set("materials.transparency", 50);
-        Config.set("materials.bar.transparency", 10);
-        Config.set("materials.panels.blur", false);
+        setGlass("materials.blur", 40);
+        setGlass("materials.transparency", 50);
+        setGlass("materials.bar.transparency", 10);
+        setGlass("materials.panels.blur", false);
         Config.set("materials.controlButtons.tint.dark", "#223344");
         Theme.rebuild();
         check("linked: own group values are ignored", Theme.materials.bar.transparency === 50 && Theme.materials.launcher.blur === 40 && !Theme.materials.bar.custom && Theme.materials.controlButtons.fill === Theme.color.controlFill);
@@ -374,20 +390,20 @@ ShellRoot {
 
     // Each Settings editor bound to a real key must read and write through Config.
     function testGroupedSettings() {
-        Config.set("materials.transparency", 40);
+        setGlass("materials.transparency", 40);
         Theme.rebuild();
         eq("groups use the one glass", Theme.materials.settingsGroups.transparency, 40);
         eq("internal groups do not apply a layer blur mask", Theme.materials.settingsGroups.blurMask, 0);
-        Config.reset("materials.transparency");
+        resetGlass("materials.transparency");
         Theme.rebuild();
     }
 
     function testEditors() {
         const cases = [
             ["BoolEditor", "materials.border", false],
-            ["NumberEditor", "materials.blur", 40],
+            ["NumberEditor", "materials.blur.dark", 40],
             ["NumberEditor", "bar.height", 44],
-            ["NumberEditor", "materials.transparency", 30],
+            ["NumberEditor", "materials.transparency.dark", 30],
             ["ThemeModeEditor", "appearance.mode", "light"],
             ["SegmentedEditor", "keybinds.workspaceStyle", "moveFollow"],
             ["EnumEditor", "notifications.position", "bottom-right"],

@@ -114,7 +114,8 @@ ShellRoot {
 
         function onSettingChanged(key, value) {
             console.info("[bifrost] setting", key, "=", JSON.stringify(value), "(" + Config.applyModeOf(key) + ")");
-            if (key === "materials.blur")
+            // Blur is kept per light/dark mode: materials.blur.light/.dark.
+            if (key.startsWith("materials.blur."))
                 shell.applySurfaceEffects();
         }
     }

@@ -119,7 +119,7 @@ GlassSurface {
             }
 
             SliderRow {
-                key: "materials.transparency"
+                key: "materials.transparency." + ThemeMode.variant
                 to: 100
                 step: 1
                 decimals: 0
@@ -127,7 +127,7 @@ GlassSurface {
             }
 
             SliderRow {
-                key: "materials.blur"
+                key: "materials.blur." + ThemeMode.variant
                 to: 100
                 step: 1
                 decimals: 0

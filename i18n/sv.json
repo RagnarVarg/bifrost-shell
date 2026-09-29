@@ -1141,5 +1141,16 @@
   "For the top bar and its frame in dark mode. Empty = the colour under All": "För panelen och dess ram i mörkt läge. Tomt = färgen under Alla",
   "The glass of every Bifrost surface. With Same glass everywhere on, every part uses the values under All; switch it off to give the top bar, widgets, panels, the control center's buttons and Bifrost windows their own. The control center grows out of its button and shares its glass. Application windows always have their own.": "Glaset för alla Bifrost-ytor. Med Samma glas överallt på använder alla delar värdena under Alla; stäng av det för att ge panelen, widgetar, paneler, kontrollcentrets knappar och Bifrost-fönster egna värden. Kontrollcentret växer ut ur sin knapp och delar dess glas. Programfönster har alltid egna.",
   "Bluetooth": "Bluetooth",
-  "VPN": "VPN"
+  "VPN": "VPN",
+  "Border & corners (colours for the mode you're in)": "Kant & hörn (färger för läget du är i)",
+  "Colour": "Färg",
+  "Colours (for the light or dark mode you're in)": "Färger (för det ljusa eller mörka läge du är i)",
+  "For Settings and other Bifrost windows. Empty = the colour under All": "För Inställningar och andra Bifrost-fönster. Tomt = färgen under Alla",
+  "For the Boxed and Grouped widget boxes. Empty = the colour under All": "För widgetboxarna (Boxed och Grouped). Tomt = färgen under Alla",
+  "For the control center's buttons. Empty = the colour under All": "För kontrollcentrets knappar. Tomt = färgen under Alla",
+  "For the dock, launcher, notifications, OSD and menus. Empty = the colour under All": "För dockan, startmenyn, notiser, OSD och menyer. Tomt = färgen under Alla",
+  "For the top bar and its frame. Empty = the colour under All": "För panelen och dess ram. Tomt = färgen under Alla",
+  "Selection, sliders, focus rings and window borders. Empty = the theme's accent": "Markering, reglage, fokusringar och fönsterkanter. Tomt = temats accent",
+  "Text and icons": "Text och ikoner",
+  "The glass of every Bifrost surface. With Same glass everywhere on, every part uses the values under All; switch it off to give the top bar, widgets, panels, the control center's buttons and Bifrost windows their own. The control center grows out of its button and shares its glass. Application windows always have their own. Transparency, blur and colours are kept separately for light and dark mode: you change the mode you're in.": "Glaset för alla Bifrost-ytor. Med Samma glas överallt på använder alla delar värdena under Alla; stäng av det för att ge panelen, widgetar, paneler, kontrollcentrets knappar och Bifrost-fönster egna värden. Kontrollcentret växer ut ur sin knapp och delar dess glas. Programfönster har alltid egna. Transparens, blur och färger sparas separat för ljust och mörkt läge: du ändrar läget du är i."
 }
