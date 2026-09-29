@@ -21,6 +21,8 @@ so edits here are live. The user writes in Swedish; answer in Swedish. UI source
   nested mode or a scratch overlay instance (see HANDOFF §4).
 - Bifrost writes to this repo, `~/.config/bifrost/`, `$XDG_RUNTIME_DIR/bifrost*/`, `~/.cache/bifrost/`, and — only via
   `bifrostctl appearance apply` with one-time backups — single keys in gsettings, GTK settings.ini and qt5ct/qt6ct.
+  `~/.config/gtk-4.0/gtk.css`: only a marked BIFROST_BEGIN/END `@import` block at the top (one-time backup), added
+  once Settings → Appearance → Apps is in use; the style itself is `~/.config/bifrost/gtk/nautilus.css`.
 - No personal paths (/home/<user>, ~/Projects) in anything installed or generated.
 - Version-sensitive code lives only in `shell/Compat/` and `shell/Compositor/*Backend.qml`;
   dependencies/min versions only in `dependencies.json`. UI uses the `Compositor` facade + capabilities.

@@ -1036,7 +1036,7 @@ ShellRoot {
     }
 
     function testPhase7() {
-        for (const m of ["Modules/Wallpaper/Wallpaper", "Settings/ProfilesPage", "Settings/TransferPage", "Settings/BluetoothPage", "Settings/DisplayPage", "Settings/GreeterControl", "Shared/BluetoothDevices", "Modules/Bar/Widgets/StatusMenu", "Modules/Bar/Widgets/AudioMenu", "Modules/Bar/Widgets/VpnMenu", "Modules/Bar/Widgets/NetworkMenu", "Modules/Bar/Widgets/BluetoothMenu", "Modules/Bar/Widgets/DisplayMenu", "Modules/Bar/SystemStatusPopup", "Modules/Bar/BarZone", "Settings/PageBase", "Settings/Card"]) {
+        for (const m of ["Modules/Wallpaper/Wallpaper", "Settings/ProfilesPage", "Settings/TransferPage", "Settings/BluetoothPage", "Settings/DisplayPage", "Settings/GreeterControl", "Settings/NautilusControl", "Shared/BluetoothDevices", "Modules/Bar/Widgets/StatusMenu", "Modules/Bar/Widgets/AudioMenu", "Modules/Bar/Widgets/VpnMenu", "Modules/Bar/Widgets/NetworkMenu", "Modules/Bar/Widgets/BluetoothMenu", "Modules/Bar/Widgets/DisplayMenu", "Modules/Bar/SystemStatusPopup", "Modules/Bar/BarZone", "Settings/PageBase", "Settings/Card"]) {
             const c = Qt.createComponent(Qt.resolvedUrl(m + ".qml"));
             check("compiles: " + m, c.status === Component.Ready, c.errorString());
         }

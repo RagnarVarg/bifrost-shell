@@ -124,6 +124,13 @@ Flickable {
             sourceComponent: Component { GreeterControl {} }
         }
 
+        Loader {
+            width: column.width
+            active: page.sectionId === "apps"
+            visible: active
+            sourceComponent: Component { NautilusControl {} }
+        }
+
         Repeater {
             id: groupRepeater
 

@@ -89,6 +89,10 @@
       "category": "appearance"
     },
     {
+      "file": "apps.json",
+      "category": "appearance"
+    },
+    {
       "file": "effects.json",
       "category": "appearance"
     },

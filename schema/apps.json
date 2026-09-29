@@ -1,0 +1,47 @@
+{
+  "section": "apps",
+  "label": "Apps",
+  "icon": "folder",
+  "description": "The look of individual applications. Files (Nautilus): the transparency of its left sidebar and right file list, each on its own, and blur behind the window. GTK reads its style when Files starts, so transparency changes reach open Files windows after Restart Files.",
+  "groups": {
+    "nautilus": "Files (Nautilus)"
+  },
+  "settings": [
+    {
+      "key": "apps.nautilus.sidebarTransparency",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "label": "Left sidebar transparency",
+      "description": "0 % = opaque (the theme's sidebar colour), 100 % = fully clear",
+      "group": "nautilus",
+      "scope": "hyprland"
+    },
+    {
+      "key": "apps.nautilus.contentTransparency",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "label": "Right pane transparency",
+      "description": "The file list and its toolbar. 0 % = opaque (the theme's view colour), 100 % = fully clear",
+      "group": "nautilus",
+      "scope": "hyprland"
+    },
+    {
+      "key": "apps.nautilus.blur",
+      "type": "bool",
+      "default": false,
+      "label": "Background blur",
+      "description": "Blurs what is behind the Files window, seen through its transparent parts. Hyprland blurs a whole window with one strength for every window (Glass & transparency → Background blur), so the strength can't differ per pane or per app; an opaque pane simply covers the blur",
+      "group": "nautilus",
+      "scope": "hyprland",
+      "requires": {
+        "compositor": ["hyprland"]
+      }
+    }
+  ]
+}

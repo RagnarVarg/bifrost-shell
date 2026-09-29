@@ -110,6 +110,49 @@ class BifrostctlTest(unittest.TestCase):
             self.assertIn("sdrbrightness = 8.8, sdrsaturation = 1.15, max_luminance = " + str(expected) + " })", text)
             self.assertEqual(text.count('apply_output({ output = "TEST"'), 1)
 
+    def test_nautilus_panes_are_independent_and_off_by_default(self):
+        """Files as shipped until used; then each pane its own theme colour
+        at (100 - transparency) %, and the window's own background cleared."""
+        self.assertEqual(ctl.nautilus_css(ctl.Config(ctl.Schema())).count("\n"), 1)
+        self.assertNotIn('window_rule("bifrost-nautilus"', ctl.generate_hypr(ctl.Config(ctl.Schema())))
+        ctl.main(["set", "apps.nautilus.sidebarTransparency", "100"])
+        ctl.main(["set", "apps.nautilus.contentTransparency", "5"])
+        css = ctl.nautilus_css(ctl.Config(ctl.Schema()))
+        self.assertIn("window.nautilus-window { background: transparent; }", css)
+        self.assertIn(".sidebar-pane { background-color: color-mix(in srgb, var(--sidebar-bg-color) 0%, transparent); }", css)
+        self.assertIn(".content-pane { background-color: color-mix(in srgb, var(--view-bg-color) 95%, transparent); }", css)
+
+    def test_nautilus_blur_rule_follows_the_app_noblur_rule(self):
+        """Rules of one priority apply in order: Files' own must come after
+        the global app no-blur rule, and pins opacity to 1."""
+        self.set_modes("materials.apps.blur", "false")
+        ctl.main(["set", "apps.nautilus.blur", "true"])
+        text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
+        rule = 'window_rule("bifrost-nautilus", { match = { class = "^org\\\\.gnome\\\\.Nautilus$" }, no_blur = false, opacity = "1.0 override" })'
+        self.assertIn(rule, text)
+        self.assertLess(text.index('window_rule("bifrost-apps-noblur"'), text.index(rule))
+
+    def test_nautilus_css_hooked_into_gtk_css_once_with_backup(self):
+        xdg = Path(self.tmp.name) / "xdg"
+        os.environ["XDG_CONFIG_HOME"] = str(xdg)
+        try:
+            gtk = xdg / "gtk-4.0" / "gtk.css"
+            gtk.parent.mkdir(parents=True)
+            gtk.write_text("label { color: red; }\n")
+            ctl.apply_nautilus_css(ctl.Config(ctl.Schema()))
+            self.assertNotIn("BIFROST_BEGIN", gtk.read_text())       # not in use: gtk.css untouched
+            ctl.main(["set", "apps.nautilus.sidebarTransparency", "40"])
+            for _ in range(2):
+                ctl.apply_nautilus_css(ctl.Config(ctl.Schema()))
+            text = gtk.read_text()
+            self.assertTrue(text.startswith(ctl.GTK_BLOCK_BEGIN))     # @import must come first
+            self.assertEqual(text.count("@import"), 1)
+            self.assertTrue(text.endswith("label { color: red; }\n"))
+            self.assertNotIn(str(Path.home()), text)
+            self.assertTrue((Path(self.tmp.name) / "backups" / "system" / "gtk-4.0__gtk.css.orig").exists())
+        finally:
+            del os.environ["XDG_CONFIG_HOME"]
+
     def test_window_frame_effects_on_by_default(self):
         cfg = ctl.Config(self.schema)
         cfg.set("hyprland.manage", True)
