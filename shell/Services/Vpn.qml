@@ -80,6 +80,21 @@ Singleton {
         function onProfilesChanged() { if (root.provider !== "pia") root.refreshNm(); }
     }
 
+    // The PIA daemon only connects while its GUI client runs or in background
+    // mode, so connecting from the bar turns background mode on first.
+    function togglePia() {
+        const done = (code, out, err) => {
+            if (code !== 0)
+                console.warn("[bifrost] piactl:", (err || out).trim());
+            busy = false;
+            root.refresh();
+        };
+        if (connected)
+            Exec.runOptional(["piactl", "disconnect"], done);
+        else
+            Exec.runOptional(["piactl", "background", "enable"], () => Exec.runOptional(["piactl", "connect"], done));
+    }
+
     function toggle() {
         if (busy)
             return;
@@ -92,13 +107,7 @@ Singleton {
                     provider = "pia";
                     applyPia(out);
 
-                    Exec.runOptional(
-                        ["piactl", connected ? "disconnect" : "connect"],
-                        () => {
-                            busy = false;
-                            root.refresh();
-                        }
-                    );
+                    root.togglePia();
                 } else {
                     busy = false;
                     root.refreshNm();
@@ -113,13 +122,7 @@ Singleton {
         busy = true;
 
         if (provider === "pia") {
-            Exec.runOptional(
-                ["piactl", connected ? "disconnect" : "connect"],
-                () => {
-                    busy = false;
-                    root.refresh();
-                }
-            );
+            togglePia();
         } else if (provider === "nm") {
             NetworkStatus.manage(
                 ["connection", connected ? "down" : "up", "uuid", nmConnection],

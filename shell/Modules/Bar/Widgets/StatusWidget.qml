@@ -101,7 +101,8 @@ BarWidget {
             id: vpn
 
             visible: Vpn.available
-            icon: "shield"
+            // Connected: a solid shield in full text colour.
+            icon: Vpn.phase === "on" ? "shield-filled" : "shield"
             dim: Vpn.phase === "off"
             strong: Vpn.phase === "on"
             busy: Vpn.phase === "connecting"
