@@ -64,7 +64,7 @@
         "keepResize": "Keep size + manual resize"
       },
       "label": "When a tiled window closes",
-      "description": "When closing a window leaves one tiled window on the workspace. Fill: it grows to fill the space (Hyprland's default). Keep current size: it stays where it was, floating, and tiles again when another window opens there. Keep size + manual resize: the same, but it stays floating so you can move and resize it freely; tile it again with Float/tile",
+      "description": "When closing a window leaves one tiled window on the workspace. Fill: it grows to fill the space (Hyprland's default). Keep current size: it stays where it was, floating; a window opened there takes the free space and it keeps its side and size. Keep size + manual resize: the same, but it stays floating so you can move and resize it freely; tile it again with Float/tile",
       "group": "tiling",
       "scope": "hyprland"
     },
