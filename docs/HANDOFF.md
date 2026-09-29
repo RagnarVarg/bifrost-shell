@@ -908,6 +908,23 @@ Validation: 535 QML, 46 CLI tests including HDR/hdredid/SDR persistence and gene
 - Raised the HDR desktop brightness slider maximum to 1500% (15x), with matching runtime and generated Hyprland limits. Default remains 100%.
 - Added generator coverage for 1500% and upper/lower clamping. Selftest: 536 QML, 49 CLI, 1 startup and 9 dependency tests pass; sandbox runtime still reports the known hyprctl version parse diagnostic.
 
+### Bifrost Effects — 2026-09-29
+- New section Settings → Appearance → **Bifrost Effects** (`schema/effects.json`, keys `effects.bar.*` and
+  `effects.windows.*`), colours and geometry in `themes/_base.json → effects` (`Theme.effects`): prism stops
+  cyan → blue → violet, highlight = `@glass.highlightColor`, edge = `@palette.void`, divider = `@color.text`.
+- Top bar (`Modules/Bar/BarEffects.qml`, between the panel glass and the zones; floating/attached panel only, not
+  the frame layout): reusable `Components/Effects/` — `EffectLine` (1 px line, faded ends, gap where a menu's
+  bridge joins the glass), `PrismWash`, `ShadeGradient`, `GlassCapsule`, `SectionDivider`, helpers in `Effects.js`.
+  All plain Rectangle gradients inside Loaders (off = not created); no shader, no extra blur. Capsule and dividers
+  only with Integrated widgets. `qs.Components.Effects` is imported by shell.qml and selftest.qml (entry files).
+- Window frame (bifrostctl `window_effects`, only with hyprland.manage): active border = frame colour at
+  Frame Opacity, with the prism as a 90° gradient on top (verified in nested: 90° = first colour at the top; one
+  gradient covers the whole border, so the top edge itself is cyan and blue → violet follow down the sides); inactive = inactive colour at opacity × inactiveShare;
+  Active Glow tints only the active shadow toward the prism blue; Inner Highlight = Hyprland 0.56 inner glow
+  (`decoration.glow`, fainter inactive); Focus Animation = leaves border/fadeGlow/fadeShadow/fadeSwitch with the
+  `bifrost_focus` curve (motion.easing.standard) at duration/100, or disabled. Effect off → the old plain border
+  and `glow = { enabled = false }`. Leaves stay as last set until Hyprland restarts when the whole effect is off.
+
 ### Minimize: Settings, shortcuts, gestures and transition (2026-09-27, Claude)
 - **Why SUPER+M did nothing:** `install_bin_lua` used a checkout's own `bin/` unless the install *was* that checkout
   (--link). `bifrostctl hypr apply` run from `~/Projects/bifrost-shell` next to the copied install wrote the repo's

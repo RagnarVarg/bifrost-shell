@@ -92,6 +92,39 @@ class BifrostctlTest(unittest.TestCase):
             text = ctl.generate_hypr(ctl.Config(self.schema))
             self.assertIn("sdrbrightness = 8.8, sdrsaturation = " + str(expected) + " })", text)
 
+    def test_window_frame_effects_on_by_default(self):
+        cfg = ctl.Config(self.schema)
+        cfg.set("hyprland.manage", True)
+        cfg.save()
+        text = ctl.generate_hypr(ctl.Config(self.schema))
+        self.assertIn("angle = 90 }", text)             # prism gradient on the active border
+        self.assertIn("glow = { enabled = true, range = 3", text)
+        self.assertIn('hl.animation({leaf="fadeGlow", enabled=true, speed=1.5, bezier="bifrost_focus"})', text)
+        self.assertNotIn('active_border = "rgb(', text)
+
+    def test_window_frame_effects_each_switch(self):
+        cfg = ctl.Config(self.schema)
+        cfg.set("hyprland.manage", True)
+        for key in ("prism", "innerHighlight", "focusAnimation"):
+            cfg.set("effects.windows." + key, False)
+        cfg.set("effects.windows.frameOpacity", 0.5)
+        cfg.save()
+        text = ctl.generate_hypr(ctl.Config(self.schema))
+        self.assertNotIn("angle = 90 }", text)
+        self.assertIn("glow = { enabled = false }", text)
+        self.assertIn('hl.animation({leaf="border", enabled=false})', text)
+        self.assertRegex(text, r'active_border = "rgba\([0-9a-f]{6}80\)"')   # 0.5 opacity
+
+    def test_window_frame_effects_off_keeps_plain_border(self):
+        cfg = ctl.Config(self.schema)
+        cfg.set("hyprland.manage", True)
+        cfg.set("effects.windows.enabled", False)
+        cfg.save()
+        text = ctl.generate_hypr(ctl.Config(self.schema))
+        self.assertIn('active_border = "rgb(', text)
+        self.assertIn("glow = { enabled = false }", text)
+        self.assertNotIn("bifrost_focus", text)
+
     def test_border_resize_applies_both_values_independently_of_appearance(self):
         cfg = ctl.Config(self.schema)
         cfg.set("hyprland.manage", False)

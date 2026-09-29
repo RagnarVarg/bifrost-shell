@@ -1749,6 +1749,79 @@ def theme_chain(cfg):
     return chain
 
 
+def theme_effects(cfg):
+    """Bifrost Effects tokens (themes → effects) of the active theme/variant."""
+    variant = effective_variant(cfg)
+    fx = {}
+    for theme in theme_chain(cfg):
+        for layer in (theme, theme.get("variants", {}).get(variant, {})):
+            fx.update(layer.get("effects", {}))
+    return fx
+
+
+def hypr_rgba(colour, alpha):
+    """"#rrggbb" + alpha 0–1 → Hyprland rgba(rrggbbaa)."""
+    return f"rgba({colour.lstrip('#')[:6].lower()}{round(max(0.0, min(1.0, alpha)) * 255):02x})"
+
+
+def mix_hex(a, b, t):
+    a, b = a.lstrip("#"), b.lstrip("#")
+    return "".join(f"{round(int(a[i:i + 2], 16) * (1 - t) + int(b[i:i + 2], 16) * t):02x}" for i in (0, 2, 4))
+
+
+# Hyprland animation leaves that carry a change of focus: border colour,
+# inner glow (highlight), shadow (active glow) and active/inactive opacity.
+FOCUS_LEAVES = ("border", "fadeGlow", "fadeShadow", "fadeSwitch")
+
+
+def window_effects(cfg, active, inactive, shadow_rgb, shadow_alpha, pal):
+    """Settings → Bifrost Effects → Window frame as Hyprland decoration: Lua
+    values for the borders, the active shadow (glow), the inner glow
+    (highlight) and the focus animations. None when the effect is off, so the
+    plain border from Windows & compositor stays exactly as it was."""
+    v = lambda k: deep_get(cfg.values, k)[0]
+    if not v("effects.windows.enabled"):
+        return None
+    tokens = theme_effects(cfg)
+    share = float(tokens.get("inactiveShare", 0.35))
+    prism = [c for c in tokens.get("prism", []) if isinstance(c, str) and c.startswith("#")]
+    opacity = float(v("effects.windows.frameOpacity"))
+    # Thin frame in the border colours, the inactive one much fainter.
+    frame_active = hypr_rgba(active, opacity)
+    active_border = lua_str(frame_active)
+    if v("effects.windows.prism") and len(prism) >= 3:
+        # Prism at the top of the focused window, fading into the frame.
+        # One gradient covers the whole border and Hyprland spreads its
+        # colours evenly along the angle (90° = first colour at the top), so
+        # the frame colour repeats to keep the prism in the upper quarter.
+        a = min(1.0, float(v("effects.windows.prismStrength")) * 4)
+        colours = [hypr_rgba(c, a) for c in prism] + [frame_active] * 6
+        active_border = "{ colors = { " + ", ".join(lua_str(c) for c in colours) + " }, angle = 90 }"
+    inactive_border = lua_str(hypr_rgba(inactive, opacity * share))
+    # Active glow: the focused window's shadow leans toward the prism blue.
+    shadow = hypr_rgba(shadow_rgb, shadow_alpha)
+    if v("effects.windows.glow") and len(prism) >= 2:
+        t = min(1.0, float(v("effects.windows.glowStrength")) * 5)
+        shadow = hypr_rgba(mix_hex(shadow_rgb, prism[1], t), shadow_alpha)
+    # Inner highlight: Hyprland's inner glow, thin and light, fainter when inactive.
+    glow = "{ enabled = false }"
+    if v("effects.windows.innerHighlight"):
+        light = pal.get("silverBright") or "#EEF2F7"
+        strength = float(v("effects.windows.innerHighlightStrength"))
+        glow = (f'{{ enabled = true, range = {int(tokens.get("windowInnerRange", 3))}, render_power = 3, '
+                f'color = {lua_str(hypr_rgba(light, strength))}, color_inactive = {lua_str(hypr_rgba(light, strength * share))} }}')
+    # Focus change: a short fade of all of the above (off = instant).
+    animations = ["-- Window frame effects: focus change (Settings → Bifrost Effects)"]
+    if v("effects.windows.focusAnimation"):
+        easing = json.loads((REPO / "themes/_base.json").read_text())["motion"]["easing"]["standard"]
+        speed = round(int(v("effects.windows.focusDuration")) / 100, 2)
+        animations.append(f'hl.curve("bifrost_focus", {{type="bezier", points={{{{{easing[0]},{easing[1]}}},{{{easing[2]},{easing[3]}}}}}}})')
+        animations += [f'hl.animation({{leaf={lua_str(leaf)}, enabled=true, speed={speed}, bezier="bifrost_focus"}})' for leaf in FOCUS_LEAVES]
+    else:
+        animations += [f'hl.animation({{leaf={lua_str(leaf)}, enabled=false}})' for leaf in FOCUS_LEAVES]
+    return {"active": active_border, "inactive": inactive_border, "shadow": shadow, "glow": glow, "animations": animations}
+
+
 def window_radius(cfg):
     """Same explicit-or-theme rounding as Theme.windowRadius (not bar material)."""
     own = deep_get(cfg.values, "hyprland.rounding")[0]
@@ -1861,17 +1934,21 @@ def generate_hypr(cfg) -> str:
         shadow_rgb = (pal.get("void") or "#000000").lstrip("#")
         shadow_alpha = round(min(1, shadow_base["opacity"]) * 255)
         shadow_colour = f"rgba({shadow_rgb}{shadow_alpha:02x})"
+        fx = window_effects(cfg, active, inactive, shadow_rgb, shadow_base["opacity"], pal)
         lines += [
             "-- Appearance (hyprland.manage)",
             "hl.config({",
             f"\tgeneral = {{ gaps_in = {v('hyprland.gapsIn')}, gaps_out = {v('hyprland.gapsOut')}, border_size = {v('hyprland.borderSize')},",
-            f'\t\tcol = {{ active_border = "rgb({active})", inactive_border = "rgb({inactive})" }} }},',
+            f'\t\tcol = {{ active_border = {fx["active"] if fx else lua_str(f"rgb({active})")}, inactive_border = {fx["inactive"] if fx else lua_str(f"rgb({inactive})")} }} }},',
             f"\tdecoration = {{ rounding = {rounding}, active_opacity = {round(1 - apps_t / 100, 3)}, inactive_opacity = {round(1 - apps_t / 100, 3)},",
-            f"\t\tshadow = {{ enabled = true, range = {shadow_range}, render_power = 3, color = \"{shadow_colour}\", color_inactive = \"{shadow_colour}\" }},",
+            f"\t\tshadow = {{ enabled = true, range = {shadow_range}, render_power = 3, color = {lua_str(fx['shadow'] if fx else shadow_colour)}, color_inactive = \"{shadow_colour}\" }},",
+            f"\t\tglow = {fx['glow'] if fx else '{ enabled = false }'},",
             f"\t\tblur = {{ enabled = {'true' if blur_on else 'false'}, size = {blur_size}, passes = {blur_passes} }} }},",
             "})",
             "",
         ]
+        if fx:
+            lines += fx["animations"] + [""]
     # Unnamed floating XWayland menus include transparent shadow margins.
     # Blurring those margins produces a large rounded rectangle around the menu.
     lines += [
