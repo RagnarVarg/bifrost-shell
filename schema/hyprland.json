@@ -6,6 +6,7 @@
   "groups": {
     "general": "General",
     "layout": "Layout",
+    "tiling": "Tiling",
     "decoration": "Border & corners (colours for the mode you're in)",
     "integration": "Integration"
   },
@@ -47,6 +48,25 @@
       "group": "layout",
       "scope": "hyprland",
       "dependsOn": "hyprland.manage"
+    },
+    {
+      "key": "hyprland.tiling.onClose",
+      "type": "enum",
+      "default": "fill",
+      "options": [
+        "fill",
+        "keep",
+        "keepResize"
+      ],
+      "optionLabels": {
+        "fill": "Fill available space",
+        "keep": "Keep current size",
+        "keepResize": "Keep size + manual resize"
+      },
+      "label": "When a tiled window closes",
+      "description": "When closing a window leaves one tiled window on the workspace. Fill: it grows to fill the space (Hyprland's default). Keep current size: it stays where it was, floating, and tiles again when another window opens there. Keep size + manual resize: the same, but it stays floating so you can move and resize it freely; tile it again with Float/tile",
+      "group": "tiling",
+      "scope": "hyprland"
     },
     {
       "key": "hyprland.borderSize",

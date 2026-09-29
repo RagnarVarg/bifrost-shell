@@ -153,6 +153,18 @@ class BifrostctlTest(unittest.TestCase):
         finally:
             del os.environ["XDG_CONFIG_HOME"]
 
+    def test_tiling_on_close_mode_reaches_the_helper(self):
+        """Fill (default) leaves Hyprland alone; the helper reads the mode at
+        every event, so the generated file always sets it."""
+        text = ctl.generate_hypr(ctl.Config(ctl.Schema()))
+        self.assertIn('state.tiling_close = "fill"', text)
+        self.assertIn('hl.on("window.close"', text)                     # inlined helper
+        for mode in ("keep", "keepResize"):
+            ctl.main(["set", "hyprland.tiling.onClose", mode])
+            self.assertIn(f'state.tiling_close = "{mode}"', ctl.generate_hypr(ctl.Config(ctl.Schema())))
+        with self.assertRaises(SystemExit):
+            ctl.main(["set", "hyprland.tiling.onClose", "shrink"])
+
     def test_window_frame_effects_on_by_default(self):
         cfg = ctl.Config(self.schema)
         cfg.set("hyprland.manage", True)

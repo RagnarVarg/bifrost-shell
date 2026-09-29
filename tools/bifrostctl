@@ -2020,6 +2020,13 @@ def generate_hypr(cfg) -> str:
     else:
         lines += ['if state.cursor and not __bifrost_verify then hl.exec_cmd("hyprctl setcursor default 24") end',
                   "state.cursor = nil", ""]
+    # Tiling (Settings → Windows & compositor → Tiling): shell/Compat/TilingKeep.lua.
+    # The mode is read at every close/open, so "fill" turns it off live.
+    on_close = v("hyprland.tiling.onClose")
+    on_close = on_close if on_close in ("fill", "keep", "keepResize") else "fill"
+    lines += ["-- Tiling: when a tiled window closes (Settings → Windows & compositor → Tiling)",
+              f"state.tiling_close = {lua_str(on_close)}",
+              "(function()\n" + (REPO / "shell/Compat/TilingKeep.lua").read_text() + "\nend)()(state)", ""]
     if (v("power.idle.screenOffMinutes") or 0) > 0:
         lines += ["-- Screen timeout (Settings → Power): any input turns the screens back on",
                   "hl.config({ misc = { key_press_enables_dpms = true, mouse_move_enables_dpms = true } })", ""]

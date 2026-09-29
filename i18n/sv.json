@@ -1164,5 +1164,11 @@
   "Restart Files": "Starta om Filer",
   "Couldn't restart Files: %1": "Kunde inte starta om Filer: %1",
   "Files isn't running; the style applies when it starts.": "Filer körs inte; stilen gäller när det startar.",
-  "Files restarted; windows reopened: %1": "Filer har startats om; fönster som öppnades igen: %1"
+  "Files restarted; windows reopened: %1": "Filer har startats om; fönster som öppnades igen: %1",
+  "Tiling": "Tiling",
+  "When a tiled window closes": "När ett tiled fönster stängs",
+  "Fill available space": "Fyll det lediga utrymmet",
+  "Keep current size": "Behåll nuvarande storlek",
+  "Keep size + manual resize": "Behåll storlek + manuell storleksändring",
+  "When closing a window leaves one tiled window on the workspace. Fill: it grows to fill the space (Hyprland's default). Keep current size: it stays where it was, floating, and tiles again when another window opens there. Keep size + manual resize: the same, but it stays floating so you can move and resize it freely; tile it again with Float/tile": "När en stängning lämnar ett tiled fönster kvar på arbetsytan. Fyll: det växer och fyller utrymmet (Hyprlands standard). Behåll nuvarande storlek: det ligger kvar där det var, flytande, och tilas igen när ett annat fönster öppnas där. Behåll storlek + manuell storleksändring: samma sak, men det förblir flytande så att du kan flytta och ändra storlek fritt; tila det igen med Flytande/tiled"
 }
