@@ -62,6 +62,7 @@ Item {
             ColorEditor: colorEditor,
             FontEditor: fontEditor,
             IconThemeEditor: iconThemeEditor,
+            CursorThemeEditor: cursorThemeEditor,
             ThemeEditor: themeEditor,
             WeatherLocationEditor: weatherLocationEditor,
             ListEditor: listEditor,
@@ -120,6 +121,12 @@ Item {
         id: iconThemeEditor
 
         IconThemeEditor {}
+    }
+
+    Component {
+        id: cursorThemeEditor
+
+        CursorThemeEditor {}
     }
 
     Component {

@@ -318,6 +318,38 @@
         2,
         3
       ]
+    },
+    {
+      "key": "appearance.cursor.theme",
+      "type": "string",
+      "default": null,
+      "nullable": true,
+      "label": "Pointer theme",
+      "description": "Empty = the system's. Applies to windows through Hyprland and to GTK apps",
+      "scope": "hyprland",
+      "requires": {
+        "compositor": [
+          "hyprland"
+        ]
+      },
+      "editor": "CursorThemeEditor"
+    },
+    {
+      "key": "appearance.cursor.size",
+      "type": "int",
+      "default": 24,
+      "min": 16,
+      "max": 64,
+      "step": 4,
+      "unit": "px",
+      "label": "Pointer size",
+      "description": "Used when a pointer theme is chosen",
+      "scope": "hyprland",
+      "requires": {
+        "compositor": [
+          "hyprland"
+        ]
+      }
     }
   ],
   "subpages": [

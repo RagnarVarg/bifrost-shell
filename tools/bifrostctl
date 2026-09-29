@@ -411,6 +411,32 @@ def icon_theme_exists(theme):
     return bool(theme) and read_index_theme(theme) is not None
 
 
+def installed_cursor_themes():
+    """XCursor themes: icon theme directories with a cursors/ folder."""
+    seen = {}
+    for b in icon_base_dirs():
+        if not b.is_dir():
+            continue
+        for t in sorted(b.iterdir()):
+            if t.name in seen or t.name == "default" or not (t / "cursors").is_dir():
+                continue
+            name = t.name
+            if (t / "index.theme").exists():
+                m = re.search(r"^Name\s*=\s*(.+)$", (t / "index.theme").read_text(errors="replace"), re.M)
+                name = m.group(1).strip() if m else name
+            seen[t.name] = {"id": t.name, "name": name}
+    return sorted(seen.values(), key=lambda x: x["id"].lower())
+
+
+def effective_cursor(cfg):
+    """(theme, size) Bifrost sets, or (None, size) when the system's is used."""
+    theme = deep_get(cfg.values, "appearance.cursor.theme")[0]
+    size = deep_get(cfg.values, "appearance.cursor.size")[0] or 24
+    if theme and not any(t["id"] == theme for t in installed_cursor_themes()):
+        theme = None
+    return theme, int(size)
+
+
 def system_icon_theme():
     """The icon theme the desktop uses when Bifrost doesn't choose one."""
     t = gsettings_get("org.gnome.desktop.interface", "icon-theme")
@@ -583,6 +609,7 @@ def appearance_apply(cfg, variant, dry=False):
     add = lambda t, st, d: rows.append({"target": t, "status": st, "detail": d})
     icons, source = effective_icon_theme(cfg, variant)
     manage_icons = source in ("default", "custom")
+    cursor, cursor_size = effective_cursor(cfg)
     gs = shutil.which("gsettings")
     iface = "org.gnome.desktop.interface"
 
@@ -604,6 +631,9 @@ def appearance_apply(cfg, variant, dry=False):
             add("gtk", "unsupported", f"no {variant} variant of the GTK theme {cur} is installed")
         if manage_icons:
             add("icons", "ok" if gset("icon-theme", icons) else "error", f"icon-theme = {icons}")
+        if cursor:
+            ok = gset("cursor-theme", cursor) and (dry or run(["gsettings", "set", iface, "cursor-size", str(cursor_size)])[0] == 0)
+            add("cursor", "ok" if ok else "error", f"cursor-theme = {cursor} ({cursor_size} px)")
     else:
         add("portal", "unsupported", "gsettings / org.gnome.desktop.interface not available")
     for gtk in ("gtk-3.0", "gtk-4.0"):
@@ -613,6 +643,9 @@ def appearance_apply(cfg, variant, dry=False):
                 ini_set(f, "Settings", "gtk-application-prefer-dark-theme", "1" if variant == "dark" else "0")
                 if manage_icons:
                     ini_set(f, "Settings", "gtk-icon-theme-name", icons)
+                if cursor:
+                    ini_set(f, "Settings", "gtk-cursor-theme-name", cursor)
+                    ini_set(f, "Settings", "gtk-cursor-theme-size", str(cursor_size))
             add(gtk, "ok", f"{f.name}: prefer-dark = {variant == 'dark'}")
     platform = os.environ.get("QT_QPA_PLATFORMTHEME", "")
     for qt in ("qt6ct", "qt5ct"):
@@ -1971,6 +2004,20 @@ def generate_hypr(cfg) -> str:
     # Screen timeout (Settings → Power): input wakes the displays in the
     # compositor itself, so screens Bifrost turned off come back even if the
     # shell is not running.
+    # Mouse pointer (Settings → Input → Mouse): the environment for
+    # the next start and apps launched from Hyprland, setcursor for a change
+    # at runtime (harmless at start, where the environment already did it). Back to the system's pointer when the choice is cleared.
+    cursor, cursor_size = effective_cursor(cfg)
+    if cursor:
+        lines += ["-- Mouse pointer (Settings → Input → Mouse)"]
+        lines += [f'hl.env({lua_str(k)}, {lua_str(str(val))})' for k, val in
+                  (("XCURSOR_THEME", cursor), ("XCURSOR_SIZE", cursor_size), ("HYPRCURSOR_THEME", cursor), ("HYPRCURSOR_SIZE", cursor_size))]
+        want = f"{cursor} {cursor_size}"
+        lines += [f'if state.cursor ~= {lua_str(want)} and not __bifrost_verify then hl.exec_cmd({lua_str("hyprctl setcursor " + shlex.quote(cursor) + " " + str(cursor_size))}) end',
+                  f"state.cursor = {lua_str(want)}", ""]
+    else:
+        lines += ['if state.cursor and not __bifrost_verify then hl.exec_cmd("hyprctl setcursor default 24") end',
+                  "state.cursor = nil", ""]
     if (v("power.idle.screenOffMinutes") or 0) > 0:
         lines += ["-- Screen timeout (Settings → Power): any input turns the screens back on",
                   "hl.config({ misc = { key_press_enables_dpms = true, mouse_move_enables_dpms = true } })", ""]
@@ -2147,6 +2194,9 @@ def main(argv=None):
     p.add_argument("theme", nargs="?")
     p.add_argument("--variant", choices=["light", "dark"])
     p.add_argument("--json", action="store_true")
+    p = sub.add_parser("cursors")
+    p.add_argument("action", choices=["list", "effective"])
+    p.add_argument("--json", action="store_true")
     p = sub.add_parser("appearance")
     p.add_argument("action", choices=["apply", "status"])
     p.add_argument("--variant", choices=["light", "dark"])
@@ -2279,6 +2329,14 @@ def main(argv=None):
                 raise SystemExit(f"icon theme '{theme}' not installed")
             f = icon_index_file(theme)
             print(json.dumps({"theme": theme, "file": str(f)}) if args.json else f)
+        return 0
+    if args.cmd == "cursors":
+        if args.action == "list":
+            items = installed_cursor_themes()
+            print(json.dumps(items) if args.json else "\n".join(f"{t['id']:<32} {t['name']}" for t in items))
+        else:
+            theme, size = effective_cursor(Config(Schema()))
+            print(json.dumps({"theme": theme, "size": size}) if args.json else f"{theme or 'system'} {size}")
         return 0
     if args.cmd == "appearance":
         cfg = Config(Schema())

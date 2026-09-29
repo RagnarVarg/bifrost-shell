@@ -397,6 +397,7 @@ ShellRoot {
             ["ThemeEditor", "appearance.theme", "bifrost-graphite"],
             ["WeatherLocationEditor", "clock.weather.location", {name:"Stockholm",lat:59.33,lon:18.07,zone:"Europe/Stockholm"}],
             ["IconThemeEditor", "appearance.icons.theme", "YAMIS"],
+            ["CursorThemeEditor", "appearance.cursor.theme", "Bibata-Modern-Classic"],
             ["ListEditor", "bar.screens", ["DP-2"]],
             ["ScreenListEditor", "bar.screens", ["DP-2"]],
             ["WidgetLayoutEditor", "bar.widgets", { left: [{ id: "clock" }], center: [], right: [] }],

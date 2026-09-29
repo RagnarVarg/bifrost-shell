@@ -167,6 +167,11 @@ PageBase {
             delegate: InputControl { required property var modelData; device: page.device; definition: modelData }
         }
     }
+    // The pointer's look is the same for every device.
+    SettingsRows {
+        visible: page.kind === "mouse" || page.kind === "trackpad"
+        keys: ["appearance.cursor.theme", "appearance.cursor.size"]
+    }
     InputGestures {
         visible: (page.kind === "trackpad" || page.kind === "gestures") && page.device !== null && page.device.capabilities.gestures === true
         device: page.device
