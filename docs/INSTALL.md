@@ -219,7 +219,20 @@ Skip all greeter installation with:
 ## Arch / CachyOS
 
 There is currently no automatic package transaction for Arch-based systems.
-Install the equivalent packages first and then run:
+Install the equivalent packages first:
+
+```sh
+sudo pacman -S --needed quickshell hyprland qt6-declarative qt6-svg qt6-wayland \
+  qt6-imageformats python python-gobject rsync util-linux dbus fontconfig \
+  noto-fonts xdg-user-dirs grim slurp wl-clipboard libnotify xdg-utils \
+  networkmanager nm-connection-editor bluez bluez-utils pipewire wireplumber \
+  libpulse upower power-profiles-daemon brightnessctl polkit \
+  xdg-desktop-portal-hyprland xdg-desktop-portal-gtk kitty
+```
+
+Optional: `ddcutil` (external monitor brightness), `greetd acl` (login
+screen), `nvidia-utils` (GPU widget) and, from the AUR, `ttf-geist-variable
+ttf-geist-mono-variable` (Bifrost's default fonts). Then run:
 
 ```sh
 ./install.sh
