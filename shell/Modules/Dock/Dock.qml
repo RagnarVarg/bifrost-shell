@@ -107,7 +107,7 @@ Scope {
 
                 enabled: dock.cfg.autohide && !window.free
                 smart: dock.cfg.smartHide
-                pointerInside: band.containsMouse
+                pointerInside: band.containsMouse || (revealStrip.active && revealStrip.containsMouse)
                 pinned: menu.visible || panelHost.open || previewHost.open || dragHandle.pressed || window.reorderKey !== ""
                 screenName: window.modelData.name
                 area: ({ x: band.x, y: band.y, width: band.width, height: band.height })
@@ -135,6 +135,7 @@ Scope {
             mask: Region {
                 item: menu.visible ? menuDismissArea : window.revealed ? (dock.cfg.autohide && !window.free ? band : glass) : revealStrip
 
+                Region { item: revealStrip.active ? revealStrip : null }
                 Region { item: previewHost.open ? previewHost : null }
                 Region {
                     item: panelHost.area.visible ? panelHost.area : null
@@ -150,14 +151,21 @@ Scope {
                 height: window.vertical ? window.geometry.height : window.geometry.height + (window.edge === "top" ? window.geometry.y : window.height-window.geometry.y-window.geometry.height)
                 hoverEnabled: true
                 acceptedButtons: Qt.NoButton
+            }
 
-                Item {
-                    id: revealStrip
-                    x: window.edge === "right" ? parent.width-width : 0
-                    y: window.edge === "bottom" ? parent.height-height : 0
-                    width: window.vertical ? Theme.space.xs : parent.width
-                    height: window.vertical ? parent.height : Theme.space.xs
-                }
+            // The whole screen edge reveals the dock, not only the part below
+            // it; it stays in the input mask while revealed so a pointer
+            // resting on the edge beside the dock keeps it shown.
+            MouseArea {
+                id: revealStrip
+
+                readonly property bool active: dock.cfg.autohide && !window.free && !menu.visible
+                x: window.edge === "right" ? window.width-width : 0
+                y: window.edge === "bottom" ? window.height-height : 0
+                width: window.vertical ? Theme.space.xs : window.width
+                height: window.vertical ? window.height : Theme.space.xs
+                hoverEnabled: true
+                acceptedButtons: Qt.NoButton
             }
 
             // Keep dock coordinates screen-local, but clip its artwork at
