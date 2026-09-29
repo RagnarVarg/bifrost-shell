@@ -64,7 +64,8 @@ Status: ✅ verifierat mot angiven version · ⚠️ antaget/overifierat · 🕓
 | Quickshell kraschhanterare | `greeter/session.sh` | ✅ | Vid SIGSEGV avslutas den startade processen (kod 255) och en ny startas fristående → launchern ser "ingen inloggning" och startar reserven. |
 | `start-hyprland -- …` (Hyprland 0.56) | `greeter/bin/bifrost-greeter` | ✅ nested | Utan den visar Hyprland en varningsbanner. |
 | `IdleMonitor { timeout, respectInhibitors, isIdle }` (Quickshell.Wayland, ext-idle-notify-v1) | `Modules/Idle/Idle.qml` | ✅ nested: släck efter 1 min, väck med pekare, lås efter 1 min, ändrad tid under körning | Behåller timeouten den skapades med → ny monitor per inställningsvärde (`Variants`). |
-| `hl.dsp.dpms({ action = "on"\|"off" })`, `misc.key_press_enables_dpms/mouse_move_enables_dpms` | `HyprlandBackend.setDisplaysPower`, generatorn | ✅ nested (`dpmsStatus`), verify ok | Väckningen i Hyprland gör att skärmen tänds även utan shell. |
+| `hl.dsp.dpms({ action = "on"\|"off" })`, `misc.key_press_enables_dpms/mouse_move_enables_dpms` | `HyprlandBackend.setDisplaysPower`, generatorn | ✅ nested (`dpmsStatus`), verify ok | Väckningen i Hyprland gör att skärmen tänds även utan shell. Skickas via `hyprctl dispatch '<lua>'`: svar `ok` + exit 0, annars `error: …` + exit ≠ 0 (verifierat 2026-09-29) – `Hyprland.dispatch` ger inget svar. |
+| `hyprctl monitors all -j` → `dpmsStatus`, `disabled` | `HyprlandBackend.queryDisplaysPower` (idle-väckningens kontroll) | ✅ | |
 | `hyprctl eval '<lua>'` | `HyprlandBackend.applySurfaceEffects` | ✅ | Runtime-only, fält valideras för `hl.layer_rule` (okända fält → fel). Lua-globaler består mellan eval-anrop. |
 | `hl.layer_rule({ match = { namespace = … }, blur, ignore_alpha, blur_popups })` | samma | ✅ | Återappliceras (tvingat) efter `configreloaded`. |
 | `hyprctl dispatch X` = `hl.dispatch(X)` i Lua-läge | — | ✅ | Klassisk syntax (`workspace 3`) fungerar **inte** längre med Lua-config. |

@@ -974,3 +974,20 @@ Validation: 535 QML, 46 CLI tests including HDR/hdredid/SDR persistence and gene
 - Produktion är **inte** längre en --link-installation: kör `./install.sh --no-hypr --no-greeter` + restart efter ändringar.
 - **Greetern**: installerad kopia (`/usr/share/bifrost-greeter`) har format 5 och vägrar synkad v6-config (visar
   standardutseende). Användaren behöver köra `sudo greeter/install-greeter.sh` igen.
+
+## 2026-09-29: skärm-idle – robust väckning och loggning (Claude)
+- *Felsökt kedja (användaren: "skärmen vaknar inte alltid efter idle", NVIDIA, G9 på DP-2, HDR 10-bit):*
+  ingen hypridle/swayidle; bara `Modules/Idle`. Användarens config har `power.idle.screenOffMinutes = 0` och
+  `suspendMinutes = 60` → Bifrost släcker **inte** skärmen; `*_enables_dpms` är därför av. Hyprland-loggen för sessionen
+  har 0 DPMS-händelser, journalen (börjar 2026-09-29 12:35) har ingen `[bifrost] idle:`-rad, ingen suspend, ingen
+  DP-hotplug/Xid. Dagens omstarter var rena shutdowns. Symtomet kunde alltså inte reproduceras ur loggarna.
+- *Svagheter i den gamla vägen:* `setDisplaysPower` gick via `Hyprland.dispatch` (inget svar → fel osynliga); väckningen
+  skickade alltid `dpms on` + en blind retry efter 700 ms (dubbla modesets även när Hyprland redan väckt skärmen);
+  ingen kontroll av `dpmsStatus`; DDC-pollning (`ddcutil detect` var 10:e s när en ljusstyrke-konsument finns) fortsatte
+  mot skärmen i standby.
+- *Nu:* `setDisplaysPower(on, cb)` via `hyprctl dispatch` (svar loggas), `queryDisplaysPower` (`dpmsStatus`).
+  Väckning: vänta 150 ms → läs status → bara skärmar som fortfarande är av får `dpms on`, kontroll efter 300/800/1500/3000 ms
+  → sist en off→on-cykel → felrad. Hotplug (`monitors`-händelse) inom 60 s efter väckning kör kontrollen igen.
+  `Brightness.paused` medan skärmarna är av. Loggar: `journalctl --user -u bifrost -g 'idle'`.
+  IPC `idle status | wake | testScreenOff <s>` (släcker och väcker med samma rutin efter 2–60 s, även utan input).
+- Kräver omstart av production (singletons Compositor/Brightness): `./install.sh --no-hypr --no-greeter` + restart.

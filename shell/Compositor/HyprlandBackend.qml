@@ -392,8 +392,30 @@ CompositorBackend {
         return true;
     }
 
-    function setDisplaysPower(on) {
-        return dispatch("hl.dsp.dpms({ action = " + lua(on ? "on" : "off") + " })", "dpms " + (on ? "on" : "off"));
+    // Through hyprctl rather than Hyprland.dispatch, which never answers: the
+    // reply ("ok", or the error) is what the idle log needs to show.
+    function setDisplaysPower(on, callback) {
+        const request = usingLua ? "hl.dsp.dpms({ action = " + lua(on ? "on" : "off") + " })" : "dpms " + (on ? "on" : "off");
+        Exec.run(["hyprctl", "dispatch", request], (code, out, err) => {
+            const ok = code === 0 && out.trim() === "ok";
+            if (!ok)
+                console.error("[bifrost] dpms", on ? "on" : "off", "failed (" + code + "):", (out + err).trim());
+            if (callback)
+                callback(ok);
+        }, 3000);
+        return true;
+    }
+
+    function queryDisplaysPower(callback) {
+        Exec.run(["hyprctl", "monitors", "all", "-j"], (code, out) => {
+            let list = null;
+            try {
+                list = JSON.parse(out).map(m => ({ name: m.name, enabled: !m.disabled, on: m.dpmsStatus !== false }));
+            } catch (e) {
+                console.error("[bifrost] cannot read display power:", code, e.message);
+            }
+            callback(list);
+        }, 3000);
     }
 
     // An empty submap: no Hyprland shortcut fires, every key reaches the

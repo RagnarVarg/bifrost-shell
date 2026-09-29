@@ -15,6 +15,9 @@ Singleton {
     property bool probed: false
     property string error: ""
     property int users: 0
+    // Set by the idle module while the screens are off: no DDC traffic to a
+    // monitor in standby (it can keep it from sleeping or disturb its wake).
+    property bool paused: false
     readonly property bool available: displays.length > 0
     readonly property string provider: available ? displays[0].provider : ""
     readonly property real value: available ? valueFor(displays[0]) : 0
@@ -75,6 +78,6 @@ Singleton {
     }
     Timer { id: applyTimer; interval: 150; onTriggered: root.applyNext() }
     // DDC has no push protocol. Refresh only while a consumer is visible.
-    Timer { interval: 10000; repeat: true; running: root.users > 0; onTriggered: root.refresh() }
+    Timer { interval: 10000; repeat: true; running: root.users > 0 && !root.paused; onTriggered: root.refresh() }
     Component.onCompleted: refresh()
 }

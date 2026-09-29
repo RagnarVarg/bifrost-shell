@@ -173,8 +173,17 @@ QtObject {
     }
 
     // Turns every display's power on or off (DPMS); input wakes them too.
-    function setDisplaysPower(on) {
+    // callback (optional) gets true once the compositor accepted the request.
+    function setDisplaysPower(on, callback) {
+        if (callback)
+            callback(false);
         return unsupported("displayPower");
+    }
+
+    // Each output's power as the compositor reports it:
+    // [{ name, enabled, on }], or null when it can't be read.
+    function queryDisplaysPower(callback) {
+        callback(null);
     }
 
     // While on, the compositor's own shortcuts are suspended so that a

@@ -253,8 +253,12 @@ Singleton {
         return backend.nextKeyboardLayout();
     }
 
-    function setDisplaysPower(on: bool): bool {
-        return backend.setDisplaysPower(on);
+    function setDisplaysPower(on: bool, callback: var): bool {
+        return backend.setDisplaysPower(on, callback);
+    }
+
+    function queryDisplaysPower(callback: var) {
+        backend.queryDisplaysPower(callback);
     }
 
     function setKeyCapture(on: bool): bool {
