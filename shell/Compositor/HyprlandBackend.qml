@@ -330,6 +330,10 @@ CompositorBackend {
             rule.sdrbrightness = Math.max(0.5, Math.min(15, Number(o.sdrBrightness) || 1));
         if (o.sdrSaturation !== undefined)
             rule.sdrsaturation = Math.max(0.5, Math.min(2, Number(o.sdrSaturation) || 1));
+        // Not reported by hyprctl: callers pass the saved value, as a rule
+        // without it falls back to the EDID peak.
+        if (o.maxLuminance !== undefined)
+            rule.max_luminance = Math.max(400, Math.min(1500, Math.round(Number(o.maxLuminance) || 1000)));
         if (o.cm)
             rule.cm = o.cm;
         if (o.cm === "hdr" || o.cm === "hdredid")

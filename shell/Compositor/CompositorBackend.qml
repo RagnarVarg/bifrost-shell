@@ -140,7 +140,8 @@ QtObject {
         callback([]);
     }
 
-    // Applies { name, width, height, refresh, x, y, scale, vrr, bitdepth, cm } at
+    // Applies { name, width, height, refresh, x, y, scale, vrr, bitdepth, cm,
+    // sdrBrightness?, sdrSaturation?, maxLuminance? (HDR peak, nits) } at
     // runtime (not persisted by the backend).
     function applyOutput(output) {
         return unsupported("applyOutput");

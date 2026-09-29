@@ -23,7 +23,13 @@ StatusMenu {
     }
 
     function current(o) {
-        return { name: o.name, width: o.width, height: o.height, refresh: o.refreshRate, x: o.x, y: o.y, scale: o.scale, vrr: o.vrr, bitdepth: o.bitdepth, cm: o.cm, sdrBrightness: o.sdrBrightness, sdrSaturation: o.sdrSaturation };
+        const c = { name: o.name, width: o.width, height: o.height, refresh: o.refreshRate, x: o.x, y: o.y, scale: o.scale, vrr: o.vrr, bitdepth: o.bitdepth, cm: o.cm, sdrBrightness: o.sdrBrightness, sdrSaturation: o.sdrSaturation };
+        // HDR peak isn't reported by Hyprland: carry the saved one, or the
+        // live rule would drop it.
+        const saved = (Config.get("displays.outputs") || {})[o.name];
+        if (saved && saved.maxLuminance !== undefined)
+            c.maxLuminance = saved.maxLuminance;
+        return c;
     }
 
     function setHdr(o, on) {

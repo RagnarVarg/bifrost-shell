@@ -92,6 +92,17 @@ class BifrostctlTest(unittest.TestCase):
             text = ctl.generate_hypr(ctl.Config(self.schema))
             self.assertIn("sdrbrightness = 8.8, sdrsaturation = " + str(expected) + " })", text)
 
+    def test_display_hdr_peak_luminance_bounds_and_sdr_values_kept(self):
+        cfg = ctl.Config(self.schema)
+        for peak, expected in ((1000, 1000), (2000, 1500), (100, 400), (1234.4, 1234)):
+            output = dict(width=1920, height=1080, refresh=60, x=0, y=0, scale=1, vrr=False, bitdepth=10,
+                          cm="hdr", sdrBrightness=8.8, sdrSaturation=1.15, maxLuminance=peak)
+            cfg.set("displays.outputs", {"TEST": output})
+            cfg.save()
+            text = ctl.generate_hypr(ctl.Config(self.schema))
+            self.assertIn("sdrbrightness = 8.8, sdrsaturation = 1.15, max_luminance = " + str(expected) + " })", text)
+            self.assertEqual(text.count('apply_output({ output = "TEST"'), 1)
+
     def test_window_frame_effects_on_by_default(self):
         cfg = ctl.Config(self.schema)
         cfg.set("hyprland.manage", True)
