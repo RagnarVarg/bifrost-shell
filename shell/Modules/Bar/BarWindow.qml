@@ -296,7 +296,9 @@ PanelWindow {
                         return GlassJoin.transform(a, (x,y) => frameGlass.mapFromItem(null,x,y));
                     }
                     attachment2: dockWindow ? dockJoin(dockWindow.frameAttachment) : null
-                    attachment3: dockWindow ? dockJoin(dockWindow.framePanelAttachment) : null
+                    // A dock panel, or the launcher grown out of the top edge (never both).
+                    readonly property var launcherJoin: ShellState.launcherFrameAttachment && ShellState.launcherScreen === root.modelData.name ? dockJoin(ShellState.launcherFrameAttachment) : null
+                    attachment3: launcherJoin || (dockWindow ? dockJoin(dockWindow.framePanelAttachment) : null)
                 }
 
                 // The panel glass (floating / attached; full or faint)

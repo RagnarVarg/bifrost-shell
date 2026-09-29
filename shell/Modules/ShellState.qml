@@ -20,6 +20,9 @@ Singleton {
     function toggleOverview() { if (overviewOpen) overviewOpen=false; else openOverview(); }
     property bool launcherOpen: false
     property string launcherScreen: ""
+    // Launcher placement "top" in the frame layout: the shape (screen
+    // coordinates, GlassJoin) the frame's glass grows out of its top edge.
+    property var launcherFrameAttachment: null
     property string launcherQuery: ""     // initial query for the next open
     property bool controlCenterOpen: false
     property string controlCenterScreen: ""
