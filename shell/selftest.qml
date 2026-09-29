@@ -389,6 +389,21 @@ ShellRoot {
     }
 
     // Each Settings editor bound to a real key must read and write through Config.
+    // Settings adapts to its window: one column below settingsCompactBelow,
+    // more room from settingsWideFrom; padding shrinks, headings stay close.
+    function testSettingsResponsive() {
+        const L = Theme.layout;
+        SettingsStyle.windowWidth = L.settingsCompactBelow - 1;
+        check("settings: narrow window is compact, sidebar is the page", SettingsStyle.compact && SettingsStyle.sidebarWidth === SettingsStyle.windowWidth && SettingsStyle.contentPadding < Theme.space.xxxl, SettingsStyle.size);
+        SettingsStyle.windowWidth = L.settingsWidth;
+        check("settings: default window is normal with the theme's sizes", SettingsStyle.size === "normal" && SettingsStyle.sidebarWidth === L.sidebarWidth && SettingsStyle.pageMaxWidth === L.pageMaxWidth && SettingsStyle.contentPadding === Theme.space.xxxl && SettingsStyle.titleScale === 1);
+        SettingsStyle.windowWidth = L.settingsWideFrom;
+        check("settings: wide window gets more room", SettingsStyle.wide && SettingsStyle.pageMaxWidth > L.pageMaxWidth && SettingsStyle.sidebarWidth > L.sidebarWidth);
+        check("settings: headings scale only a little", Math.abs(SettingsStyle.titleScale - 1) <= 0.1);
+        check("settings: minimum window is compact", L.settingsMinWidth < L.settingsCompactBelow && L.settingsCompactBelow < L.settingsWidth && L.settingsWidth < L.settingsWideFrom);
+        SettingsStyle.windowWidth = L.settingsWidth;
+    }
+
     function testGroupedSettings() {
         setGlass("materials.transparency", 40);
         Theme.rebuild();
@@ -1283,6 +1298,7 @@ ShellRoot {
             test.testMigrations();
             test.testTheme();
             test.testComponents();
+            test.testSettingsResponsive();
             test.testGroupedSettings();
             test.testEditors();
             test.prepareRowLayoutTests();

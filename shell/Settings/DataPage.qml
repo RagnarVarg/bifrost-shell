@@ -14,7 +14,7 @@ Flickable {
     property bool confirmReset: false
     readonly property var problems: Schema.errors.map(e => "Schema: " + e).concat(Config.loadError ? ["config.json: " + Config.loadError] : []).concat(Config.issues.map(i => i.message)).concat(Theme.issues.map(i => "Theme: " + i))
 
-    contentHeight: column.implicitHeight + Theme.space.xxxl * 2
+    contentHeight: column.implicitHeight + SettingsStyle.contentPadding * 2
     clip: true
     boundsBehavior: Flickable.StopAtBounds
 
@@ -57,14 +57,17 @@ Flickable {
     Column {
         id: column
 
-        x: Theme.space.xxxl
-        y: Theme.space.xxxl
-        width: Math.min(page.width - Theme.space.xxxl * 2, Theme.layout.pageMaxWidth)
+        x: SettingsStyle.contentPadding
+        y: SettingsStyle.contentPadding
+        width: Math.min(page.width - SettingsStyle.contentPadding * 2, SettingsStyle.pageMaxWidth)
         spacing: Theme.space.xl
 
         BText {
             text: I18n.tr("Data & diagnostics")
             role: "title"
+            font.pixelSize: Theme.typography.title.size * SettingsStyle.titleScale
+            width: parent.width
+            wrapMode: Text.WordWrap
         }
 
         Rectangle {

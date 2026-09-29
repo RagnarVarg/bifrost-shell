@@ -11,7 +11,7 @@ Flickable {
 
     readonly property var results: Schema.search(SettingsNav.query).filter(r => Schema.isSupported(r.key) && Schema.inMode(r.key))
 
-    contentHeight: column.implicitHeight + Theme.space.xxxl * 2
+    contentHeight: column.implicitHeight + SettingsStyle.contentPadding * 2
     clip: true
     boundsBehavior: Flickable.StopAtBounds
 
@@ -28,14 +28,17 @@ Flickable {
     Column {
         id: column
 
-        x: Theme.space.xxxl
-        y: Theme.space.xxxl
-        width: Math.min(page.width - Theme.space.xxxl * 2, Theme.layout.pageMaxWidth)
+        x: SettingsStyle.contentPadding
+        y: SettingsStyle.contentPadding
+        width: Math.min(page.width - SettingsStyle.contentPadding * 2, SettingsStyle.pageMaxWidth)
         spacing: Theme.space.md
 
         BText {
             text: I18n.tr("%n result(s) for “%1”", page.results.length).arg(SettingsNav.query)
             role: "title"
+            font.pixelSize: Theme.typography.title.size * SettingsStyle.titleScale
+            width: parent.width
+            wrapMode: Text.WordWrap
         }
 
         Repeater {

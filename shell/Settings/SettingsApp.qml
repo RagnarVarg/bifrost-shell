@@ -5,16 +5,43 @@ import qs.Components.Controls
 import qs.Components.Glass
 import qs.Components.Text
 
-// The Settings UI: sidebar + current page, with global banners.
+// The Settings UI: sidebar + current page, with global banners. Adapts to
+// its width (SettingsStyle): in a compact window it is one column, either the
+// navigation or the page (with a back button and the search field on top).
 Item {
     id: app
 
     property bool embedded: false
+    // Compact only: the page is shown instead of the navigation.
+    property bool showPage: true
 
     signal closeRequested
 
     function focusSearch() {
-        sidebar.focusSearch();
+        if (SettingsStyle.compact && showPage)
+            pageSearch.input.forceActiveFocus();
+        else
+            sidebar.focusSearch();
+    }
+
+    Binding {
+        target: SettingsStyle
+        property: "windowWidth"
+        value: app.width
+    }
+
+    // Typing in the navigation's search field shows the results page; the
+    // page's own field takes over with the same text.
+    Connections {
+        target: SettingsNav
+
+        function onQueryChanged() {
+            if (SettingsNav.query !== "" && SettingsStyle.compact && !app.showPage) {
+                app.showPage = true;
+                pageSearch.input.forceActiveFocus();
+                pageSearch.input.cursorPosition = SettingsNav.query.length;
+            }
+        }
     }
 
     GlassSurface {
@@ -27,11 +54,14 @@ Item {
         Sidebar {
             id: sidebar
 
-            width: Theme.layout.sidebarWidth
+            width: SettingsStyle.sidebarWidth
             height: parent.height
+            visible: !SettingsStyle.compact || !app.showPage
+            onNavigated: app.showPage = true
         }
 
         Rectangle {
+            visible: !SettingsStyle.compact
             x: sidebar.width
             width: Theme.border.hairline
             height: parent.height
@@ -41,16 +71,50 @@ Item {
         Item {
             id: main
 
-            x: sidebar.width + Theme.border.hairline
+            visible: !SettingsStyle.compact || app.showPage
+            x: SettingsStyle.compact ? 0 : sidebar.width + Theme.border.hairline
             width: parent.width - x
             height: parent.height
+
+            // Compact: back to the navigation, and search (results replace
+            // the page) next to it.
+            Row {
+                id: compactBar
+
+                visible: SettingsStyle.compact
+                x: Theme.space.lg
+                y: Theme.space.lg
+                width: main.width - x - close.width - Theme.space.lg * 2
+                spacing: Theme.space.md
+
+                BIconButton {
+                    id: back
+
+                    icon: "chevron-left"
+                    onClicked: {
+                        SettingsNav.query = "";
+                        app.showPage = false;
+                    }
+                }
+
+                BTextField {
+                    id: pageSearch
+
+                    width: parent.width - back.width - parent.spacing
+                    icon: "search"
+                    placeholder: I18n.tr("Search settings")
+                    text: SettingsNav.query
+                    onTextChanged: SettingsNav.query = text
+                    Keys.onEscapePressed: text = ""
+                }
+            }
 
             Column {
                 id: banners
 
-                x: Theme.space.xxxl
-                y: Theme.space.lg
-                width: Math.min(main.width - Theme.space.xxxl * 2 - close.width, Theme.layout.pageMaxWidth)
+                x: SettingsStyle.contentPadding
+                y: SettingsStyle.compact ? compactBar.y + compactBar.height + Theme.space.sm : Theme.space.lg
+                width: Math.min(main.width - SettingsStyle.contentPadding * 2 - (SettingsStyle.compact ? 0 : close.width), SettingsStyle.pageMaxWidth)
                 spacing: Theme.space.sm
 
                 Banner {

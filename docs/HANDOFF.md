@@ -991,3 +991,17 @@ Validation: 535 QML, 46 CLI tests including HDR/hdredid/SDR persistence and gene
   `Brightness.paused` medan skärmarna är av. Loggar: `journalctl --user -u bifrost -g 'idle'`.
   IPC `idle status | wake | testScreenOff <s>` (släcker och väcker med samma rutin efter 2–60 s, även utan input).
 - Kräver omstart av production (singletons Compositor/Brightness): `./install.sh --no-hypr --no-greeter` + restart.
+
+## 2026-09-29 — HDR peak, glass test fixes, Files (Nautilus), tiling on close, responsive Settings
+- Displays: HDR Peak Brightness (`max_luminance`, 400–1500 nits); Hyprland doesn't report it, so every live rule carries the saved value.
+- Per-mode glass keys (format 11): selftest/bifrostctl tests and three leftover base-key users fixed (shell.qml blur, greeter high contrast, Gallery tuning).
+- Appearance → Apps: Files sidebar/content transparency (GTK CSS in `~/.config/bifrost/gtk/nautilus.css`, imported from a marked block in
+  gtk-4.0/gtk.css) and blur (window rule after `bifrost-apps-noblur`). Hyprland has no per-window blur strength; GTK reads gtk.css once
+  per process ("Restart Files" reopens windows via FileManager1.OpenWindowsWithLocations). The user's own red test rules in gtk.css
+  are still there (`!important` makes GTK drop them); left for the user.
+- Windows & compositor → Tiling → When a tiled window closes: `shell/Compat/TilingKeep.lua` (window.close still sees old geometry;
+  float at it, resize before move; "keep" re-tiles on the next open via a timer). Tested in nested Hyprland.
+- Settings is responsive: `SettingsStyle.windowWidth` (bound by SettingsApp) → compact (< layout.settingsCompactBelow: one column,
+  navigation or page with back + search), normal (theme sizes), wide (≥ settingsWideFrom: wider sidebar/page). Min window size from
+  tokens. Compact toggles stay inline (SettingRow.inlineToggle, DisplayPage Field.inline). Verified offscreen at 380/700/1100/1560 px
+  (QT_QPA_PLATFORM=offscreen qs -p <harness> with SettingsApp at fixed widths + grabToImage).

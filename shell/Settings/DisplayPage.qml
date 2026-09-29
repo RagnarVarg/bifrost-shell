@@ -257,8 +257,10 @@ PageBase {
             component Field: Item {
                 id: field
                 property string label: ""
+                // A small control (toggle) stays next to its label.
+                property bool inline: false
                 default property alias control: slot.data
-                readonly property bool stacked: width < Theme.layout.editorWidth + Theme.control.height.md * 6
+                readonly property bool stacked: !inline && width < Theme.layout.editorWidth + Theme.control.height.md * 6
                 width: parent.width
                 height: stacked ? fieldLabel.implicitHeight + Theme.space.sm + slot.height : Math.max(fieldLabel.implicitHeight, slot.height)
                 BText {
@@ -273,7 +275,7 @@ PageBase {
                     id: slot
                     anchors.right: parent.right
                     y: field.stacked ? fieldLabel.height + Theme.space.sm : 0
-                    width: Math.min(parent.width, Theme.layout.editorWidth)
+                    width: field.inline ? Math.max(...children.map(c => c.implicitWidth || 0), 0) : field.stacked ? parent.width : Math.min(parent.width, Theme.layout.editorWidth)
                     height: Math.max(Theme.control.height.md, ...children.map(c => c.implicitHeight || 0))
                 }
             }
@@ -334,6 +336,7 @@ PageBase {
 
             Field {
                 label: I18n.tr("Variable refresh rate (VRR)")
+                inline: true
 
                 BToggle {
                     anchors.right: parent.right
@@ -345,6 +348,7 @@ PageBase {
 
             Field {
                 label: I18n.tr("High dynamic range (HDR)")
+                inline: true
 
                 BToggle {
                     anchors.right: parent.right

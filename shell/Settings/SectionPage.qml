@@ -70,7 +70,7 @@ Flickable {
 
         x: SettingsStyle.contentPadding
         y: SettingsStyle.contentPadding
-        width: Math.min(page.width - SettingsStyle.contentPadding * 2, Theme.layout.pageMaxWidth)
+        width: Math.min(page.width - SettingsStyle.contentPadding * 2, SettingsStyle.pageMaxWidth)
         spacing: SettingsStyle.groupSpacing
 
         Item {
@@ -86,6 +86,9 @@ Flickable {
                 BText {
                     text: page.section ? page.section.label : ""
                     role: "title"
+                    font.pixelSize: Theme.typography.title.size * SettingsStyle.titleScale
+                    width: parent.width
+                    wrapMode: Text.WordWrap
                 }
 
                 BText {

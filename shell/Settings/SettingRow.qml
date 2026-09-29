@@ -49,11 +49,14 @@ Item {
             return "TextEditor";
         }
     }
-    readonly property real editorWidth: Math.max(Theme.layout.editorWidth, editor.item ? editor.item.implicitWidth : 0)
+    // Compact Settings: a toggle keeps its own small width next to the text
+    // instead of reserving a full editor column and stacking under it.
+    readonly property bool inlineToggle: SettingsStyle.compact && editorName === "BoolEditor" && editor.item !== null
+    readonly property real editorWidth: inlineToggle ? editor.item.implicitWidth : Math.max(Theme.layout.editorWidth, editor.item ? editor.item.implicitWidth : 0)
     readonly property real innerWidth: Math.max(0, width - Theme.space.xl * 2)
     // Stack before the text column becomes narrower than a normal editor.
     // Use intrinsic control widths: translated segments can exceed the token.
-    readonly property bool wide: (editor.item && editor.item.wide) || innerWidth < editorWidth + resetButton.width + Theme.space.sm + Theme.space.xl + Theme.layout.editorWidth
+    readonly property bool wide: !inlineToggle && ((editor.item && editor.item.wide) || innerWidth < editorWidth + resetButton.width + Theme.space.sm + Theme.space.xl + Theme.layout.editorWidth)
     readonly property var editors: ({
             BoolEditor: boolEditor,
             NumberEditor: numberEditor,

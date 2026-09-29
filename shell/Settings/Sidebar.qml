@@ -10,6 +10,9 @@ import qs.Components.Text
 Item {
     id: sidebar
 
+    // A page was chosen (also the one already open): compact Settings shows it.
+    signal navigated
+
     Column {
         id: top
 
@@ -111,7 +114,10 @@ Item {
                             label: modelData.label
                             badge: Config.modifiedKeys(modelData.id).length
                             current: SettingsNav.query === "" && SettingsNav.page === modelData.id
-                            onClicked: SettingsNav.open(modelData.id)
+                            onClicked: {
+                                SettingsNav.open(modelData.id);
+                                sidebar.navigated();
+                            }
                         }
                     }
 
@@ -124,7 +130,10 @@ Item {
                             icon: modelData.icon
                             label: modelData.label
                             current: SettingsNav.query === "" && SettingsNav.page === modelData.id
-                            onClicked: SettingsNav.open(modelData.id)
+                            onClicked: {
+                                SettingsNav.open(modelData.id);
+                                sidebar.navigated();
+                            }
                         }
                     }
                 }

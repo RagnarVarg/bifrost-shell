@@ -105,7 +105,7 @@ ShellRoot {
         visible: settings.shown
         implicitWidth: Theme.layout.settingsWidth
         implicitHeight: Theme.layout.settingsHeight
-        minimumSize: Qt.size(800, 600)
+        minimumSize: Qt.size(Theme.layout.settingsMinWidth, Theme.layout.settingsMinHeight)
 
         // The compositor closed the toplevel (Super+Q, title bar): keep the
         // process and hide, so the next open maps the same window again.
