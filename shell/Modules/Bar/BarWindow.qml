@@ -8,6 +8,7 @@ import qs.Components.Motion
 import qs.Modules
 import qs.Modules.Launcher
 import "../../Shared/GlassJoin.js" as GlassJoin
+import "../../Components/Effects/Effects.js" as FX
 
 // The bar on one screen. Styles: floating (margin + radius), attached (edge
 // to edge, square), with a full, faint or no panel glass and widgets either
@@ -59,7 +60,9 @@ PanelWindow {
             m.radius = 0;
         return m;
     }
-    readonly property var panelMaterial: material
+    // Panel and frame glass with the top-bar Bifrost Effects (highlight,
+    // edge, prism, gradient) applied to the material the shader draws.
+    readonly property var panelMaterial: FX.barMaterial(material, Config.values.effects ? Config.values.effects.bar : null, Theme.effects)
     // Bubbles and islands: the Widgets glass (Glass & transparency). Unless
     // it has its own values they are the bar glass without a panel, and a
     // lighter glass within glass without their own shadow on a panel.
@@ -306,13 +309,11 @@ PanelWindow {
                     attachment: menuHost.attachmentFor(barGlass)
                 }
 
-                // Bifrost Effects: highlight, edge, prism, gradient, capsule,
-                // dividers (Settings → Appearance → Bifrost Effects).
+                // Bifrost Effects: centre capsule and section dividers (the
+                // glass effects are in panelMaterial).
                 BarEffects {
                     anchors.fill: parent
                     bar: root
-                    glass: barGlass
-                    frameSurface: frameGlass
                     leftZone: left
                     centerZone: center
                     rightZone: right

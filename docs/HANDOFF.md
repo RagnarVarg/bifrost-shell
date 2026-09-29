@@ -909,23 +909,25 @@ Validation: 535 QML, 46 CLI tests including HDR/hdredid/SDR persistence and gene
 - Added generator coverage for 1500% and upper/lower clamping. Selftest: 536 QML, 49 CLI, 1 startup and 9 dependency tests pass; sandbox runtime still reports the known hyprctl version parse diagnostic.
 
 ### Bifrost Effects — 2026-09-29
-- New section Settings → Appearance → **Bifrost Effects** (`schema/effects.json`, keys `effects.bar.*` and
-  `effects.windows.*`), colours and geometry in `themes/_base.json → effects` (`Theme.effects`): prism stops
-  cyan → blue → violet, highlight = `@glass.highlightColor`, edge = `@palette.void`, divider = `@color.text`.
-- Top bar (`Modules/Bar/BarEffects.qml`, between the panel glass and the zones; floating/attached panel and the
-  frame layout's bar strip — there the prism fades out toward the frame sides, the inner line stops at the hole's
-  corner radius and the light-to-dark gradient is off; edges are bar-relative: highlight outer, dark line toward
-  the windows): reusable `Components/Effects/` — `EffectLine` (1 px line, faded ends, gap where a menu's
-  bridge joins the glass), `PrismWash`, `ShadeGradient`, `GlassCapsule`, `SectionDivider`, helpers in `Effects.js`.
-  All plain Rectangle gradients inside Loaders (off = not created); no shader, no extra blur. Capsule and dividers
-  only with Integrated widgets. `qs.Components.Effects` is imported by shell.qml and selftest.qml (entry files).
-- Window frame (bifrostctl `window_effects`, only with hyprland.manage): active border = frame colour at
-  Frame Opacity, with the prism as a 90° gradient on top (verified in nested: 90° = first colour at the top; one
-  gradient covers the whole border, so the top edge itself is cyan and blue → violet follow down the sides); inactive = inactive colour at opacity × inactiveShare;
-  Active Glow tints only the active shadow toward the prism blue; Inner Highlight = Hyprland 0.56 inner glow
-  (`decoration.glow`, fainter inactive); Focus Animation = leaves border/fadeGlow/fadeShadow/fadeSwitch with the
-  `bifrost_focus` curve (motion.easing.standard) at duration/100, or disabled. Effect off → the old plain border
-  and `glow = { enabled = false }`. Leaves stay as last set until Hyprland restarts when the whole effect is off.
+- Settings → Appearance → **Bifrost Effects** (`schema/effects.json`, keys `effects.bar.*` / `effects.windows.*`);
+  colours and geometry in `themes/_base.json → effects` (`Theme.effects`): prism stops cyan → blue → violet,
+  highlight = `@glass.highlightColor`, edge = `@palette.void`, divider = `@color.text`.
+- Top bar glass effects are **material**, not overlays: `Effects.barMaterial()` (Components/Effects/Effects.js) turns
+  them into the bar's `panelMaterial` (panel and frame): highlight adds to `innerBorder` alpha, edge to `outerBorder`,
+  prism = `refraction` (× `effects.prismRefraction`) with `material.prismStops` (the shader's aurora colours;
+  GlassSurface prefers them over Theme.prism.stops), gradient adds to `highlight` and `depth`. The shader draws them
+  along the real shape (corners, frame hole, joined menus). The first version drew its own lines/washes on top: it
+  duplicated the shader's rim and its defaults sat on the theme's own rim (0.16/0.5), so nothing was visible.
+- Drawn on top (`Modules/Bar/BarEffects.qml`, integrated widgets only): `GlassCapsule` round the centre zone and
+  `SectionDivider`s halfway to the side zones.
+- Window frame (bifrostctl `window_effects`, with hyprland.manage): 1 px dark edge = border in `palette.void` at
+  Frame Opacity (inactive × max(inactiveShare, 0.5)); prism on top of the active border as a 90° gradient taking
+  `windowPrismShare` (90° = first colour at the top, checked in nested; one gradient covers the whole border, so the
+  top edge is cyan and blue/violet follow down the sides); Active Glow = active shadow in the prism blue at Glow
+  Strength (inactive keeps the dark shadow); Inner Highlight = Hyprland 0.56 inner glow (range 2, power 4,
+  fainter inactive); Focus Animation = leaves border/fadeGlow/fadeShadow/fadeSwitch, `bifrost_focus` curve, or off.
+  Effect off → the old plain border and `glow = { enabled = false }`; animation leaves stay as last set until
+  Hyprland restarts. Defaults tuned in nested Hyprland screenshots (glow 0.3 was a heavy halo → 0.18).
 
 ### Minimize: Settings, shortcuts, gestures and transition (2026-09-27, Claude)
 - **Why SUPER+M did nothing:** `install_bin_lua` used a checkout's own `bin/` unless the install *was* that checkout

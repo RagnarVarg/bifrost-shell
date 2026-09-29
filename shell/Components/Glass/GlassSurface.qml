@@ -136,7 +136,9 @@ Item {
         property real bevelStrength: root.material.bevelStrength || 0
         property real refraction: root.material.refraction || 0
         property real glow: root.material.glow || 0
-        readonly property var stops: Theme.prism.stops || []
+        // Refraction and glow colours: the material's own (Bifrost Effects'
+        // prism on the bar), else the theme's aurora.
+        readonly property var stops: root.material.prismStops || Theme.prism.stops || []
         property vector4d glowA: root.vec(stops[0] ? Qt.lighter(stops[0], 1.0) : root.highlightColor)
         property vector4d glowB: root.vec(stops[1] ? Qt.lighter(stops[1], 1.0) : root.highlightColor)
         property vector4d hole: root.hole.width > 0 ? Qt.vector4d(root.hole.x + ox, root.hole.y + oy, root.hole.width, root.hole.height) : Qt.vector4d(0, 0, 0, 0)

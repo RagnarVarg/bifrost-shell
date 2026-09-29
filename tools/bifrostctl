@@ -1786,29 +1786,33 @@ def window_effects(cfg, active, inactive, shadow_rgb, shadow_alpha, pal):
     share = float(tokens.get("inactiveShare", 0.35))
     prism = [c for c in tokens.get("prism", []) if isinstance(c, str) and c.startswith("#")]
     opacity = float(v("effects.windows.frameOpacity"))
-    # Thin frame in the border colours, the inactive one much fainter.
-    frame_active = hypr_rgba(active, opacity)
+    # 1 px dark outer edge (the border, in the palette's darkest colour),
+    # the inactive one fainter.
+    edge = (pal.get("void") or "#000000")
+    frame_active = hypr_rgba(edge, opacity)
     active_border = lua_str(frame_active)
     if v("effects.windows.prism") and len(prism) >= 3:
-        # Prism at the top of the focused window, fading into the frame.
+        # Prism at the top of the focused window, fading into the dark edge.
         # One gradient covers the whole border and Hyprland spreads its
         # colours evenly along the angle (90° = first colour at the top), so
-        # the frame colour repeats to keep the prism in the upper quarter.
-        a = min(1.0, float(v("effects.windows.prismStrength")) * 4)
-        colours = [hypr_rgba(c, a) for c in prism] + [frame_active] * 6
+        # the edge colour repeats until the prism takes windowPrismShare.
+        a = float(v("effects.windows.prismStrength"))
+        stops = max(1, round(2 / max(0.05, float(tokens.get("windowPrismShare", 0.2)))) - 1)
+        colours = [hypr_rgba(c, a) for c in prism] + [frame_active] * stops
         active_border = "{ colors = { " + ", ".join(lua_str(c) for c in colours) + " }, angle = 90 }"
-    inactive_border = lua_str(hypr_rgba(inactive, opacity * share))
-    # Active glow: the focused window's shadow leans toward the prism blue.
+    inactive_border = lua_str(hypr_rgba(edge, opacity * max(share, 0.5)))
+    # Active glow: the focused window's shadow becomes a soft prism-blue
+    # glow; inactive windows keep the plain dark shadow.
     shadow = hypr_rgba(shadow_rgb, shadow_alpha)
     if v("effects.windows.glow") and len(prism) >= 2:
-        t = min(1.0, float(v("effects.windows.glowStrength")) * 5)
-        shadow = hypr_rgba(mix_hex(shadow_rgb, prism[1], t), shadow_alpha)
-    # Inner highlight: Hyprland's inner glow, thin and light, fainter when inactive.
+        shadow = hypr_rgba(prism[1], float(v("effects.windows.glowStrength")))
+    # Inner highlight: Hyprland's inner glow, 1–2 px of light just inside the
+    # edge, fainter when inactive.
     glow = "{ enabled = false }"
     if v("effects.windows.innerHighlight"):
         light = pal.get("silverBright") or "#EEF2F7"
         strength = float(v("effects.windows.innerHighlightStrength"))
-        glow = (f'{{ enabled = true, range = {int(tokens.get("windowInnerRange", 3))}, render_power = 3, '
+        glow = (f'{{ enabled = true, range = {int(tokens.get("windowInnerRange", 2))}, render_power = 4, '
                 f'color = {lua_str(hypr_rgba(light, strength))}, color_inactive = {lua_str(hypr_rgba(light, strength * share))} }}')
     # Focus change: a short fade of all of the above (off = instant).
     animations = ["-- Window frame effects: focus change (Settings → Bifrost Effects)"]

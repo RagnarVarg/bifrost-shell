@@ -13,7 +13,7 @@
       "type": "bool",
       "default": true,
       "label": "Glass highlight",
-      "description": "A 1 px light line along the inside of the bar's top edge",
+      "description": "Strengthens the glass's 1 px light inner rim (brighter at the top)",
       "group": "bar"
     },
     {
@@ -32,7 +32,7 @@
       "type": "bool",
       "default": true,
       "label": "Bottom edge",
-      "description": "A very thin dark line along the bottom of the bar",
+      "description": "Deepens the thin dark line along the glass's edge toward the windows",
       "group": "bar"
     },
     {
@@ -51,13 +51,13 @@
       "type": "bool",
       "default": true,
       "label": "Prism effect",
-      "description": "A faint cyan → blue → violet wash across the bar",
+      "description": "A faint cyan → blue → violet colour split just inside the glass's edge",
       "group": "bar"
     },
     {
       "key": "effects.bar.prismStrength",
       "type": "real",
-      "default": 0.1,
+      "default": 0.35,
       "min": 0,
       "max": 1,
       "step": 0.01,
@@ -68,7 +68,7 @@
     {
       "key": "effects.bar.prismSaturation",
       "type": "real",
-      "default": 0.2,
+      "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
@@ -82,13 +82,13 @@
       "type": "bool",
       "default": true,
       "label": "Bar gradient",
-      "description": "Slightly lighter at the top and darker at the bottom",
+      "description": "More light at the top of the glass and more depth toward the bottom",
       "group": "bar"
     },
     {
       "key": "effects.bar.gradientStrength",
       "type": "real",
-      "default": 0.08,
+      "default": 0.1,
       "min": 0,
       "max": 1,
       "step": 0.01,
@@ -117,7 +117,7 @@
       "type": "bool",
       "default": true,
       "label": "Active frame effect",
-      "description": "Thin frame, inner highlight, glow and prism on application windows. Off = the plain border from Windows & compositor",
+      "description": "Dark outer edge, light inner edge, glow and prism on application windows. Off = the plain border from Windows & compositor",
       "group": "windows",
       "scope": "hyprland",
       "dependsOn": "hyprland.manage"
@@ -125,12 +125,12 @@
     {
       "key": "effects.windows.frameOpacity",
       "type": "real",
-      "default": 0.3,
+      "default": 0.9,
       "min": 0,
       "max": 1,
       "step": 0.01,
       "label": "Frame opacity",
-      "description": "Opacity of the thin outer frame; inactive windows get a fainter one",
+      "description": "Opacity of the 1 px dark outer edge; inactive windows get a fainter one",
       "group": "windows",
       "scope": "hyprland",
       "dependsOn": "effects.windows.enabled"
@@ -140,7 +140,7 @@
       "type": "bool",
       "default": true,
       "label": "Inner highlight",
-      "description": "A thin light edge just inside the window",
+      "description": "A 1–2 px light edge just inside the window",
       "group": "windows",
       "scope": "hyprland",
       "dependsOn": "effects.windows.enabled"
@@ -148,7 +148,7 @@
     {
       "key": "effects.windows.innerHighlightStrength",
       "type": "real",
-      "default": 0.15,
+      "default": 0.22,
       "min": 0,
       "max": 1,
       "step": 0.01,
@@ -173,7 +173,7 @@
     {
       "key": "effects.windows.glowStrength",
       "type": "real",
-      "default": 0.08,
+      "default": 0.18,
       "min": 0,
       "max": 1,
       "step": 0.01,
@@ -198,7 +198,7 @@
     {
       "key": "effects.windows.prismStrength",
       "type": "real",
-      "default": 0.12,
+      "default": 0.55,
       "min": 0,
       "max": 1,
       "step": 0.01,

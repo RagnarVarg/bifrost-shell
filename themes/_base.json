@@ -357,7 +357,7 @@
     }
   },
   "effects": {
-    "_comment": "Bifrost Effects (Settings → Appearance → Bifrost Effects). Colours and fixed geometry for the optional top-bar and window-frame effects; their strengths and on/off switches are settings (effects.*). prism = the cyan → blue → violet wash, lowered further by Prism Saturation. Everything is plain gradients and 1 px lines: no extra shader or blur. windowInnerRange = Hyprland inner-glow width (px) for the inner highlight; inactiveShare = how much of an active-window effect an inactive window keeps.",
+    "_comment": "Bifrost Effects (Settings → Appearance → Bifrost Effects). The bar's effects strengthen its glass material (the shader draws them along the real shape): highlight adds to the inner rim, the edge to the dark outer hairline, the prism becomes refraction in the prism colours (cyan → blue → violet, toned by Prism Saturation; prismRefraction = refraction per unit of Prism Strength), the gradient adds to the top light and the depth. capsule*/divider* = the centre capsule and section dividers. windowInnerRange = Hyprland inner-glow width (px) for the windows' inner highlight; inactiveShare = how much of an active-window effect an inactive window keeps; windowPrismShare = share of the border height the prism takes at the top.",
     "prism": ["#5CC8DC", "#6A8BEE", "#9B7DE6"],
     "highlightColor": "@glass.highlightColor",
     "edgeColor": "@palette.void",
@@ -365,11 +365,12 @@
     "dividerOpacity": 0.14,
     "dividerLength": 0.42,
     "lineWidth": 1,
-    "lineFade": 0.12,
+    "prismRefraction": 2,
     "capsuleFill": 0.05,
     "capsuleBorder": 0.1,
     "capsulePadding": "@space.sm",
-    "windowInnerRange": 3,
+    "windowInnerRange": 2,
+    "windowPrismShare": 0.2,
     "inactiveShare": 0.35
   },
   "prism": {

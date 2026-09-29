@@ -98,7 +98,7 @@ class BifrostctlTest(unittest.TestCase):
         cfg.save()
         text = ctl.generate_hypr(ctl.Config(self.schema))
         self.assertIn("angle = 90 }", text)             # prism gradient on the active border
-        self.assertIn("glow = { enabled = true, range = 3", text)
+        self.assertIn("glow = { enabled = true, range = 2", text)
         self.assertIn('hl.animation({leaf="fadeGlow", enabled=true, speed=1.5, bezier="bifrost_focus"})', text)
         self.assertNotIn('active_border = "rgb(', text)
 

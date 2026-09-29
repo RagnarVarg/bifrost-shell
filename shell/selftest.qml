@@ -341,7 +341,7 @@ ShellRoot {
             "Motion/BNumberAnimation", "Motion/BColorAnimation", "Controls/BButton", "Controls/BIconButton",
             "Controls/BToggle", "Controls/BSlider", "Controls/BSegmented", "Controls/BListRow",
             "Controls/BTextField", "Controls/BChip", "Controls/BDivider",
-            "Effects/EffectLine", "Effects/PrismWash", "Effects/ShadeGradient", "Effects/GlassCapsule", "Effects/SectionDivider"];
+            "Effects/GlassCapsule", "Effects/SectionDivider"];
         for (const f of files) {
             const c = Qt.createComponent(Qt.resolvedUrl("Components/" + f + ".qml"));
             check("component loads: " + f, c.status === Component.Ready, c.errorString());
@@ -355,16 +355,21 @@ ShellRoot {
     }
 
     function testEffects() {
-        eq("effect line: whole length without a gap", FX.segments(100, 0, 0), [[0, 100]]);
-        eq("effect line: a menu gap splits it", FX.segments(100, 40, 20), [[0, 40], [60, 100]]);
-        eq("effect line: a gap at the start", FX.segments(100, -10, 30), [[20, 100]]);
-        eq("effect line: a gap past the end", FX.segments(100, 120, 30), [[0, 100]]);
         const grey = FX.tone(Qt.color("#6A8BEE"), 0, 1);
         check("prism saturation 0 is grey", Math.abs(grey.hslSaturation) < 0.01 && grey.a === 1);
         const full = FX.tone(Qt.color("#6A8BEE"), 1, 0.5);
         check("prism saturation 1 keeps the colour", Math.abs(full.hslSaturation - Qt.color("#6A8BEE").hslSaturation) < 0.01 && Math.abs(full.a - 0.5) < 0.01);
         check("theme has three prism stops", (Theme.effects.prism || []).length === 3);
-        eq("effects defaults are cautious", [Config.values.effects.bar.highlightStrength, Config.values.effects.bar.prismStrength, Config.values.effects.windows.glowStrength, Config.values.effects.windows.focusDuration], [0.18, 0.1, 0.08, 150]);
+        eq("effects defaults", [Config.values.effects.bar.highlightStrength, Config.values.effects.bar.prismStrength, Config.values.effects.windows.glowStrength, Config.values.effects.windows.focusDuration], [0.18, 0.35, 0.18, 150]);
+        const base = { innerBorder: Qt.rgba(1, 1, 1, 0.16), outerBorder: Qt.rgba(0, 0, 0, 0.5), highlight: 0.06, depth: 0.36, refraction: 0 };
+        const all = { highlight: true, highlightStrength: 0.2, bottomEdge: true, bottomEdgeOpacity: 0.2, prism: true, prismStrength: 0.5, prismSaturation: 0.5, gradient: true, gradientStrength: 0.1 };
+        const on = FX.barMaterial(base, all, Theme.effects);
+        check("bar highlight strengthens the inner rim", Math.abs(Qt.color(on.innerBorder).a - 0.36) < 0.01);
+        check("bar edge deepens the outer hairline", Math.abs(Qt.color(on.outerBorder).a - 0.7) < 0.01);
+        check("bar prism becomes refraction in three prism colours", on.refraction > 0 && (on.prismStops || []).length === 3);
+        check("bar gradient adds light and depth", Math.abs(on.highlight - 0.16) < 0.001 && Math.abs(on.depth - 0.46) < 0.001);
+        const off = FX.barMaterial(base, { highlight: false, bottomEdge: false, prism: false, gradient: false }, Theme.effects);
+        check("bar effects off leave the material as it was", off.innerBorder === base.innerBorder && off.outerBorder === base.outerBorder && off.refraction === 0 && off.prismStops === undefined && off.highlight === 0.06 && off.depth === 0.36);
     }
 
     // Each Settings editor bound to a real key must read and write through Config.
