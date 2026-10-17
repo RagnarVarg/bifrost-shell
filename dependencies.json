@@ -373,6 +373,20 @@
       }
     },
     {
+      "id": "gpu-screen-recorder",
+      "level": "optional",
+      "purpose": "Screen recording (bifrost-screenshot record, Super+Shift+R)",
+      "check": {
+        "type": "executable",
+        "cmd": [
+          "gpu-screen-recorder"
+        ]
+      },
+      "install": {
+        "arch": "pacman -S gpu-screen-recorder"
+      }
+    },
+    {
       "id": "ddcutil",
       "level": "optional",
       "purpose": "Brightness of external monitors over DDC/CI",
