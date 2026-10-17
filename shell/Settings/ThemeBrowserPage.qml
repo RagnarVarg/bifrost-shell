@@ -75,18 +75,11 @@ PageBase {
                 role: "caption"
                 wrapMode: Text.Wrap
             }
-            // Palette preview uses the exact downloaded color data.
-            Row {
+            // Miniature desktop in the exact downloaded colours.
+            ThemePreview {
                 width: parent.width
-                Repeater {
-                    model: ["00", "01", "02", "05", "08", "0A", "0B", "0C", "0D", "0E"]
-                    delegate: Rectangle {
-                        required property string modelData
-                        width: parent.width / 10
-                        height: Theme.control.height.lg
-                        color: card.modelData.palette[modelData]
-                    }
-                }
+                height: implicitHeight
+                colors: card.modelData.palette
             }
             BText {
                 width: parent.width
