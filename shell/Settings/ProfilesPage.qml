@@ -31,7 +31,8 @@ PageBase {
 
     BText {
         text: I18n.tr("Presets")
-        role: "overline"
+        role: "caption"
+        font.weight: Theme.font.weight.semibold
         tone: "muted"
     }
 
@@ -62,7 +63,8 @@ PageBase {
 
     BText {
         text: I18n.tr("Profiles")
-        role: "overline"
+        role: "caption"
+        font.weight: Theme.font.weight.semibold
         tone: "muted"
     }
 

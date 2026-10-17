@@ -1,8 +1,6 @@
 import QtQuick
 import qs.Core
 import qs.Components.Controls
-import qs.Components.Icons
-import qs.Components.State
 import qs.Components.Text
 
 // Search results across all supported settings: one card of rows (section
@@ -45,114 +43,23 @@ Flickable {
             wrapMode: Text.WordWrap
         }
 
-        Item {
+        SettingsNavList {
             visible: page.results.length > 0
-            width: parent.width
-            height: rows.implicitHeight + SettingsStyle.groupInset * 2
 
-            SettingsGroupSurface {
-                anchors.fill: parent
-            }
+            Repeater {
+                model: page.results
 
-            Column {
-                id: rows
+                delegate: SettingsNavRow {
+                    required property var modelData
+                    required property int index
+                    readonly property var section: Schema.section(modelData.section)
 
-                y: SettingsStyle.groupInset
-                width: parent.width
-
-                Repeater {
-                    model: page.results
-
-                    delegate: Item {
-                        id: result
-
-                        required property var modelData
-                        required property int index
-                        readonly property var section: Schema.section(modelData.section)
-
-                        width: rows.width
-                        height: Math.max(tile.height, texts.implicitHeight) + SettingsStyle.rowPaddingY * 2
-
-                        SettingsDivider {
-                            visible: result.index > 0
-                            x: texts.x
-                            width: parent.width - x
-                        }
-
-                        StateLayer {
-                            anchors.fill: parent
-                            anchors.margins: SettingsStyle.groupInset
-                            radius: Theme.radius.md
-                            hovered: mouse.containsMouse
-                            pressed: mouse.pressed
-                        }
-
-                        Rectangle {
-                            id: tile
-
-                            x: SettingsStyle.rowPaddingX
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: Theme.control.tile.size
-                            height: width
-                            radius: Theme.control.tile.radius
-                            color: SettingsStyle.tileColor(result.modelData.section)
-                            border.width: Theme.border.hairline
-                            border.color: Theme.color.innerBorder
-
-                            BIcon {
-                                anchors.centerIn: parent
-                                name: result.section ? result.section.icon : ""
-                                size: Theme.control.tile.icon
-                                color: Theme.color.tileIcon
-                            }
-                        }
-
-                        Column {
-                            id: texts
-
-                            anchors.left: tile.right
-                            anchors.leftMargin: Theme.space.lg
-                            anchors.right: chevron.left
-                            anchors.rightMargin: Theme.space.md
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: SettingsStyle.descriptionSpacing
-
-                            BText {
-                                width: parent.width
-                                text: result.modelData.label
-                                role: "label"
-                                elide: Text.ElideRight
-                            }
-
-                            BText {
-                                width: parent.width
-                                text: (result.section ? result.section.label : "") + " · " + page.describe(Config.get(result.modelData.key))
-                                role: "caption"
-                                tone: "muted"
-                                elide: Text.ElideRight
-                            }
-                        }
-
-                        BIcon {
-                            id: chevron
-
-                            anchors.right: parent.right
-                            anchors.rightMargin: SettingsStyle.rowPaddingX
-                            anchors.verticalCenter: parent.verticalCenter
-                            name: "chevron-right"
-                            size: Theme.icon.size.sm
-                            color: Theme.color.iconMuted
-                        }
-
-                        MouseArea {
-                            id: mouse
-
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: SettingsNav.open(result.modelData.key)
-                        }
-                    }
+                    divider: index > 0
+                    icon: section ? section.icon : ""
+                    tileId: modelData.section
+                    title: modelData.label
+                    subtitle: (section ? section.label : "") + " · " + page.describe(Config.get(modelData.key))
+                    onClicked: SettingsNav.open(modelData.key)
                 }
             }
         }

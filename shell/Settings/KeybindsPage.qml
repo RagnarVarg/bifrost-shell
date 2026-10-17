@@ -98,7 +98,8 @@ PageBase {
 
             BText {
                 text: page.groupLabel(group.modelData)
-                role: "overline"
+                role: "caption"
+                font.weight: Theme.font.weight.semibold
                 tone: "muted"
             }
 

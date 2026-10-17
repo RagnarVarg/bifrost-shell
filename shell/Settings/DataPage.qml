@@ -149,7 +149,8 @@ Flickable {
 
         BText {
             text: page.problems.length ? I18n.tr("Problems") : I18n.tr("No problems found")
-            role: "overline"
+            role: "caption"
+            font.weight: Theme.font.weight.semibold
             tone: page.problems.length ? "warning" : "muted"
         }
 

@@ -40,7 +40,8 @@ PageBase {
     // ── Export
     BText {
         text: I18n.tr("Export")
-        role: "overline"
+        role: "caption"
+        font.weight: Theme.font.weight.semibold
         tone: "muted"
     }
 
@@ -66,7 +67,8 @@ PageBase {
     // ── Import bundle
     BText {
         text: I18n.tr("Import")
-        role: "overline"
+        role: "caption"
+        font.weight: Theme.font.weight.semibold
         tone: "muted"
     }
 
@@ -137,7 +139,8 @@ PageBase {
     BText {
         visible: page.dmsFound
         text: I18n.tr("From DankMaterialShell")
-        role: "overline"
+        role: "caption"
+        font.weight: Theme.font.weight.semibold
         tone: "muted"
     }
 
