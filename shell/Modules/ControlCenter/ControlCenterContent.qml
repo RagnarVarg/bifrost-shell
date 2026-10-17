@@ -256,8 +256,8 @@ Item {
 
             readonly property var names: ({
                     "power-saver": I18n.tr("Power saver"),
-                    "balanced": "Balanserad",
-                    "performance": "Prestanda"
+                    "balanced": I18n.tr("Balanced"),
+                    "performance": I18n.tr("Performance")
                 })
 
             BText {
