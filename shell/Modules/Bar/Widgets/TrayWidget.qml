@@ -43,8 +43,8 @@ BarWidget {
 
                 Image {
                     anchors.centerIn: parent
-                    width: Theme.icon.size.md
-                    height: Theme.icon.size.md
+                    width: Theme.icon.size.bar
+                    height: Theme.icon.size.bar
                     source: Tray.iconOf(icon.modelData)
                     sourceSize: Qt.size(width * 2, height * 2)
                     smooth: true

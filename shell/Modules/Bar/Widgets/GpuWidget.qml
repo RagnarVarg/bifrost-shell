@@ -29,7 +29,7 @@ BarWidget {
 
         BIcon {
             name: "display"
-            size: Theme.icon.size.sm
+            size: Theme.icon.size.bar
             color: GpuStats.usage >= widget.warn ? Theme.color.warning : Theme.color.text
         }
 

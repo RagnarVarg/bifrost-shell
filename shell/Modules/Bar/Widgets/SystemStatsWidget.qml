@@ -30,7 +30,7 @@ BarWidget {
 
         BIcon {
             name: readout.icon
-            size: Theme.icon.size.sm
+            size: Theme.icon.size.bar
             color: readout.warning ? Theme.color.warning : Theme.color.text
         }
 

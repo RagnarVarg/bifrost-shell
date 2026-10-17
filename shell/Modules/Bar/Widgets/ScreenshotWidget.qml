@@ -11,6 +11,6 @@ BarWidget {
         anchors.fill:parent
         padding:Theme.space.sm
         onClicked:Platform.launch(["bash",Paths.repoDir+"/bin/bifrost-screenshot","region"],{appId:"bifrost-screenshot"})
-        BIcon { name:"camera"; size:Theme.icon.size.md; color:Theme.color.text }
+        BIcon { name:"camera"; size:Theme.icon.size.bar; color:Theme.color.text }
     }
 }

@@ -18,7 +18,7 @@ BarWidget {
         vertical: widget.vertical
         selected: menu.isOpen
         onClicked: menu.click()
-        BIcon { color: Theme.color.text; name: Media.playing ? "play" : "music" }
+        BIcon { size: Theme.icon.size.bar; color: Theme.color.text; name: Media.playing ? "play" : "music" }
         BText {
             visible: !widget.vertical && Media.available
             width: Math.min(implicitWidth, Theme.layout.editorWidth)

@@ -34,7 +34,7 @@ BarWidget {
 
         BIcon {
             source: "file://" + Paths.assetsDir + "/brand/bifrost-mark.svg"
-            size: Theme.icon.size.lg
+            size: Theme.icon.size.bar
             color: "#FFFFFF"
         }
     }

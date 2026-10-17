@@ -71,7 +71,7 @@ BarWidget {
 
             anchors.centerIn: parent
             name: status.icon
-            size: Theme.icon.size.sm
+            size: Theme.icon.size.bar
             color: status.busy ? Theme.color.textMuted : status.dim ? Theme.color.textFaint : Theme.color.text
 
             SequentialAnimation on opacity {
