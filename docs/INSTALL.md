@@ -231,8 +231,8 @@ sudo pacman -S --needed quickshell hyprland qt6-declarative qt6-svg qt6-wayland 
 ```
 
 Optional: `ddcutil` (external monitor brightness), `greetd acl` (login
-screen), `nvidia-utils` (GPU widget) and, from the AUR, `ttf-geist-variable
-ttf-geist-mono-variable` (Bifrost's default fonts). Then run:
+screen), `nvidia-utils` (GPU widget), `inter-font` and, from the AUR,
+`ttf-geist-mono-variable` (Bifrost's default fonts). Then run:
 
 ```sh
 ./install.sh

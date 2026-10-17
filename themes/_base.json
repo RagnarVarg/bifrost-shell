@@ -111,7 +111,7 @@
     }
   },
   "font": {
-    "ui": "Geist",
+    "ui": "Inter",
     "mono": "Geist Mono",
     "size": {
       "xs": 10,
