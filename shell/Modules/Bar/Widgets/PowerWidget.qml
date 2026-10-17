@@ -19,7 +19,7 @@ BarWidget {
         Canvas {
             id: rune
             // The rune keeps its 11:15 shape at the shared bar icon height.
-            height: Theme.icon.size.bar - 5
+            height: Theme.icon.size.bar - 3
             width: Math.round(height * 11 / 15)
             anchors.centerIn: parent
 
@@ -33,7 +33,7 @@ BarWidget {
                 ctx.reset()
 
                 ctx.strokeStyle = rune.color
-                ctx.lineWidth = 1.9
+                ctx.lineWidth = 1.6
                 ctx.lineCap = "round"
                 ctx.lineJoin = "round"
 
