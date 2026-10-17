@@ -1005,3 +1005,12 @@ Validation: 535 QML, 46 CLI tests including HDR/hdredid/SDR persistence and gene
   navigation or page with back + search), normal (theme sizes), wide (≥ settingsWideFrom: wider sidebar/page). Min window size from
   tokens. Compact toggles stay inline (SettingRow.inlineToggle, DisplayPage Field.inline). Verified offscreen at 380/700/1100/1560 px
   (QT_QPA_PLATFORM=offscreen qs -p <harness> with SettingsApp at fixed widths + grabToImage).
+
+## 2026-10-17 — Settings i mac-stil (branch `ui/mac-style`, ej mergad)
+- Bara presentationslagret: sidomeny med sök överst och färgade ikonrutor (`Theme.color.tile`), rader kant i kant i
+  rundade kort, återställ vid hover, segmenterat för 2–4 val, färgprick, sökträffar som kort, centrerad kolumn 680 px,
+  in-animation vid sektionsbyte. Egna sidor (Inmatning, gester, enhetsrader) i samma radmönster. Detaljer och testlista:
+  `docs/PROGRESS.md`.
+- Offscreen-skärmbilder med glas och ikoner: `QT_QUICK_BACKEND=rhi QSG_RHI_BACKEND=opengl QT_QPA_PLATFORM=offscreen`
+  (mjukvarurenderaren ritar inga shaders, så ikoner och glas saknas där; Vulkan offscreen hänger sig).
+- Selftest 623/0. Väntar på användarens granskning innan merge och `./install.sh --no-hypr --no-greeter`.
