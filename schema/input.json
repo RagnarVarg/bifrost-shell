@@ -20,6 +20,30 @@
       }
     },
     {
+      "key": "input.trackpadDragLock",
+      "type": "enum",
+      "default": 1,
+      "options": [
+        0,
+        1,
+        2
+      ],
+      "optionLabels": {
+        "0": "Disabled",
+        "1": "With timeout",
+        "2": "Sticky"
+      },
+      "scope": "hyprland",
+      "apply": "live",
+      "label": "Trackpad drag lock",
+      "description": "When you lift your finger during a double-tap drag, the drag keeps holding for a moment (With timeout) or until the next tap (Sticky). A trackpad's own setting overrides this.",
+      "requires": {
+        "compositor": [
+          "hyprland"
+        ]
+      }
+    },
+    {
       "key": "input.devices",
       "type": "object",
       "default": {},

@@ -207,6 +207,13 @@ class BifrostctlTest(unittest.TestCase):
             text = ctl.generate_hypr(ctl.Config(self.schema))
             self.assertIn("resize_on_border = " + str(enabled).lower(), text)
 
+    def test_trackpad_drag_lock_defaults_to_timeout(self):
+        cfg = ctl.Config(self.schema)
+        self.assertIn("touchpad = { drag_lock = 1 }", ctl.generate_hypr(cfg))
+        cfg.set("input.trackpadDragLock", 2)
+        cfg.save()
+        self.assertIn("touchpad = { drag_lock = 2 }", ctl.generate_hypr(ctl.Config(self.schema)))
+
     def test_input_generator_verifies_all_device_kinds_and_gestures(self):
         cfg = ctl.Config(self.schema)
         cfg.set("input.devices", {
