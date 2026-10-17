@@ -594,7 +594,7 @@ ShellRoot {
     }
 
     function testBar() {
-        for (const w of ["ScreenshotWidget", "LauncherWidget", "WorkspacesWidget", "ActiveWindowWidget", "ClockWidget", "BatteryWidget", "MediaWidget", "SystemStatsWidget", "GpuWidget", "TrayWidget", "SettingsWidget", "SpacerWidget", "ControlCenterWidget", "StatusWidget", "DisplayWidget", "NotificationsWidget", "PowerWidget"]) {
+        for (const w of ["ScreenshotWidget", "ClaudeWidget", "LauncherWidget", "WorkspacesWidget", "ActiveWindowWidget", "ClockWidget", "BatteryWidget", "MediaWidget", "SystemStatsWidget", "GpuWidget", "TrayWidget", "SettingsWidget", "SpacerWidget", "ControlCenterWidget", "StatusWidget", "DisplayWidget", "NotificationsWidget", "PowerWidget"]) {
             const c = Qt.createComponent(Qt.resolvedUrl("Modules/Bar/Widgets/" + w + ".qml"));
             check("bar widget loads: " + w, c.status === Component.Ready, c.errorString());
             if (c.status === Component.Ready) {

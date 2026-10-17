@@ -2110,6 +2110,100 @@ GTK_BLOCK_BEGIN = "/* BIFROST_BEGIN (managed by Bifrost: Settings → Appearance
 GTK_BLOCK_END = "/* BIFROST_END */"
 
 
+# --- Claude Code hooks (bar widget "claude") --------------------------------
+# bin/bifrost-claude-hook keeps $XDG_RUNTIME_DIR/bifrost/claude.json up to date
+# from Claude Code's hooks; `bifrostctl claude install` registers it in Claude
+# Code's user settings (one-time backup), `uninstall` removes only ours.
+
+CLAUDE_HOOK_EVENTS = ["SessionStart", "SessionEnd", "UserPromptSubmit", "PreToolUse", "PostToolUse",
+                      "PermissionRequest", "Notification", "Stop", "StopFailure"]
+CLAUDE_HOOK_NAME = "bifrost-claude-hook"
+
+
+def claude_settings_file() -> Path:
+    base = os.environ.get("CLAUDE_CONFIG_DIR") or str(Path.home() / ".claude")
+    return Path(base) / "settings.json"
+
+
+def claude_hook_command() -> str:
+    """The hook's path; under $HOME written with $HOME (hooks run in a shell)."""
+    path = str(REPO / "bin" / CLAUDE_HOOK_NAME)
+    home = str(Path.home())
+    if path.startswith(home + "/"):
+        path = "$HOME" + path[len(home):]
+    return f'"{path}"' if " " in path else path
+
+
+def claude_hooks_snippet() -> dict:
+    cmd = claude_hook_command()
+    return {"hooks": {ev: [{"hooks": [{"type": "command", "command": cmd, "timeout": 5}]}] for ev in CLAUDE_HOOK_EVENTS}}
+
+
+def _claude_is_ours(handler) -> bool:
+    return isinstance(handler, dict) and CLAUDE_HOOK_NAME in str(handler.get("command", ""))
+
+
+def claude_hooks_status() -> dict:
+    f = claude_settings_file()
+    try:
+        data = json.loads(f.read_text()) if f.exists() else {}
+    except ValueError as e:
+        return {"file": str(f), "installed": False, "error": f"settings.json is not valid JSON: {e}"}
+    hooks = data.get("hooks") if isinstance(data, dict) else None
+    hooks = hooks if isinstance(hooks, dict) else {}
+    have = [ev for ev in CLAUDE_HOOK_EVENTS
+            if any(_claude_is_ours(h) for g in hooks.get(ev) or [] if isinstance(g, dict) for h in g.get("hooks") or [])]
+    return {"file": str(f), "installed": len(have) == len(CLAUDE_HOOK_EVENTS), "events": have}
+
+
+def claude_hooks_edit(install: bool) -> dict:
+    """Adds (or removes) Bifrost's hook for every event, leaving the user's
+    own hooks and settings as they are. Idempotent."""
+    f = claude_settings_file()
+    try:
+        data = json.loads(f.read_text()) if f.exists() else {}
+    except ValueError as e:
+        return {"ok": False, "error": f"{f} is not valid JSON ({e}); fix it first"}
+    if not isinstance(data, dict):
+        return {"ok": False, "error": f"{f} does not hold a JSON object"}
+    hooks = data.get("hooks")
+    if hooks is None:
+        hooks = {}
+    if not isinstance(hooks, dict):
+        return {"ok": False, "error": f'"hooks" in {f} is not an object'}
+    for ev in list(hooks):
+        groups = hooks[ev] if isinstance(hooks[ev], list) else []
+        kept = []
+        for g in groups:
+            if isinstance(g, dict) and isinstance(g.get("hooks"), list):
+                rest = [h for h in g["hooks"] if not _claude_is_ours(h)]
+                if not rest:
+                    continue
+                g = {**g, "hooks": rest}
+            kept.append(g)
+        if kept:
+            hooks[ev] = kept
+        elif ev in CLAUDE_HOOK_EVENTS and isinstance(hooks[ev], list):
+            del hooks[ev]
+    if install:
+        for ev, groups in claude_hooks_snippet()["hooks"].items():
+            hooks.setdefault(ev, [])
+            hooks[ev] = (hooks[ev] if isinstance(hooks[ev], list) else []) + groups
+    if hooks:
+        data["hooks"] = hooks
+    else:
+        data.pop("hooks", None)
+    text = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+    if f.exists() and f.read_text() == text:
+        return {"ok": True, "changed": False, "file": str(f)}
+    backup_once(f)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    tmp = f.with_name(f.name + ".bifrost-tmp")
+    tmp.write_text(text)
+    os.replace(tmp, f)
+    return {"ok": True, "changed": True, "file": str(f)}
+
+
 def nautilus_values(cfg):
     v = lambda k: deep_get(cfg.values, k)[0]
     clamp = lambda x: max(0, min(100, int(x or 0)))
@@ -2316,6 +2410,9 @@ def main(argv=None):
     p = sub.add_parser("nautilus", help="Files (Nautilus): Settings → Appearance → Apps")
     p.add_argument("action", choices=["css", "apply", "restart", "status"])
     p.add_argument("--json", action="store_true")
+    p = sub.add_parser("claude", help="Claude Code hooks for the bar's Claude widget")
+    p.add_argument("action", choices=["hooks", "install", "uninstall", "status"])
+    p.add_argument("--json", action="store_true")
     p = sub.add_parser("greeter", help="the login screen's copy of your look")
     p.add_argument("action", choices=["sync", "status", "enable", "disable"])
     p.add_argument("--json", action="store_true")
@@ -2380,6 +2477,24 @@ def main(argv=None):
         return 1 if any(st == "fail" for st, _, _ in rows) else 0
     if args.cmd == "doctor":
         return doctor(args)
+    if args.cmd == "claude":
+        if args.action == "hooks":
+            print(json.dumps(claude_hooks_snippet(), indent=2))
+            return 0
+        if args.action == "status":
+            st = claude_hooks_status()
+            print(json.dumps(st) if args.json else ("installed" if st["installed"] else st.get("error") or "not installed") + f" ({st['file']})")
+            return 0 if "error" not in st else 1
+        res = claude_hooks_edit(args.action == "install")
+        if args.json:
+            print(json.dumps(res))
+        elif not res["ok"]:
+            print(res["error"])
+        else:
+            what = "installed" if args.action == "install" else "removed"
+            print(f"{what} in {res['file']}" + ("" if res["changed"] else " (no change)")
+                  + ("; restart running Claude Code sessions to pick them up" if res["changed"] else ""))
+        return 0 if res["ok"] else 1
     if args.cmd == "greeter":
         cache = greeter_cache()
         if args.action == "sync":

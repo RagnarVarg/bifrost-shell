@@ -110,6 +110,56 @@ class BifrostctlTest(unittest.TestCase):
             self.assertIn("sdrbrightness = 8.8, sdrsaturation = 1.15, max_luminance = " + str(expected) + " })", text)
             self.assertEqual(text.count('apply_output({ output = "TEST"'), 1)
 
+    def test_claude_hooks_install_keeps_user_hooks_and_is_idempotent(self):
+        d = Path(self.tmp.name) / "claude"
+        d.mkdir()
+        f = d / "settings.json"
+        mine = {"hooks": [{"type": "command", "command": "notify-send done"}]}
+        f.write_text(json.dumps({"model": "opus", "hooks": {"Stop": [mine]}}))
+        with patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(d)}):
+            self.assertFalse(ctl.claude_hooks_status()["installed"])
+            self.assertTrue(ctl.claude_hooks_edit(True)["changed"])
+            self.assertFalse(ctl.claude_hooks_edit(True)["changed"])
+            st = ctl.claude_hooks_status()
+            self.assertTrue(st["installed"], st)
+            data = json.loads(f.read_text())
+            self.assertEqual(data["model"], "opus")
+            self.assertEqual(data["hooks"]["Stop"][0], mine)
+            self.assertEqual(sorted(data["hooks"]), sorted(ctl.CLAUDE_HOOK_EVENTS))
+            self.assertTrue(ctl.claude_hooks_edit(False)["ok"])
+            self.assertEqual(json.loads(f.read_text()), {"model": "opus", "hooks": {"Stop": [mine]}})
+            self.assertTrue((Path(self.tmp.name) / "backups" / "system" / "claude__settings.json.orig").exists())
+            f.write_text("{broken")
+            self.assertFalse(ctl.claude_hooks_edit(True)["ok"])
+            self.assertEqual(f.read_text(), "{broken")
+
+    def test_claude_hook_tracks_session_states(self):
+        import subprocess
+        run = Path(self.tmp.name) / "run"
+        run.mkdir()
+        hook = ctl.REPO / "bin" / "bifrost-claude-hook"
+        state = run / "bifrost" / "claude.json"
+
+        def send(event, **extra):
+            payload = {"session_id": "s1", "hook_event_name": event, "cwd": "/work/bifrost-shell", **extra}
+            subprocess.run([sys.executable, str(hook)], input=json.dumps(payload), text=True, check=True,
+                           env={**os.environ, "XDG_RUNTIME_DIR": str(run)})
+            sessions = json.loads(state.read_text())["sessions"]
+            return sessions[0]["state"] if sessions else None
+
+        self.assertEqual(send("SessionStart"), "idle")
+        self.assertEqual(send("UserPromptSubmit"), "working")
+        self.assertEqual(send("Notification", notification_type="permission_prompt", message="Allow Bash?"), "waiting")
+        self.assertEqual(json.loads(state.read_text())["sessions"][0]["message"], "Allow Bash?")
+        self.assertEqual(send("PreToolUse", tool_name="Bash"), "working")
+        self.assertEqual(send("Stop"), "done")
+        self.assertEqual(send("Notification", notification_type="idle_prompt"), "done")
+        self.assertEqual(json.loads(state.read_text())["sessions"][0]["project"], "bifrost-shell")
+        self.assertIsNone(send("SessionEnd"))
+        bad = subprocess.run([sys.executable, str(hook)], input="not json", text=True, capture_output=True,
+                             env={**os.environ, "XDG_RUNTIME_DIR": str(run)})
+        self.assertEqual(bad.returncode, 0)
+
     def test_nautilus_panes_are_independent_and_off_by_default(self):
         """Files as shipped until used; then each pane its own theme colour
         at (100 - transparency) %, and the window's own background cleared."""

@@ -21,6 +21,7 @@ Item {
     readonly property var components: ({
             launcher: launcher,
             screenshot: screenshot,
+            claude: claude,
             workspaces: workspaces,
             activeWindow: activeWindow,
             clock: clock,
@@ -68,6 +69,8 @@ Item {
     }
 
     Component { id: screenshot; ScreenshotWidget {} }
+
+    Component { id: claude; ClaudeWidget {} }
 
     Component {
         id: launcher

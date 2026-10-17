@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""Claude Code hook for the bar's Claude widget.
+
+Claude Code runs this for its session and turn events (hooks in
+~/.claude/settings.json; `bifrostctl claude hooks` prints them) with the
+event's JSON on stdin. It keeps one record per session and writes them all to
+$XDG_RUNTIME_DIR/bifrost/claude.json, which the widget watches:
+
+    {"sessions": [{"id", "state", "cwd", "project", "pids", "owner",
+                   "message", "updated"}]}
+
+state: idle (started, nothing asked yet) | working | waiting (needs you:
+permission, a question) | done (finished its turn).
+`pids` is the hook's process ancestry, so the shell can find the terminal
+window; `owner` is the Claude process, so ended sessions can be pruned.
+`bifrost-claude-hook --prune` drops sessions whose Claude process is gone.
+Never fails loudly: a hook must not get in Claude Code's way.
+"""
+import fcntl
+import json
+import os
+import sys
+import time
+
+RUNTIME = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
+STATE_DIR = os.path.join(RUNTIME, "bifrost")
+STATE_FILE = os.path.join(STATE_DIR, "claude.json")
+LOCK_FILE = os.path.join(STATE_DIR, ".claude.lock")
+
+WORKING = {"UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PostToolBatch",
+           "SubagentStart", "PreCompact"}
+NEEDS_YOU = {"permission_prompt", "elicitation_dialog", "elicitation_url_dialog", "agent_needs_input"}
+SHELLS = {"sh", "bash", "dash", "zsh", "fish", "python3", "python"}
+
+
+def ancestry(pid: int) -> list:
+    """Parent chain of `pid` (excluding it), nearest first, up to init."""
+    chain = []
+    while pid > 1 and len(chain) < 32:
+        try:
+            with open(f"/proc/{pid}/stat") as f:
+                # comm may contain spaces/parens: the ppid follows the last ')'.
+                pid = int(f.read().rsplit(")", 1)[1].split()[1])
+        except (OSError, ValueError, IndexError):
+            break
+        if pid > 1:
+            chain.append(pid)
+    return chain
+
+
+def comm(pid: int) -> str:
+    try:
+        with open(f"/proc/{pid}/comm") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+def alive(pid: int) -> bool:
+    return pid > 0 and os.path.exists(f"/proc/{pid}")
+
+
+def next_state(event: str, payload: dict, previous: str):
+    """New state for the session, or None to remove it, or previous to keep."""
+    if event == "SessionEnd":
+        return None
+    if event == "SessionStart":
+        return "idle"
+    if event in WORKING:
+        return "working"
+    if event == "PermissionRequest":
+        return "waiting"
+    if event == "Notification":
+        kind = payload.get("notification_type") or ""
+        if kind in NEEDS_YOU:
+            return "waiting"
+        return previous
+    if event in ("Stop", "StopFailure"):
+        return "done"
+    return previous
+
+
+def update(payload: dict, now: float):
+    sid = str(payload.get("session_id") or "")
+    event = str(payload.get("hook_event_name") or "")
+    # Subagents report through the main session's hooks; leave their stops be.
+    if not sid or (payload.get("agent_id") and event in ("Stop", "SubagentStop")):
+        return
+    os.makedirs(STATE_DIR, exist_ok=True)
+    with open(LOCK_FILE, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        sessions = load()
+        current = next((s for s in sessions if s.get("id") == sid), None)
+        state = next_state(event, payload, current.get("state", "idle") if current else "idle")
+        sessions = [s for s in sessions if s.get("id") != sid]
+        if state is not None:
+            pids = ancestry(os.getpid())
+            owner = next((p for p in pids if comm(p) not in SHELLS), pids[0] if pids else 0)
+            cwd = str(payload.get("cwd") or (current or {}).get("cwd") or "")
+            message = str(payload.get("message") or "") if state == "waiting" else ""
+            sessions.append({
+                "id": sid,
+                "state": state,
+                "cwd": cwd,
+                "project": os.path.basename(cwd.rstrip("/")) or cwd,
+                "pids": pids,
+                "owner": owner,
+                "message": message[:200],
+                "updated": int(now),
+            })
+        save(prune(sessions))
+
+
+def load() -> list:
+    try:
+        with open(STATE_FILE) as f:
+            data = json.load(f)
+        return [s for s in data.get("sessions", []) if isinstance(s, dict)]
+    except (OSError, ValueError, AttributeError):
+        return []
+
+
+def prune(sessions: list) -> list:
+    return [s for s in sessions if alive(int(s.get("owner") or 0))]
+
+
+def save(sessions: list):
+    tmp = STATE_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump({"sessions": sorted(sessions, key=lambda s: s.get("updated", 0))}, f)
+    os.replace(tmp, STATE_FILE)
+
+
+def main() -> int:
+    try:
+        if sys.argv[1:] == ["--prune"]:
+            if not os.path.exists(STATE_FILE):
+                return 0
+            with open(LOCK_FILE, "w") as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX)
+                sessions = load()
+                kept = prune(sessions)
+                if len(kept) != len(sessions):
+                    save(kept)
+            return 0
+        payload = json.load(sys.stdin)
+        if isinstance(payload, dict):
+            update(payload, time.time())
+    except Exception as e:  # noqa: BLE001 - a hook must never break Claude Code
+        print(f"bifrost-claude-hook: {e}", file=sys.stderr)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

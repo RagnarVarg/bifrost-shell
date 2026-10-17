@@ -107,6 +107,11 @@
       "id": "screenshot",
       "label": "Screenshot",
       "icon": "camera"
+    },
+    {
+      "id": "claude",
+      "label": "Claude Code",
+      "icon": "info"
     }
   ]
 }

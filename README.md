@@ -131,6 +131,15 @@ Bifrost's own login screen, replacing e.g. SDDM. Install it, then run
 sudo pacman -S --needed greetd acl
 ```
 
+Claude Code status in the bar: add the **Claude Code** widget (Settings →
+Bar), then let Claude Code report to it. This adds Bifrost's hook to
+`~/.claude/settings.json` (your own hooks are kept, a backup is made first;
+`uninstall` removes it again). Restart running Claude Code sessions afterwards.
+
+```sh
+bifrostctl claude install
+```
+
 The installer copies Bifrost to `~/.local/share/bifrost-shell`, links its
 commands (`bifrostctl`, `bifrost-settings`, …) into `~/.local/bin`, enables the
 `bifrost.service` user service and, after asking, adds one marked hook to your
