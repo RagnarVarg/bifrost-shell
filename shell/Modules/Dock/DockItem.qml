@@ -11,7 +11,7 @@ import qs.Modules
 import qs.Components.Glass
 import qs.Components.Icons
 
-// One dock entry. pinned-only: icon; running: dots; active: prism + accent bar.
+// One dock entry. pinned-only: icon; running: dot; active: prism + accent dot.
 // Hover lifts the icon slightly; previews only open for apps with windows.
 Item {
     id: dockItem
@@ -100,27 +100,19 @@ Item {
         }
     }
 
-    // Running / active indicator
-    Row {
+    // Running indicator: one dot under open apps, accent when active.
+    Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Theme.space.xxs
-        spacing: Theme.space.xxs
+        width: Theme.space.sm
+        height: width
+        radius: width / 2
         visible: dockItem.running
+        color: dockItem.isActive ? Theme.color.accent : Theme.color.textMuted
 
-        Repeater {
-            model: dockItem.isActive ? 1 : Math.min(3, dockItem.windowCount)
-
-            delegate: Rectangle {
-                width: dockItem.isActive ? Theme.space.lg : Theme.space.xs
-                height: Theme.space.xxs + 1
-                radius: height / 2
-                color: dockItem.isActive ? Theme.color.accent : Theme.color.textMuted
-
-                Behavior on width {
-                    BNumberAnimation {}
-                }
-            }
+        Behavior on color {
+            BColorAnimation {}
         }
     }
 
