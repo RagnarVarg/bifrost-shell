@@ -95,7 +95,7 @@
       "default": null,
       "nullable": true,
       "label": "Text and icons",
-      "description": "Shell text and monochrome icons, including the top panel. Empty uses the theme colour.",
+      "description": "Shell text and monochrome icons, including the panel. Empty uses the theme colour.",
       "group": "colors",
       "inherit": "palette.text",
       "nullLabel": "Theme",

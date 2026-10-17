@@ -1,6 +1,6 @@
 {
   "section": "bar",
-  "label": "Top bar",
+  "label": "Panel",
   "icon": "bar",
   "groups": {
     "general": "General",
@@ -43,7 +43,7 @@
         "frame"
       ],
       "optionLabels": {
-        "bar": "Top bar",
+        "bar": "Panel",
         "frame": "Frame"
       },
       "label": "Layout",

@@ -689,7 +689,7 @@ class BifrostctlTest(unittest.TestCase):
         for f in (ctl.REPO / "shell").rglob("*.js"):
             texts.update(re.findall(r'\btr\("((?:[^"\\]|\\.)*)"', f.read_text()))
         same = {"Bifrost", "Bluetooth", "Shell", "System", "Launcher", "Dock", "OSD", "GPU", "GB", "Media", "Popups", "Layout", "Integration",
-                "Workspaces", "Widgets", "Standard", "Terminal", "Boxed", "Integrated", "Top bar", "Control center", "Autohide", "Import & export",
+                "Workspaces", "Widgets", "Standard", "Terminal", "Boxed", "Integrated", "Control center", "Autohide", "Import & export",
                 "Widgets & info", "Monospace", "Processor", "Version %1", "%1 min", "%1 h", "Bifrost Settings", "System & GPU",
                 "Workspace %1"}
         missing = sorted(t for t in texts if t not in sv and t not in same)
