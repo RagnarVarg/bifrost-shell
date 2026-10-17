@@ -508,6 +508,54 @@ ShellRoot {
         eq("nav highlights key", SettingsNav.highlightKey, "bar.height");
     }
 
+    // Every supported schema setting of every schema section gets a row with
+    // its editor (the mac-style Settings must not lose any), the row's reset
+    // button restores the default, and enums pick segmented vs popup.
+    function testSettingsRowsComplete() {
+        const surface = Qt.createQmlObject("import QtQuick; Item { width: 900; height: 700; visible: false }", test);
+        const pc = Qt.createComponent(Qt.resolvedUrl("Settings/SectionPage.qml"));
+        if (pc.status !== Component.Ready) {
+            check("section page loads", false, pc.errorString());
+            return;
+        }
+        const met = d => Object.keys(d.dependsOnValue || {}).every(k => Array.isArray(d.dependsOnValue[k]) ? d.dependsOnValue[k].indexOf(Config.get(k)) >= 0 : Config.get(k) === d.dependsOnValue[k]);
+        let shown = 0, expected = 0;
+        const missing = [];
+        for (const s of Schema.sections) {
+            if (s.page || s.hidden || !Schema.isSectionSupported(s.id))
+                continue;
+            const page = pc.createObject(surface, { sectionId: s.id, width: 900, height: 700 });
+            for (const d of s.settings) {
+                if (!Schema.isSupported(d.key) || !Schema.inMode(d.key) || (d.hideUnlessMet && !met(d)))
+                    continue;
+                expected++;
+                const holder = page.rowFor(d.key);
+                const row = holder ? (holder.settingRow ? holder : holder.children.find(c => c.settingRow === true)) : null;
+                const control = row ? row.children.find(c => c.objectName === "settingControl") : null;
+                const editor = control ? control.children[0].item : null;
+                if (editor && editor.key === d.key)
+                    shown++;
+                else
+                    missing.push(d.key);
+            }
+            page.destroy();
+        }
+        check("settings: every schema setting has a row with its editor (" + shown + "/" + expected + ")", missing.length === 0 && expected > 100, missing);
+
+        const rc = Qt.createComponent(Qt.resolvedUrl("Settings/SettingRow.qml"));
+        const row = rc.createObject(surface, { key: "dock.autohide", width: 700 });
+        const before = Config.get("dock.autohide");
+        Config.set("dock.autohide", !before);
+        const reset = row.children.find(c => c.objectName === "settingReset");
+        check("settings: modified row offers reset", row.modified && reset.enabled);
+        reset.clicked();
+        check("settings: row reset restores the default", !Config.isModified("dock.autohide") && !reset.enabled);
+        row.destroy();
+        const pick = key => { const r = rc.createObject(surface, { key: key, width: 700 }); const n = r.editorName; r.destroy(); return n; };
+        eq("settings: 2-4 short choices are segmented, longer lists a popup", [pick("bar.position"), pick("osd.position"), pick("notifications.position")], ["SegmentedEditor", "SegmentedEditor", "EnumEditor"]);
+        surface.destroy();
+    }
+
     property var layoutCases: []
 
     function prepareRowLayoutTests() {
@@ -1301,6 +1349,7 @@ ShellRoot {
             test.testSettingsResponsive();
             test.testGroupedSettings();
             test.testEditors();
+            test.testSettingsRowsComplete();
             test.prepareRowLayoutTests();
             test.testEffects();
             test.testBar();

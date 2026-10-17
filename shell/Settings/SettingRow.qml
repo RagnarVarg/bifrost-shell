@@ -284,6 +284,7 @@ Item {
     // (or the button has keyboard focus). Stacked rows put it by the label.
     BIconButton {
         id: resetButton
+        objectName: "settingReset"
 
         x: row.wide ? row.width - width - SettingsStyle.rowPaddingX : editorArea.x - width - Theme.space.sm
         y: row.wide ? texts.y + (label.height - height) / 2 : editorArea.y + (Math.min(editorArea.height, Theme.control.height.md) - height) / 2
