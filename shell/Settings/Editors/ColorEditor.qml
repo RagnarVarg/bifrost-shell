@@ -2,10 +2,12 @@ import QtQuick
 import qs.Core
 import qs.Components.Controls
 import qs.Components.State
+import qs.Components.Text
 
-// Colour setting: swatch (click opens the HSV picker), hex field, quick picks
-// from the theme palette and "Bifrost default" for nullable colours. The
-// picker previews live: every drag step is written through Config, and both
+// Colour setting: a round colour dot with its hex value; clicking the dot
+// opens the HSV picker, a hex field and quick picks from the theme palette.
+// "Bifrost default" returns a nullable colour to the theme. The picker
+// previews live: every drag step is written through Config, and both
 // Settings and the shell restyle at once.
 EditorBase {
     id: editor
@@ -16,29 +18,40 @@ EditorBase {
     property bool open: false
 
     implicitWidth: Theme.layout.settingsEditorWidth
-    implicitHeight: top.height + Theme.space.sm + (open ? picker.implicitHeight + Theme.space.md : 0) + quick.height
+    implicitHeight: top.height + (open ? Theme.space.md + panel.implicitHeight : 0)
 
-    Flow {
+    Row {
         id: top
 
         anchors.right: parent.right
-        width: parent.width
-        spacing: Theme.space.sm
+        height: Theme.control.height.md
+        spacing: Theme.space.md
 
         BChip {
             visible: editor.def.nullable === true
+            anchors.verticalCenter: parent.verticalCenter
             text: I18n.tr("Bifrost default")
             selected: editor.isNull
             onClicked: editor.set(null)
         }
 
+        BText {
+            anchors.verticalCenter: parent.verticalCenter
+            text: editor.shown.toUpperCase()
+            role: "mono"
+            tone: editor.isNull ? "faint" : "muted"
+        }
+
         Item {
-            width: Theme.control.height.md
-            height: Theme.control.height.md
+            id: dot
+
+            anchors.verticalCenter: parent.verticalCenter
+            width: Theme.control.height.sm
+            height: width
 
             Rectangle {
                 anchors.fill: parent
-                radius: Theme.control.radius
+                radius: width / 2
                 color: editor.shown || "transparent"
                 border.width: editor.open ? Theme.border.focus : Theme.border.hairline
                 border.color: editor.open ? Theme.color.focus : Theme.color.innerBorder
@@ -46,12 +59,16 @@ EditorBase {
 
             StateLayer {
                 anchors.fill: parent
-                radius: Theme.control.radius
-                hovered: swatchMouse.containsMouse
+                radius: width / 2
+                hovered: dotMouse.containsMouse
+                focused: dot.activeFocus
             }
 
+            activeFocusOnTab: true
+            Keys.onSpacePressed: editor.open = !editor.open
+
             MouseArea {
-                id: swatchMouse
+                id: dotMouse
 
                 anchors.fill: parent
                 hoverEnabled: true
@@ -59,9 +76,27 @@ EditorBase {
                 onClicked: editor.open = !editor.open
             }
         }
+    }
+
+    Column {
+        id: panel
+
+        anchors.top: top.bottom
+        anchors.topMargin: Theme.space.md
+        anchors.right: parent.right
+        width: Math.min(parent.width, Theme.layout.settingsEditorWidth)
+        spacing: Theme.space.md
+        visible: editor.open
+
+        BColorPicker {
+            width: parent.width
+            color: editor.shown || Theme.palette.accent
+            onPicked: hex => editor.set(hex)
+        }
 
         BTextField {
-            width: Theme.space.xxxl * 4
+            width: parent.width
+            icon: "palette"
             text: editor.shown
             onAccepted: t => {
                 const h = (t.startsWith("#") ? t : "#" + t).toUpperCase();
@@ -69,62 +104,46 @@ EditorBase {
                     editor.set(h);
             }
         }
-    }
 
-    BColorPicker {
-        id: picker
+        Flow {
+            width: parent.width
+            spacing: Theme.space.xs
 
-        anchors.top: top.bottom
-        anchors.topMargin: Theme.space.md
-        anchors.right: parent.right
-        width: Math.min(parent.width, Theme.layout.settingsEditorWidth)
-        visible: editor.open
-        color: editor.shown || Theme.palette.accent
-        onPicked: hex => editor.set(hex)
-    }
+            Repeater {
+                model: editor.picks
 
-    Flow {
-        id: quick
+                delegate: Item {
+                    id: pick
 
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        width: parent.width
-        spacing: Theme.space.xs
+                    required property string modelData
 
-        Repeater {
-            model: editor.picks
+                    width: Theme.control.height.sm
+                    height: Theme.control.height.sm
 
-            delegate: Item {
-                id: pick
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: Theme.space.xxs
+                        radius: width / 2
+                        color: pick.modelData
+                        border.width: Theme.border.hairline
+                        border.color: Theme.color.innerBorder
+                    }
 
-                required property string modelData
+                    StateLayer {
+                        anchors.fill: parent
+                        radius: width / 2
+                        hovered: pickMouse.containsMouse
+                        selected: !editor.isNull && String(editor.value).toUpperCase() === pick.modelData.toUpperCase()
+                    }
 
-                width: Theme.control.height.sm
-                height: Theme.control.height.sm
+                    MouseArea {
+                        id: pickMouse
 
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.margins: Theme.space.xxs
-                    radius: width / 2
-                    color: pick.modelData
-                    border.width: Theme.border.hairline
-                    border.color: Theme.color.innerBorder
-                }
-
-                StateLayer {
-                    anchors.fill: parent
-                    radius: width / 2
-                    hovered: pickMouse.containsMouse
-                    selected: !editor.isNull && String(editor.value).toUpperCase() === pick.modelData.toUpperCase()
-                }
-
-                MouseArea {
-                    id: pickMouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: editor.set(pick.modelData)
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: editor.set(pick.modelData)
+                    }
                 }
             }
         }

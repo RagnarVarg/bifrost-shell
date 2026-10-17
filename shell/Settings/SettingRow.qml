@@ -66,6 +66,9 @@ Item {
     // Stack before the text column becomes narrower than a normal editor.
     // Use intrinsic control widths: translated segments can exceed the token.
     readonly property bool wide: !inlineToggle && ((editor.item && editor.item.wide) || innerWidth < editorWidth + resetButton.width + Theme.space.sm + SettingsStyle.rowPaddingX + Theme.layout.settingsEditorWidth)
+    // A control much taller than one line (an open colour picker, a stack of
+    // fields): text and control align at the top instead of centring.
+    readonly property bool tall: !wide && editor.height > Math.max(texts.implicitHeight, Theme.control.height.md) + Theme.space.lg
     readonly property var editors: ({
             BoolEditor: boolEditor,
             NumberEditor: numberEditor,
@@ -211,7 +214,7 @@ Item {
         objectName: "settingTexts"
 
         x: SettingsStyle.rowPaddingX
-        y: row.wide ? SettingsStyle.rowPaddingY : (row.height - implicitHeight) / 2
+        y: row.wide ? SettingsStyle.rowPaddingY : row.tall ? SettingsStyle.rowPaddingY + Math.max(0, (Theme.control.height.md - implicitHeight) / 2) : (row.height - implicitHeight) / 2
         width: row.wide ? row.innerWidth - resetButton.width - Theme.space.sm : Math.max(0, row.width - editorArea.width - resetButton.width - Theme.space.sm - SettingsStyle.rowPaddingX * 3)
         spacing: SettingsStyle.descriptionSpacing
 
@@ -259,7 +262,7 @@ Item {
         // The control is flush with the card's right padding; the reset
         // button sits between it and the text, so it needs no own column.
         x: row.wide ? SettingsStyle.rowPaddingX : row.width - width - SettingsStyle.rowPaddingX
-        y: row.wide ? texts.y + texts.implicitHeight + Theme.space.md : (row.height - height) / 2
+        y: row.wide ? texts.y + texts.implicitHeight + Theme.space.md : row.tall ? SettingsStyle.rowPaddingY : (row.height - height) / 2
         width: row.wide ? row.innerWidth : row.editorWidth
         height: editor.height
 
