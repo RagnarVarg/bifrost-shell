@@ -2105,6 +2105,10 @@ def hypr_status(cfg):
 # window's own background lets each pane carry its own, from the theme's
 # colour variables, so the two are transparent independently. GTK reads
 # gtk.css once per process: open windows change after a Files restart.
+# GTK 4.24 speaks ext-background-effect-v1 and sends an empty blur region
+# unless CSS asks for one, and Hyprland then blurs nothing even with the
+# window rule. backdrop-filter on the panes makes GTK send their area; the
+# strength stays Hyprland's.
 NAUTILUS_CLASS = "^org\\.gnome\\.Nautilus$"
 GTK_BLOCK_BEGIN = "/* BIFROST_BEGIN (managed by Bifrost: Settings → Appearance → Apps) */"
 GTK_BLOCK_END = "/* BIFROST_END */"
@@ -2225,6 +2229,7 @@ def nautilus_css(cfg) -> str:
         f".nautilus-window .sidebar-pane {{ background-color: {mix('--sidebar-bg-color', n['sidebar'])}; }}",
         f".nautilus-window .sidebar-pane:backdrop {{ background-color: {mix('--sidebar-backdrop-color', n['sidebar'])}; }}",
         f".nautilus-window .content-pane {{ background-color: {mix('--view-bg-color', n['content'])}; }}",
+        *([".nautilus-window .sidebar-pane, .nautilus-window .content-pane { backdrop-filter: blur(20px); }"] if n["blur"] else []),
         ""])
 
 

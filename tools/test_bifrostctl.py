@@ -182,6 +182,12 @@ class BifrostctlTest(unittest.TestCase):
         self.assertIn(rule, text)
         self.assertLess(text.index('window_rule("bifrost-apps-noblur"'), text.index(rule))
 
+    def test_nautilus_blur_asks_gtk_for_a_blur_region(self):
+        ctl.main(["set", "apps.nautilus.contentTransparency", "40"])
+        self.assertNotIn("backdrop-filter", ctl.nautilus_css(ctl.Config(ctl.Schema())))
+        ctl.main(["set", "apps.nautilus.blur", "true"])
+        self.assertIn("backdrop-filter: blur(", ctl.nautilus_css(ctl.Config(ctl.Schema())))
+
     def test_nautilus_css_hooked_into_gtk_css_once_with_backup(self):
         xdg = Path(self.tmp.name) / "xdg"
         os.environ["XDG_CONFIG_HOME"] = str(xdg)
