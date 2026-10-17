@@ -56,6 +56,8 @@
     { "group": "screenshots", "id": "screenshot-area", "keys": "Print", "run": "bifrost-screenshot region", "description": "Screenshot of an area" },
     { "group": "screenshots", "id": "screenshot-screen", "keys": "CTRL + Print", "run": "bifrost-screenshot full", "description": "Screenshot of the screen" },
     { "group": "screenshots", "id": "screenshot-window", "keys": "ALT + Print", "run": "bifrost-screenshot window", "description": "Screenshot of the active window" },
+    { "group": "screenshots", "id": "screenshot-area-super", "keys": "SUPER + SHIFT + S", "run": "bifrost-screenshot region", "description": "Screenshot of an area (Super)" },
+    { "group": "screenshots", "id": "screen-record", "keys": "SUPER + SHIFT + R", "run": "bifrost-screenshot record", "description": "Record an area (again to stop)" },
 
     { "group": "windows", "id": "close-window", "keys": "SUPER + Q", "dispatch": "hl.dsp.window.close()", "description": "Close window" },
     { "group": "windows", "id": "maximize", "keys": "SUPER + F", "dispatch": "hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\" })", "description": "Maximize" },

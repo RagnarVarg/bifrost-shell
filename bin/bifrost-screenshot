@@ -1,10 +1,44 @@
 #!/usr/bin/env bash
-# bifrost-screenshot region|full|window
+# bifrost-screenshot region|full|window|record
 # Saves to the XDG pictures dir (Screenshots/), copies to the clipboard and
 # shows a notification. Uses grim + slurp; the window's geometry comes from
 # Hyprland.
+# record toggles a screen recording of a chosen area with gpu-screen-recorder
+# (desktop audio included): the first call starts it, the next one stops it and
+# saves it to the XDG videos dir (Recordings/).
 set -uo pipefail
 mode="${1:-region}"
+
+if [[ "$mode" == record ]]; then
+    state="${XDG_RUNTIME_DIR:-/tmp}/bifrost"
+    pidfile="$state/recording.pid"
+    if [[ -f "$pidfile" ]] && pid="$(<"$pidfile")" && kill -0 "$pid" 2>/dev/null; then
+        kill -INT "$pid"              # gpu-screen-recorder finishes the file on SIGINT
+        exit 0
+    fi
+    for tool in gpu-screen-recorder slurp; do
+        command -v "$tool" >/dev/null || { notify-send -a Bifrost "Recording failed" "$tool is not installed"; exit 1; }
+    done
+    videos="$(xdg-user-dir VIDEOS 2>/dev/null || echo "$HOME/Videos")"
+    out_dir="$videos/Recordings"
+    mkdir -p "$out_dir" "$state"
+    file="$out_dir/Recording_$(date +%Y-%m-%d_%H-%M-%S).mp4"
+    region="$(slurp -d -f '%wx%h+%x+%y')" || exit 0     # Esc cancels quietly
+    gpu-screen-recorder -w region -region "$region" -f 60 -a default_output -o "$file" >/dev/null 2>&1 &
+    pid=$!
+    echo "$pid" >"$pidfile"
+    notify-send -a Bifrost -t 2000 "Recording started" "Super+Shift+R again to stop" 2>/dev/null
+    wait "$pid"
+    code=$?
+    rm -f "$pidfile"
+    if [[ -s "$file" ]]; then
+        notify-send -a Bifrost "Recording saved" "$(basename "$file")" 2>/dev/null
+    else
+        notify-send -a Bifrost "Recording failed" "gpu-screen-recorder exited with $code" 2>/dev/null
+        exit 1
+    fi
+    exit 0
+fi
 for tool in grim wl-copy; do
     command -v "$tool" >/dev/null || { notify-send -a Bifrost "Screenshot failed" "$tool is not installed"; exit 1; }
 done
@@ -32,7 +66,7 @@ print(f"{w[\"at\"][0]},{w[\"at\"][1]} {w[\"size\"][0]}x{w[\"size\"][1]}")' 2>/de
 import json, sys
 print(next((m["name"] for m in json.load(sys.stdin) if m.get("focused")), ""))' 2>/dev/null)"
         if [[ -n "$output" ]]; then grim -o "$output" "$file"; else grim "$file"; fi ;;
-    *) echo "usage: bifrost-screenshot region|full|window" >&2; exit 2 ;;
+    *) echo "usage: bifrost-screenshot region|full|window|record" >&2; exit 2 ;;
 esac || { notify-send -a Bifrost "Screenshot failed"; exit 1; }
 wl-copy --type image/png <"$file"
 notify-send -a Bifrost -i "$file" "Screenshot saved" "$(basename "$file") — copied to the clipboard" 2>/dev/null
