@@ -208,7 +208,7 @@
     {
       "key": "dock.hover.highlight",
       "type": "bool",
-      "default": true,
+      "default": false,
       "label": "Hover background",
       "group": "hover"
     },
