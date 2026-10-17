@@ -33,6 +33,25 @@ Scope {
     ListModel { id: stableEntries }
     onEntriesChanged: DockModel.syncKeys(stableEntries, entries.map(e => e.key))
     Component.onCompleted: DockModel.syncKeys(stableEntries, entries.map(e => e.key))
+    // The dock and the bar share the Top layer, where the compositor draws the
+    // newest surface on top. The bar's glass joins the dock from below, so a
+    // bar window created after the dock (bar settings changed, screen added)
+    // would cover and blur the dock. Recreate the dock windows then, so the
+    // dock is always the newer surface.
+    property bool restacking: false
+    property int barCount: ShellState.barWindows.length
+    Connections {
+        target: ShellState
+        function onBarWindowsChanged() {
+            const added = ShellState.barWindows.length > dock.barCount;
+            dock.barCount = ShellState.barWindows.length;
+            if (added && ShellState.dockWindows.length > 0 && !dock.restacking) {
+                dock.restacking = true;
+                Qt.callLater(() => dock.restacking = false);
+            }
+        }
+    }
+
     readonly property int pinnedCount: entries.filter(e => e.pinned).length
     readonly property int firstRunningIndex: entries.findIndex(e => !e.pinned && !e.kind)
 
@@ -43,7 +62,7 @@ Scope {
     }
 
     Variants {
-        model: dock.cfg.enabled ? Quickshell.screens : []
+        model: dock.cfg.enabled && !dock.restacking ? Quickshell.screens : []
 
         delegate: PanelWindow {
             id: window
