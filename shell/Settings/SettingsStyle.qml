@@ -23,11 +23,21 @@ QtObject {
     readonly property real titleScale: compact ? 0.9 : wide ? 1.08 : 1
 
     readonly property bool grouped: true
+    // Padding inside custom-page cards (Card); schema groups (SettingsRows)
+    // only pad vertically, their rows carry the horizontal inset.
     readonly property real innerPadding: compact ? Theme.space.md : Theme.space.lg
-    readonly property real groupSpacing: compact ? Theme.space.lg : wide ? Theme.space.xxl : Theme.space.xl
-    readonly property real rowSpacing: Theme.space.sm
+    readonly property real groupInset: Theme.space.xs
+    readonly property real groupSpacing: compact ? Theme.space.xl : wide ? Theme.space.xxxl : Theme.space.xxl
+    // Rows in a schema group sit edge to edge, split by hairlines.
+    readonly property real rowSpacing: 0
+    // Space between children of a custom-page card.
+    readonly property real cardSpacing: Theme.space.sm
+    // A row's inner padding: around its text and control.
+    readonly property real rowPaddingX: compact ? Theme.space.lg : Theme.space.xl
+    readonly property real rowPaddingY: Theme.space.lg
     readonly property real contentPadding: compact ? Theme.space.lg : wide ? Theme.space.xxxl + Theme.space.md : Theme.space.xxxl
-    readonly property real separatorInset: compact ? Theme.space.lg : Theme.space.xl
+    // Dividers start where the row's text starts and run to the card's edge.
+    readonly property real separatorInset: rowPaddingX
     readonly property real titleSpacing: Theme.space.sm
     readonly property real descriptionSpacing: Theme.space.xxs
     readonly property bool background: true
@@ -35,4 +45,16 @@ QtObject {
     readonly property real dividerOpacity: 1
     readonly property bool dashed: false
     readonly property var material: Theme.materials.settingsGroups || Theme.materials.panel
+
+    // x of a page column of width w in a pane: centred once the pane is
+    // wider than the column plus its padding.
+    function pageX(paneWidth: real, w: real): real {
+        return Math.max(contentPadding, (paneWidth - w) / 2);
+    }
+
+    // Colour of the icon tile for a section or page id (Theme.color.tile).
+    function tileColor(id: string): color {
+        const tiles = Theme.color.tile || {};
+        return tiles[id] || tiles[String(id).split("/")[0]] || tiles.fallback || Theme.color.accent;
+    }
 }

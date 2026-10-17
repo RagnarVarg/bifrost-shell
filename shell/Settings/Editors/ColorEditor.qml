@@ -15,7 +15,7 @@ EditorBase {
     readonly property var picks: ["accent", "accentDeep", "silver", "success", "warning", "danger"].map(k => Theme.palette[k]).concat(Theme.prism.stops || [])
     property bool open: false
 
-    implicitWidth: Theme.layout.editorWidth
+    implicitWidth: Theme.layout.settingsEditorWidth
     implicitHeight: top.height + Theme.space.sm + (open ? picker.implicitHeight + Theme.space.md : 0) + quick.height
 
     Flow {
@@ -77,7 +77,7 @@ EditorBase {
         anchors.top: top.bottom
         anchors.topMargin: Theme.space.md
         anchors.right: parent.right
-        width: Math.min(parent.width, Theme.layout.editorWidth)
+        width: Math.min(parent.width, Theme.layout.settingsEditorWidth)
         visible: editor.open
         color: editor.shown || Theme.palette.accent
         onPicked: hex => editor.set(hex)

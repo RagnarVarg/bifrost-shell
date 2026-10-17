@@ -14,7 +14,7 @@ Item {
         id:inner
         x:card.padding; y:card.padding
         width:Math.max(0,card.width-card.padding*2)
-        spacing:SettingsStyle.rowSpacing
+        spacing:SettingsStyle.cardSpacing
     }
     Repeater {
         model:card.settingRows
@@ -23,7 +23,7 @@ Item {
             required property int index
             visible:SettingsStyle.separators && index>0
             x:card.padding+SettingsStyle.separatorInset
-            y:card.padding+modelData.y-SettingsStyle.rowSpacing/2
+            y:card.padding+modelData.y-SettingsStyle.cardSpacing/2
             width:Math.max(0,inner.width-SettingsStyle.separatorInset*2)
         }
     }

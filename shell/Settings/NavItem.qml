@@ -4,12 +4,15 @@ import qs.Components.Icons
 import qs.Components.State
 import qs.Components.Text
 
-// One sidebar entry.
+// One sidebar entry: a coloured icon tile, the label and a count of
+// modified settings.
 Item {
     id: item
 
     property string icon: ""
     property string label: ""
+    // Section or page id: picks the tile colour (SettingsStyle.tileColor).
+    property string pageId: ""
     property int badge: 0
     property bool current: false
 
@@ -26,21 +29,32 @@ Item {
         selected: item.current
     }
 
-    BIcon {
-        id: glyph
+    Rectangle {
+        id: tile
 
         anchors.left: parent.left
         anchors.leftMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
-        name: item.icon
-        size: Theme.icon.size.sm
-        color: item.current ? Theme.color.text : Theme.color.iconMuted
+        width: Theme.control.tile.size
+        height: width
+        radius: Theme.control.tile.radius
+        color: SettingsStyle.tileColor(item.pageId)
+        border.width: Theme.border.hairline
+        border.color: Theme.color.innerBorder
+
+        BIcon {
+            anchors.centerIn: parent
+            name: item.icon
+            size: Theme.control.tile.icon
+            color: Theme.color.tileIcon
+        }
     }
 
     BText {
-        anchors.left: glyph.right
+        anchors.left: tile.right
         anchors.leftMargin: Theme.space.md
         anchors.right: count.left
+        anchors.rightMargin: Theme.space.sm
         anchors.verticalCenter: parent.verticalCenter
         text: item.label
         role: "label"
@@ -55,6 +69,7 @@ Item {
         anchors.rightMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
         visible: item.badge > 0
+        width: visible ? implicitWidth : 0
         text: item.badge
         role: "mono"
         tone: "accent"

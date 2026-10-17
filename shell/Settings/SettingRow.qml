@@ -2,6 +2,7 @@ import QtQuick
 import qs.Core
 import qs.Components.Controls
 import qs.Components.Icons
+import qs.Components.Motion
 import qs.Components.State
 import qs.Components.Text
 import qs.Settings.Editors
@@ -32,7 +33,7 @@ Item {
         case "real":
             return "NumberEditor";
         case "enum":
-            return (def.options || []).length <= 3 ? "SegmentedEditor" : "EnumEditor";
+            return segmentable ? "SegmentedEditor" : "EnumEditor";
         case "color":
             return "ColorEditor";
         case "font":
@@ -49,14 +50,22 @@ Item {
             return "TextEditor";
         }
     }
+    // 2–4 short choices are a segmented control, longer lists a popup menu.
+    readonly property bool segmentable: {
+        const options = def.options || [];
+        if (options.length < 2 || options.length > 4)
+            return false;
+        return options.length <= 3 || options.map(o => Schema.optionLabel(key, o)).join("").length <= Theme.layout.settingsSegmentChars;
+    }
     // Compact Settings: a toggle keeps its own small width next to the text
     // instead of reserving a full editor column and stacking under it.
     readonly property bool inlineToggle: SettingsStyle.compact && editorName === "BoolEditor" && editor.item !== null
-    readonly property real editorWidth: inlineToggle ? editor.item.implicitWidth : Math.max(Theme.layout.editorWidth, editor.item ? editor.item.implicitWidth : 0)
-    readonly property real innerWidth: Math.max(0, width - Theme.space.xl * 2)
+    // A toggle keeps its own small width so the text gets the room.
+    readonly property real editorWidth: (inlineToggle || (editorName === "BoolEditor" && editor.item !== null && !editor.item.def.nullable)) ? editor.item.implicitWidth : Math.max(Theme.layout.settingsEditorWidth, editor.item ? editor.item.implicitWidth : 0)
+    readonly property real innerWidth: Math.max(0, width - SettingsStyle.rowPaddingX * 2)
     // Stack before the text column becomes narrower than a normal editor.
     // Use intrinsic control widths: translated segments can exceed the token.
-    readonly property bool wide: !inlineToggle && ((editor.item && editor.item.wide) || innerWidth < editorWidth + resetButton.width + Theme.space.sm + Theme.space.xl + Theme.layout.editorWidth)
+    readonly property bool wide: !inlineToggle && ((editor.item && editor.item.wide) || innerWidth < editorWidth + resetButton.width + Theme.space.sm + SettingsStyle.rowPaddingX + Theme.layout.settingsEditorWidth)
     readonly property var editors: ({
             BoolEditor: boolEditor,
             NumberEditor: numberEditor,
@@ -169,9 +178,14 @@ Item {
     }
 
     width: parent ? parent.width : 0
-    implicitHeight: (wide ? texts.implicitHeight + Theme.space.md + editor.height : Math.max(texts.implicitHeight, editor.height)) + Theme.space.lg * 2
+    implicitHeight: (wide ? texts.implicitHeight + Theme.space.md + editor.height : Math.max(texts.implicitHeight, editor.height)) + SettingsStyle.rowPaddingY * 2
     enabled: dependencyMet
     opacity: enabled ? 1 : Theme.opacity.disabled
+
+    // Hover shows the reset button of a modified row.
+    HoverHandler {
+        id: hover
+    }
 
     StateLayer {
         anchors.fill: parent
@@ -179,11 +193,12 @@ Item {
         active: SettingsNav.highlightKey === row.key
     }
 
+    // Modified: a small accent dot in the margin before the label.
     Rectangle {
         id: marker
 
         visible: row.modified
-        x: Theme.space.sm
+        x: (SettingsStyle.rowPaddingX - width) / 2
         y: texts.y + (label.height - height) / 2
         width: Theme.space.xs + Theme.space.xxs
         height: width
@@ -195,9 +210,9 @@ Item {
         id: texts
         objectName: "settingTexts"
 
-        x: Theme.space.xl
-        y: row.wide ? Theme.space.lg : (row.height - implicitHeight) / 2
-        width: row.wide ? row.innerWidth : Math.max(0, row.width - editorArea.width - Theme.space.xl * 3)
+        x: SettingsStyle.rowPaddingX
+        y: row.wide ? SettingsStyle.rowPaddingY : (row.height - implicitHeight) / 2
+        width: row.wide ? row.innerWidth - resetButton.width - Theme.space.sm : Math.max(0, row.width - editorArea.width - resetButton.width - Theme.space.sm - SettingsStyle.rowPaddingX * 3)
         spacing: SettingsStyle.descriptionSpacing
 
         BText {
@@ -241,16 +256,17 @@ Item {
         id: editorArea
         objectName: "settingControl"
 
-        x: row.wide ? Theme.space.xl : row.width - width - Theme.space.xl
+        // The control is flush with the card's right padding; the reset
+        // button sits between it and the text, so it needs no own column.
+        x: row.wide ? SettingsStyle.rowPaddingX : row.width - width - SettingsStyle.rowPaddingX
         y: row.wide ? texts.y + texts.implicitHeight + Theme.space.md : (row.height - height) / 2
-        width: row.wide ? row.innerWidth : row.editorWidth + resetButton.width + Theme.space.sm
+        width: row.wide ? row.innerWidth : row.editorWidth
         height: editor.height
 
         Loader {
             id: editor
 
-            anchors.left: parent.left
-            width: Math.max(0, parent.width - resetButton.width - Theme.space.sm)
+            width: parent.width
             height: item ? item.implicitHeight : 0
             // Editors are statically known components: Quickshell cannot load
             // qs:@ URLs of files outside the import graph.
@@ -259,17 +275,23 @@ Item {
                 item.key = row.key;
             }
         }
+    }
 
-        BIconButton {
-            id: resetButton
+    // Reset: only on a modified row, shown while the pointer is on the row
+    // (or the button has keyboard focus). Stacked rows put it by the label.
+    BIconButton {
+        id: resetButton
 
-            anchors.right: parent.right
-            anchors.top: parent.top
-            icon: "reset"
-            size: "sm"
-            opacity: row.modified ? 1 : 0
-            enabled: row.modified
-            onClicked: Config.reset(row.key)
+        x: row.wide ? row.width - width - SettingsStyle.rowPaddingX : editorArea.x - width - Theme.space.sm
+        y: row.wide ? texts.y + (label.height - height) / 2 : editorArea.y + (Math.min(editorArea.height, Theme.control.height.md) - height) / 2
+        icon: "reset"
+        size: "sm"
+        opacity: row.modified && (hover.hovered || activeFocus) ? 1 : 0
+        enabled: row.modified
+        onClicked: Config.reset(row.key)
+
+        Behavior on opacity {
+            BNumberAnimation {}
         }
     }
 }

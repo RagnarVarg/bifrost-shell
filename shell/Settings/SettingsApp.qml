@@ -3,6 +3,7 @@ import qs.Compat
 import qs.Core
 import qs.Components.Controls
 import qs.Components.Glass
+import qs.Components.Motion
 import qs.Components.Text
 
 // The Settings UI: sidebar + current page, with global banners. Adapts to
@@ -112,7 +113,7 @@ Item {
             Column {
                 id: banners
 
-                x: SettingsStyle.contentPadding
+                x: SettingsStyle.pageX(main.width, width)
                 y: SettingsStyle.compact ? compactBar.y + compactBar.height + Theme.space.sm : Theme.space.lg
                 width: Math.min(main.width - SettingsStyle.contentPadding * 2 - (SettingsStyle.compact ? 0 : close.width), SettingsStyle.pageMaxWidth)
                 spacing: Theme.space.sm
@@ -166,6 +167,56 @@ Item {
                 anchors.top: banners.bottom
                 anchors.bottom: parent.bottom
                 width: parent.width
+                transform: Translate {
+                    id: pageShift
+                }
+
+                // A new section fades in, sliding up a little.
+                function enter() {
+                    if (!Theme.motion.enabled)
+                        return;
+                    pageEnter.restart();
+                }
+
+                ParallelAnimation {
+                    id: pageEnter
+
+                    BNumberAnimation {
+                        target: pageLoader
+                        property: "opacity"
+                        from: 0
+                        to: 1
+                        speed: "normal"
+                        curve: "decelerate"
+                    }
+
+                    BNumberAnimation {
+                        target: pageShift
+                        property: "y"
+                        from: Theme.space.md
+                        to: 0
+                        speed: "normal"
+                        curve: "decelerate"
+                    }
+                }
+
+                Connections {
+                    target: SettingsNav
+
+                    function onPageChanged() {
+                        pageLoader.enter();
+                    }
+
+                    // Entering or leaving the search results, not every keystroke.
+                    function onQueryChanged() {
+                        if ((SettingsNav.query === "") !== pageLoader.wasPage) {
+                            pageLoader.wasPage = SettingsNav.query === "";
+                            pageLoader.enter();
+                        }
+                    }
+                }
+
+                property bool wasPage: true
                 sourceComponent: SettingsNav.query !== "" ? searchPage : info && info.kind === "section" ? sectionPage : info && info.page === "InputPage" ? inputPage : info && info.page === "KeybindsPage" ? keybindsPage : info && info.page === "ThemeBrowserPage" ? themeBrowserPage : info && info.page === "NetworkPage" ? networkPage : info && info.page === "ProfilesPage" ? profilesPage : info && info.page === "TransferPage" ? transferPage : info && info.page === "BluetoothPage" ? bluetoothPage : info && info.page === "DisplayPage" ? displayPage : dataPage
             }
 

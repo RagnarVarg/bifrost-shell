@@ -10,7 +10,7 @@ Item {
     // Editors that need the full row width (e.g. widget layouts) set this.
     property bool wide: false
 
-    implicitWidth: Theme.layout.editorWidth
+    implicitWidth: Theme.layout.settingsEditorWidth
     implicitHeight: Theme.control.height.md
 
     // Theme token a nullable setting inherits when null (schema "inherit").

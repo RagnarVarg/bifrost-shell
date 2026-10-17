@@ -1,12 +1,13 @@
 import QtQuick
 import qs.Core
 
-// Shared schema-row container: one glass group or one box per row.
+// Shared schema-row container: one rounded glass card, rows edge to edge
+// split by hairlines that start at the rows' text.
 Item {
     id:group
     property var keys:[]
     width:parent ? parent.width : 0
-    height:rowsColumn.implicitHeight+(SettingsStyle.grouped ? SettingsStyle.innerPadding*2 : 0)
+    height:rowsColumn.implicitHeight+(SettingsStyle.grouped ? SettingsStyle.groupInset*2 : 0)
     function rowFor(key) {
         for(let i=0;i<rows.count;i++){ const r=rows.itemAt(i); if(r && r.key===key) return r; }
         return null;
@@ -14,9 +15,8 @@ Item {
     SettingsGroupSurface { anchors.fill:parent; visible:SettingsStyle.grouped }
     Column {
         id:rowsColumn
-        x:SettingsStyle.grouped ? SettingsStyle.innerPadding : 0
-        y:x
-        width:Math.max(0,group.width-x*2)
+        y:SettingsStyle.grouped ? SettingsStyle.groupInset : 0
+        width:group.width
         spacing:SettingsStyle.rowSpacing
         Repeater {
             id:rows
@@ -32,7 +32,7 @@ Item {
                     visible:SettingsStyle.separators && index>0
                     x:SettingsStyle.separatorInset
                     y:-SettingsStyle.rowSpacing/2
-                    width:Math.max(0,parent.width-x*2)
+                    width:Math.max(0,parent.width-x)
                 }
                 SettingRow {
                     id:row

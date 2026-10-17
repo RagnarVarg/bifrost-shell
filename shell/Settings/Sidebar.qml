@@ -13,57 +13,26 @@ Item {
     // A page was chosen (also the one already open): compact Settings shows it.
     signal navigated
 
-    Column {
-        id: top
+    // Search first, as in a system settings window; the brand sits in the
+    // footer.
+    BTextField {
+        id: search
 
-        x: Theme.space.lg
+        x: Theme.space.md
         y: Theme.space.xl
-        width: parent.width - Theme.space.lg * 2
-        spacing: Theme.space.lg
-
-        Row {
-            spacing: Theme.space.md
-
-            BIcon {
-                source: "file://" + Paths.assetsDir + "/brand/bifrost-mark.svg"
-                size: Theme.icon.size.xl
-                color: Theme.palette.silverBright
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-
-                BText {
-                    text: "Bifrost"
-                    role: "heading"
-                }
-
-                BText {
-                    text: I18n.tr("Settings")
-                    role: "caption"
-                    tone: "muted"
-                }
-            }
-        }
-
-        BTextField {
-            id: search
-
-            width: parent.width
-            icon: "search"
-            placeholder: I18n.tr("Search settings")
-            text: SettingsNav.query
-            onTextChanged: SettingsNav.query = text
-            Keys.onEscapePressed: text = ""
-        }
+        width: parent.width - Theme.space.md * 2
+        icon: "search"
+        placeholder: I18n.tr("Search settings")
+        text: SettingsNav.query
+        onTextChanged: SettingsNav.query = text
+        Keys.onEscapePressed: text = ""
     }
 
     Flickable {
         id: list
 
-        anchors.top: top.bottom
-        anchors.topMargin: Theme.space.lg
+        anchors.top: search.bottom
+        anchors.topMargin: Theme.space.sm
         anchors.bottom: footer.top
         anchors.bottomMargin: Theme.space.md
         x: Theme.space.md
@@ -99,8 +68,10 @@ Item {
 
                     BText {
                         x: Theme.space.md
+                        bottomPadding: Theme.space.xs
                         text: category.modelData.label
-                        role: "overline"
+                        role: "caption"
+                        font.weight: Theme.font.weight.semibold
                         tone: category.modelData.advanced ? "warning" : "faint"
                     }
 
@@ -112,6 +83,7 @@ Item {
 
                             icon: modelData.icon
                             label: modelData.label
+                            pageId: modelData.id
                             badge: Config.modifiedKeys(modelData.id).length
                             current: SettingsNav.query === "" && SettingsNav.page === modelData.id
                             onClicked: {
@@ -129,6 +101,7 @@ Item {
 
                             icon: modelData.icon
                             label: modelData.label
+                            pageId: modelData.id
                             current: SettingsNav.query === "" && SettingsNav.page === modelData.id
                             onClicked: {
                                 SettingsNav.open(modelData.id);
@@ -146,17 +119,41 @@ Item {
         }
     }
 
-    BText {
+    Row {
         id: footer
 
-        x: Theme.space.xl
+        x: Theme.space.lg
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Theme.space.lg
-        width: parent.width - Theme.space.xl * 2
-        text: Compositor.displayName + " " + Compositor.version + " · " + RunMode.mode
-        role: "mono"
-        tone: "faint"
-        elide: Text.ElideRight
+        width: parent.width - Theme.space.lg * 2
+        spacing: Theme.space.md
+
+        BIcon {
+            source: "file://" + Paths.assetsDir + "/brand/bifrost-mark.svg"
+            size: Theme.icon.size.lg
+            color: Theme.palette.silverBright
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Column {
+            width: parent.width - Theme.icon.size.lg - parent.spacing
+            anchors.verticalCenter: parent.verticalCenter
+
+            BText {
+                text: "Bifrost " + I18n.tr("Settings")
+                role: "label"
+                width: parent.width
+                elide: Text.ElideRight
+            }
+
+            BText {
+                width: parent.width
+                text: Compositor.displayName + " " + Compositor.version + " · " + RunMode.mode
+                role: "caption"
+                tone: "faint"
+                elide: Text.ElideRight
+            }
+        }
     }
 
     function focusSearch() {

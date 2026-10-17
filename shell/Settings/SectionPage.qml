@@ -2,6 +2,7 @@ import QtQuick
 import qs.Compositor
 import qs.Core
 import qs.Components.Controls
+import qs.Components.Motion
 import qs.Components.Text
 
 // A schema section rendered as grouped setting rows.
@@ -68,7 +69,7 @@ Flickable {
     Column {
         id: column
 
-        x: SettingsStyle.contentPadding
+        x: SettingsStyle.pageX(page.width, width)
         y: SettingsStyle.contentPadding
         width: Math.min(page.width - SettingsStyle.contentPadding * 2, SettingsStyle.pageMaxWidth)
         spacing: SettingsStyle.groupSpacing
@@ -101,6 +102,7 @@ Flickable {
                 }
             }
 
+            // Shown only while something in the section is modified.
             BButton {
                 id: resetSection
 
@@ -110,7 +112,12 @@ Flickable {
                 icon: "reset"
                 text: I18n.tr("Reset section")
                 enabled: page.modifiedCount > 0
+                opacity: enabled ? 1 : 0
                 onClicked: Config.resetSection(page.sectionId)
+
+                Behavior on opacity {
+                    BNumberAnimation {}
+                }
             }
         }
 
@@ -151,9 +158,10 @@ Flickable {
 
                 BText {
                     visible: group.modelData.id !== ""
-                    x: Theme.space.xl
+                    x: SettingsStyle.rowPaddingX
                     text: Schema.groupLabel(page.sectionId, group.modelData.id)
-                    role: "overline"
+                    role: "caption"
+                    font.weight: Theme.font.weight.semibold
                     tone: "muted"
                 }
 

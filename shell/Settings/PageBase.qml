@@ -19,7 +19,7 @@ Flickable {
     Column {
         id: column
 
-        x: SettingsStyle.contentPadding
+        x: SettingsStyle.pageX(page.width, width)
         y: SettingsStyle.contentPadding
         width: Math.min(page.width - SettingsStyle.contentPadding * 2, SettingsStyle.pageMaxWidth)
         spacing: SettingsStyle.groupSpacing

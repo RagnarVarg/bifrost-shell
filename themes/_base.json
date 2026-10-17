@@ -190,6 +190,42 @@
     "divider": {
       "color": "@palette.silver",
       "alpha": "@opacity.divider"
+    },
+    "_tile": "Settings navigation: the rounded square behind each section's icon, by section or page id (fallback for any other). Muted hues next to graphite and steel blue; the icon on it is tileIcon.",
+    "tileIcon": "#FFFFFF",
+    "tile": {
+      "fallback": "#5F6878",
+      "appearance": "#7E6BB0",
+      "wallpaper": "#4F8E95",
+      "materials": "#5B7FA6",
+      "apps": "#4E77B5",
+      "effects": "#9A6A9C",
+      "typography": "#6A6FB8",
+      "motion": "#B07A55",
+      "themeBrowser": "#8A6FB8",
+      "bar": "#566B8C",
+      "workspaces": "#4F7FA0",
+      "launcher": "#5574B8",
+      "dock": "#5E86A8",
+      "controlCenter": "#6E7A90",
+      "osd": "#8C6E9E",
+      "notifications": "#B5615F",
+      "lock": "#6B7280",
+      "greeter": "#5C6A80",
+      "power": "#A65D5D",
+      "clock": "#B48A4E",
+      "systemStats": "#5E8F74",
+      "keybinds": "#68707E",
+      "keybinds/shortcuts": "#68707E",
+      "displays": "#4F78C4",
+      "monitors": "#4F78C4",
+      "hyprland": "#56729A",
+      "input": "#707A88",
+      "network": "#4E82B8",
+      "bluetooth": "#4E6FC0",
+      "profiles": "#7A7E58",
+      "transfer": "#5F8C86",
+      "data": "#5E6672"
     }
   },
   "textShadow": {
@@ -495,6 +531,11 @@
     "settingsScroll": {
       "pixelMultiplier": 1.8,
       "rowsPerNotch": 3
+    },
+    "tile": {
+      "size": 22,
+      "icon": 14,
+      "radius": 6
     }
   },
   "layout": {
@@ -506,11 +547,15 @@
     "settingsMinHeight": 420,
     "settingsCompactBelow": 760,
     "settingsWideFrom": 1380,
-    "sidebarWideWidth": 284,
-    "pageWideMaxWidth": 1040,
-    "sidebarWidth": 248,
-    "pageMaxWidth": 780,
+    "sidebarWideWidth": 240,
+    "pageWideMaxWidth": 720,
+    "sidebarWidth": 220,
+    "pageMaxWidth": 680,
     "editorWidth": 300,
+    "_settingsEditorWidth": "Width of a control in a Settings row (the row's right column).",
+    "settingsEditorWidth": 260,
+    "_settingsSegmentChars": "A choice of 4 options is a segmented control while its labels together are at most this many characters, else a popup menu (2–3 options always segmented).",
+    "settingsSegmentChars": 26,
     "popupMaxHeight": 320,
     "launcherWidth": 900,
     "launcherHeight": 620,
