@@ -67,7 +67,7 @@ bar and dock.
 | Compositor | `hyprland` | `hyprland` |
 | Qt Quick runtime | `qt6-qtbase`, `qt6-qtdeclarative`, `qt6-qtsvg`, `qt6-qtwayland`, `qt6-qtimageformats` | `qt6-base-dev-tools`, `qt6-wayland`, `libqt6svg6`, `qt6-image-formats-plugins`, required QML6 modules |
 | Bifrost tools | `python3`, `python3-gobject` | `python3`, `python3-gi`, `gir1.2-glib-2.0` |
-| Fonts / font discovery | `fontconfig`, `google-noto-sans-runic-fonts` | `fontconfig`, `fonts-noto-core` |
+| Fonts / font discovery | `fontconfig`, `google-noto-sans-runic-fonts`, `rsms-inter-fonts` | `fontconfig`, `fonts-noto-core`, `fonts-inter` |
 | Installation/session | `rsync`, `util-linux`, `dbus-tools`, `systemd` | `rsync`, `util-linux`, `dbus-user-session`, `dbus-bin`, `systemd` |
 | Screenshots | `grim`, `slurp`, `wl-clipboard`, `libnotify`, `xdg-user-dirs` | `grim`, `slurp`, `wl-clipboard`, `libnotify-bin`, `xdg-user-dirs` |
 | Networking | `NetworkManager`, `nm-connection-editor` | `network-manager`, `nm-connection-editor` |
@@ -138,9 +138,10 @@ These are deliberately not installed for every user:
 - **External DDC/CI brightness:** the monitor must support DDC/CI and Linux must
   expose a usable I2C device. Installing `ddcutil` alone cannot make unsupported
   hardware support DDC.
-- **Geist / Geist Mono:** these are Bifrost's preferred UI fonts. They are
-  recommended but not required; Bifrost falls back to the system sans/mono
-  fonts when they are unavailable.
+- **Inter / Geist Mono:** Bifrost's preferred UI and monospace fonts. Inter is
+  part of the Fedora/Ubuntu package plan; Geist Mono is not packaged there.
+  Both are recommended but not required; Bifrost falls back to the system
+  sans/mono fonts when they are unavailable.
 
 `hyprland-guiutils` is a useful Hyprland companion package, but the current
 Bifrost runtime does not directly invoke it, so it is not classified as a

@@ -589,7 +589,8 @@
         "upower",
         "ddcutil",
         "power-profiles-daemon",
-        "google-noto-sans-runic-fonts"
+        "google-noto-sans-runic-fonts",
+        "rsms-inter-fonts"
       ],
       "greeterPackages": [
         "greetd",
@@ -693,7 +694,8 @@
         "upower",
         "ddcutil",
         "power-profiles-daemon",
-        "fonts-noto-core"
+        "fonts-noto-core",
+        "fonts-inter"
       ],
       "greeterPackages": [
         "greetd",

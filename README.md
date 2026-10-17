@@ -12,8 +12,8 @@ hand-edited config files.
 
 ## Features
 
-- **Top bar**: on any screen edge, with auto-hide, widget boxes and a widget
-  layout you arrange in Settings. Widgets cover workspaces (numbers or runes), the
+- **Bar**: on any screen edge, as a classic bar or a frame around the desktop,
+  with auto-hide, widget boxes and a widget layout you arrange in Settings. Widgets cover workspaces (numbers or runes), the
   active window, clock, media, system stats, GPU, battery, tray,
   notifications, screenshots and a control-center button.
 - **Dock**: pinned and running apps with window previews, reordering by drag,
@@ -38,6 +38,8 @@ hand-edited config files.
     brightness and saturation
 - **Hardware integration**: NetworkManager, BlueZ, PipeWire, laptop and
   DDC/CI monitor brightness, UPower and power-profiles-daemon.
+- **Presets**: ready-made looks (`bifrost`, `minimal`, `compact`, `spacious`),
+  chosen in Settings or with `bifrostctl preset set <name>`.
 - **`bifrostctl`**: a command-line tool for every setting, preset, profile and
   health check.
 - **Translations**: English and Swedish.
@@ -92,9 +94,9 @@ Optional extras for Arch/CachyOS:
 
 - `ddcutil`: brightness of external monitors over DDC/CI (needs access to
   `i2c-dev`).
-- `ttf-geist-variable` and `ttf-geist-mono-variable` (AUR): Bifrost's default
-  fonts. Without them Bifrost falls back to your system fonts, and any font
-  can be chosen in Settings.
+- `inter-font` and `ttf-geist-mono-variable` (AUR): Bifrost's default UI and
+  monospace fonts. Without them Bifrost falls back to your system fonts, and
+  any font can be chosen in Settings.
 - `greetd` and `acl`: the Bifrost login screen.
 - `nvidia-utils`: the GPU widget on NVIDIA cards.
 
@@ -120,7 +122,16 @@ bifrostctl doctor     # dependencies, versions and session checks
 bifrostctl validate   # configuration check
 ```
 
-Log out, choose **Hyprland**, and Bifrost starts with the session. Open
+Log out, choose **Hyprland**, and Bifrost starts with the session. For the
+author's own look (frame bar on the left, flat dark glass, rune workspaces,
+auto-hiding dock), apply the `bifrost` preset:
+
+```sh
+bifrostctl preset set bifrost
+```
+
+It uses the McMojave-circle icon theme when installed and Inter as the UI
+font. Open
 Settings with <kbd>Super</kbd> + <kbd>,</kbd> and the launcher with
 <kbd>Super</kbd> + <kbd>Space</kbd>.
 
