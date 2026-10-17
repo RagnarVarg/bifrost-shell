@@ -12,7 +12,7 @@ GallerySection {
 
         Repeater {
             model: [
-                { id: "bar", note: "Top bar" },
+                { id: "bar", note: "Panel" },
                 { id: "dock", note: "Dock" },
                 { id: "panel", note: "Control center, launcher, notiscenter, Settings" },
                 { id: "popover", note: "Menyer och små popups" },

@@ -19,6 +19,7 @@ BarWidget {
         onClicked: menu.click()
 
         BIcon {
+            size: Theme.icon.size.bar
             name: Power.charging ? "battery-charging" : "battery-" + Math.min(4, Math.ceil(Power.charge * 4))
             color: Power.critical ? Theme.color.danger : Power.low ? Theme.color.warning : Theme.color.text
         }

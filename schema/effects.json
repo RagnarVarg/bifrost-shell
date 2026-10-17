@@ -2,9 +2,9 @@
   "section": "effects",
   "label": "Bifrost Effects",
   "icon": "palette",
-  "description": "Subtle light, edge and prism effects for the top bar and application windows. Each effect has its own switch.",
+  "description": "Subtle light, edge and prism effects for the panel and application windows. Each effect has its own switch.",
   "groups": {
-    "bar": "Top bar",
+    "bar": "Panel",
     "windows": "Window frame"
   },
   "settings": [

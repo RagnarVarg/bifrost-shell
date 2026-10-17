@@ -1,0 +1,123 @@
+{
+  "name": "Bifrost",
+  "description": "Frame bar on the left, flat dark glass, runes, autohiding dock",
+  "values": {
+    "bar": {
+      "layout": "frame",
+      "height": 55,
+      "frame": {
+        "thickness": 16
+      },
+      "position": "left",
+      "widgets": {
+        "left": [
+          {
+            "id": "power"
+          },
+          {
+            "id": "workspaces"
+          },
+          {
+            "id": "activeWindow"
+          }
+        ],
+        "center": [
+          {
+            "id": "clock"
+          }
+        ],
+        "right": [
+          {
+            "id": "controlCenter"
+          },
+          {
+            "id": "status"
+          },
+          {
+            "id": "tray"
+          },
+          {
+            "id": "notifications"
+          },
+          {
+            "id": "display"
+          },
+          {
+            "id": "systemStats"
+          },
+          {
+            "id": "gpu"
+          },
+          {
+            "id": "screenshot"
+          }
+        ]
+      }
+    },
+    "materials": {
+      "border": false,
+      "transparency": {
+        "dark": 0
+      },
+      "apps": {
+        "blur": {
+          "dark": false
+        }
+      },
+      "tint": {
+        "dark": "#323232"
+      },
+      "blur": {
+        "dark": 41
+      }
+    },
+    "effects": {
+      "bar": {
+        "highlight": false,
+        "bottomEdge": false,
+        "prism": false,
+        "gradient": false,
+        "capsule": false,
+        "dividers": false
+      },
+      "windows": {
+        "glowStrength": 0.04,
+        "prism": false
+      }
+    },
+    "dock": {
+      "trash": {
+        "enabled": true
+      },
+      "autohide": true,
+      "iconSize": 52,
+      "hover": {
+        "scale": 1.2
+      },
+      "launcher": {
+        "enabled": true
+      }
+    },
+    "appearance": {
+      "icons": {
+        "theme": "McMojave-circle-dark"
+      },
+      "prism": {
+        "intensity": 0
+      }
+    },
+    "workspaces": {
+      "labels": "runes"
+    },
+    "hyprland": {
+      "tiling": {
+        "onClose": "keepResize"
+      },
+      "rounding": 21
+    },
+    "launcher": {
+      "iconSize": 56,
+      "placement": "top"
+    }
+  }
+}

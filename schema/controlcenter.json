@@ -16,12 +16,12 @@
         "dock"
       ],
       "label": "Placement",
-      "description": "Top panel = the control center grows out of the bar under its button, as one glass with the bar; Dock = it grows out of the dock. The bar button, keybind and IPC all open it there. Without a dock it opens at the bar.",
+      "description": "Panel = the control center grows out of the bar under its button, as one glass with the bar; Dock = it grows out of the dock. The bar button, keybind and IPC all open it there. Without a dock it opens at the bar.",
       "group": "placement",
       "scope": "shell",
       "apply": "live",
       "optionLabels": {
-        "bar": "Top panel",
+        "bar": "Panel",
         "dock": "Dock"
       }
     },

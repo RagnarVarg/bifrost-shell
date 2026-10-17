@@ -13,7 +13,7 @@
       "default": null,
       "nullable": true,
       "label": "UI font",
-      "description": "Empty = the theme's (Geist)",
+      "description": "Empty = the theme's (Inter)",
       "group": "fonts",
       "inherit": "font.ui"
     },

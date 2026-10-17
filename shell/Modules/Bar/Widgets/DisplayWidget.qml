@@ -19,7 +19,7 @@ BarWidget {
 
         BIcon {
             name: "display"
-            size: Theme.icon.size.sm
+            size: Theme.icon.size.bar
             color: Theme.color.text
         }
     }

@@ -147,15 +147,17 @@
       }
     },
     {
-      "id": "font-geist",
+      "id": "font-inter",
       "level": "recommended",
       "purpose": "Primary UI typeface (falls back to the system sans-serif)",
       "check": {
         "type": "font",
-        "family": "Geist"
+        "family": "Inter"
       },
       "install": {
-        "arch": "yay -S ttf-geist-variable"
+        "arch": "pacman -S inter-font",
+        "fedora": "dnf install rsms-inter-fonts",
+        "ubuntu": "apt install fonts-inter"
       }
     },
     {
@@ -587,7 +589,8 @@
         "upower",
         "ddcutil",
         "power-profiles-daemon",
-        "google-noto-sans-runic-fonts"
+        "google-noto-sans-runic-fonts",
+        "rsms-inter-fonts"
       ],
       "greeterPackages": [
         "greetd",
@@ -691,7 +694,8 @@
         "upower",
         "ddcutil",
         "power-profiles-daemon",
-        "fonts-noto-core"
+        "fonts-noto-core",
+        "fonts-inter"
       ],
       "greeterPackages": [
         "greetd",

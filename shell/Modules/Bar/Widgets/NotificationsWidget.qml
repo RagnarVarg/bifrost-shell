@@ -31,7 +31,7 @@ BarWidget {
 
         BIcon {
             name: Notify.dnd ? "bell-off" : "bell"
-            size: Theme.icon.size.sm
+            size: Theme.icon.size.bar
             color: Theme.color.text
         }
 

@@ -260,7 +260,7 @@ ShellRoot {
         eq("selected state uses prism", Theme.states.selected.fill, "prism");
         for (const group of ["typography", "icon", "control", "materials", "states", "prism", "motion"])
             check("Theme exposes " + group, Theme[group] && Object.keys(Theme[group]).length > 0);
-        eq("typography role resolves family", Theme.typography.body.family, "Geist");
+        eq("typography role resolves family", Theme.typography.body.family, "Inter");
         eq("control tokens resolve refs", Theme.control.radius, Theme.radius.md);
         check("material has glass params", ["depth", "density", "sheen", "edgeTopBias", "grain", "highlight"].every(k => typeof Theme.materials.panel[k] === "number"));
 

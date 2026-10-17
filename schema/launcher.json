@@ -19,14 +19,14 @@
         "top"
       ],
       "label": "Placement",
-      "description": "Dock = the launcher grows out of the dock; Center = middle of the screen; Top panel = the panel button, or the middle of the panel (the clock on a side panel) when no launcher button is present; Top edge = the middle of the top screen edge, wherever the panel is. Without a dock, Dock falls back to Center.",
+      "description": "Dock = the launcher grows out of the dock; Center = middle of the screen; Panel = the panel button, or the middle of the panel (the clock on a side panel) when no launcher button is present; Top edge = the middle of the top screen edge, wherever the panel is. Without a dock, Dock falls back to Center.",
       "group": "placement",
       "scope": "shell",
       "apply": "live",
       "optionLabels": {
         "dock": "Dock",
         "center": "Center",
-        "bar": "Top panel",
+        "bar": "Panel",
         "top": "Top edge"
       }
     },

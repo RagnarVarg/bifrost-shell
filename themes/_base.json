@@ -111,7 +111,7 @@
     }
   },
   "font": {
-    "ui": "Geist",
+    "ui": "Inter",
     "mono": "Geist Mono",
     "size": {
       "xs": 10,
@@ -501,7 +501,8 @@
       "sm": 14,
       "md": 18,
       "lg": 22,
-      "xl": 28
+      "xl": 28,
+      "bar": "@icon.size.md"
     },
     "stroke": 1.5
   },
@@ -567,6 +568,7 @@
     "clockMenuWidth": 560,
     "dayPanelWidth": 320,
     "workspacePreviewWidth": 440,
+    "themePreviewAspect": 2.6,
     "_overview": "Overview (all windows): a picture is at most overviewTileHeight × the screen's height tall and overviewTileAspect × that wide (fewer windows never make them bigger), with overviewGap between them.",
     "overviewTileHeight": 0.28,
     "overviewTileAspect": 2.4,

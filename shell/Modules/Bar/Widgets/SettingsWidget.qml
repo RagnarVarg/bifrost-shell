@@ -15,7 +15,7 @@ BarWidget {
 
         BIcon {
             name: "settings"
-            size: Theme.icon.size.md
+            size: Theme.icon.size.bar
             color: Theme.color.text
         }
     }

@@ -37,7 +37,7 @@ BarWidget {
 
         BIcon {
             name: "toggles"
-            size: Theme.icon.size.md
+            size: Theme.icon.size.bar
             color: Theme.color.text
         }
     }

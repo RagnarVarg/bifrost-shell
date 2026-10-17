@@ -12,8 +12,8 @@ hand-edited config files.
 
 ## Features
 
-- **Top bar**: on any screen edge, with auto-hide, widget boxes and a widget
-  layout you arrange in Settings. Widgets cover workspaces (numbers or runes), the
+- **Bar**: on any screen edge, as a classic bar or a frame around the desktop,
+  with auto-hide, widget boxes and a widget layout you arrange in Settings. Widgets cover workspaces (numbers or runes), the
   active window, clock, media, system stats, GPU, battery, tray,
   notifications, screenshots and a control-center button.
 - **Dock**: pinned and running apps with window previews, reordering by drag,
@@ -38,6 +38,8 @@ hand-edited config files.
     brightness and saturation
 - **Hardware integration**: NetworkManager, BlueZ, PipeWire, laptop and
   DDC/CI monitor brightness, UPower and power-profiles-daemon.
+- **Presets**: ready-made looks (`bifrost`, `minimal`, `compact`, `spacious`),
+  chosen in Settings or with `bifrostctl preset set <name>`.
 - **`bifrostctl`**: a command-line tool for every setting, preset, profile and
   health check.
 - **Translations**: English and Swedish.
@@ -56,77 +58,88 @@ Minimum versions and every dependency live in
 
 ## Installation
 
-Run everything as your normal user; only package installation and the optional
-login screen use `sudo`.
+Copy the block for your distribution into a terminal and run it as your normal
+user (not root). It downloads Bifrost, installs everything it needs, installs
+Bifrost itself and applies the `bifrost` look: a frame bar on the left, flat
+dark glass, rune workspaces and an auto-hiding dock.
 
-### 1. Get the source
+### Arch Linux and CachyOS
 
-```sh
-git clone https://github.com/RagnarVarg/bifrost-shell.git
-cd bifrost-shell
-```
-
-### 2. Install the dependencies
-
-**Fedora 44 and Ubuntu 26.04 LTS**: the installer can do this for you. It
-enables the Hyprland and Quickshell repositories (COPR or PPA) and installs the
-full feature set.
+The monospace font comes from the AUR via [`yay`](https://github.com/Jguer/yay);
+with `paru`, write `paru` instead.
 
 ```sh
-./install.sh --deps-plan      # preview every repository and package change
-./install.sh --install-deps   # install the dependencies, then Bifrost
-```
-
-**Arch Linux and CachyOS**: install the packages yourself:
-
-```sh
+git clone https://github.com/RagnarVarg/bifrost-shell.git ~/bifrost-shell
+cd ~/bifrost-shell
 sudo pacman -S --needed quickshell hyprland qt6-declarative qt6-svg qt6-wayland \
   qt6-imageformats python python-gobject rsync util-linux dbus fontconfig \
   noto-fonts xdg-user-dirs grim slurp wl-clipboard libnotify xdg-utils \
   networkmanager nm-connection-editor bluez bluez-utils pipewire wireplumber \
   libpulse upower power-profiles-daemon brightnessctl polkit \
-  xdg-desktop-portal-hyprland xdg-desktop-portal-gtk kitty
-```
-
-Optional extras for Arch/CachyOS:
-
-- `ddcutil`: brightness of external monitors over DDC/CI (needs access to
-  `i2c-dev`).
-- `ttf-geist-variable` and `ttf-geist-mono-variable` (AUR): Bifrost's default
-  fonts. Without them Bifrost falls back to your system fonts, and any font
-  can be chosen in Settings.
-- `greetd` and `acl`: the Bifrost login screen.
-- `nvidia-utils`: the GPU widget on NVIDIA cards.
-
-### 3. Install Bifrost
-
-```sh
+  xdg-desktop-portal-hyprland xdg-desktop-portal-gtk kitty inter-font
+yay -S --needed ttf-geist-mono-variable
 ./install.sh
+~/.local/bin/bifrostctl preset set bifrost
 ```
 
-The installer:
+### Fedora 44 and Ubuntu 26.04 LTS
 
-- copies Bifrost to `~/.local/share/bifrost-shell` and links its commands
-  (`bifrostctl`, `bifrost-settings`, …) into `~/.local/bin`
-- installs and enables the `bifrost.service` user service
-- generates `~/.config/bifrost/hypr/bifrost.lua` and, after asking, adds a
-  marked hook to `hyprland.lua` (backup made first)
-- offers the login screen if greetd is installed
-
-### 4. Check and log in
+The installer adds the Hyprland and Quickshell repositories (COPR or PPA) and
+installs every package itself, fonts included.
 
 ```sh
-bifrostctl doctor     # dependencies, versions and session checks
-bifrostctl validate   # configuration check
+git clone https://github.com/RagnarVarg/bifrost-shell.git ~/bifrost-shell
+cd ~/bifrost-shell
+./install.sh --install-deps
+~/.local/bin/bifrostctl preset set bifrost
 ```
 
-Log out, choose **Hyprland**, and Bifrost starts with the session. Open
-Settings with <kbd>Super</kbd> + <kbd>,</kbd> and the launcher with
-<kbd>Super</kbd> + <kbd>Space</kbd>.
+To see every repository and package change first, run
+`./install.sh --deps-plan` before `--install-deps`.
+
+### Then
+
+Log out, choose **Hyprland** and log in: Bifrost starts with the session.
+Open Settings with <kbd>Super</kbd> + <kbd>,</kbd> and the launcher with
+<kbd>Super</kbd> + <kbd>Space</kbd>. To check the installation:
+
+```sh
+bifrostctl doctor
+```
+
+Prefer the plain default look (bar at the top)? Skip the `preset set` line, or
+undo it later with `bifrostctl preset set default`.
+
+### Optional extras (Arch/CachyOS)
+
+Brightness of external monitors from the bar (the monitor must support DDC/CI):
+
+```sh
+sudo pacman -S --needed ddcutil
+```
+
+GPU widget on NVIDIA cards (usually already installed with the driver):
+
+```sh
+sudo pacman -S --needed nvidia-utils
+```
+
+Bifrost's own login screen, replacing e.g. SDDM. Install it, then run
+`./install.sh` again and answer yes when it offers the login screen:
+
+```sh
+sudo pacman -S --needed greetd acl
+```
+
+The installer copies Bifrost to `~/.local/share/bifrost-shell`, links its
+commands (`bifrostctl`, `bifrost-settings`, …) into `~/.local/bin`, enables the
+`bifrost.service` user service and, after asking, adds one marked hook to your
+`hyprland.lua` (backup made first).
 
 ### Updating
 
 ```sh
+cd ~/bifrost-shell
 git pull
 ./install.sh
 systemctl --user restart bifrost.service
