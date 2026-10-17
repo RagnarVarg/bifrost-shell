@@ -1,8 +1,10 @@
 # Bifrost Shell — instructions for Claude sessions
 
 Bifrost is the user's own Quickshell desktop shell. Since 2026-09-25 it **is** the user's session shell
-(bifrost.service; DMS stopped), installed with `install.sh --link` (~/.local/share/bifrost-shell → this repo),
-so edits here are live. The user writes in Swedish; answer in Swedish. UI source strings are English
+(bifrost.service; DMS stopped). ~/.local/share/bifrost-shell is a **copy** of this repo (plain `install.sh`, not
+`--link`), so neither edits here nor `git pull` reach the running shell: run `./install.sh --no-hypr --no-greeter`
+(no prompts), then restart bifrost.service and Settings. Check with
+`diff -rq --exclude=.git --exclude=__pycache__ . ~/.local/share/bifrost-shell`. The user writes in Swedish; answer in Swedish. UI source strings are English
 (`I18n.tr`), with the Swedish catalogue in `i18n/sv.json`.
 
 ## Read first
