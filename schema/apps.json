@@ -36,7 +36,7 @@
       "type": "bool",
       "default": false,
       "label": "Background blur",
-      "description": "Blurs what is behind the Files window, seen through its transparent parts. Hyprland blurs a whole window with one strength for every window (Glass & transparency → Background blur), so the strength can't differ per pane or per app; an opaque pane simply covers the blur",
+      "description": "Blurs what is behind the Files window, seen through its transparent parts: at low transparency (around 10 %) almost nothing shows through, so the blur is hard to see; from about 30 % it is clear. Hyprland blurs a whole window with one strength for every window (Glass & transparency → Background blur), so the strength can't differ per pane or per app; an opaque pane simply covers the blur",
       "group": "nautilus",
       "scope": "hyprland",
       "requires": {
