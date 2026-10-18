@@ -29,7 +29,7 @@
   "Inner highlight strength": "Inre reflexens styrka",
   "Active glow": "Glöd på aktivt fönster",
   "A subtle blue glow around the focused window only": "En diskret blå glöd, bara runt fönstret i fokus",
-  "Glow strength": "Glödens styrka",
+  "Glow strength": "Glödstyrka",
   "Prism frame": "Prismaram",
   "A subtle cyan → blue → violet gradient along the top of the focused window": "En diskret gradient i cyan → blått → violett längs överkanten på fönstret i fokus",
   "Focus animation": "Fokusanimation",
@@ -1183,8 +1183,9 @@
   "Prism": "Prisma",
   "Glow": "Glöd",
   "Selection": "Markering",
-  "How the active workspace and open buttons are marked in the bar. Prism = Bifrost prism; Glow = a glowing accent colour": "Hur aktiv arbetsyta och öppna knappar markeras i panelen. Prisma = Bifrost-prisma; Glöd = en lysande accentfärg",
   "Glow colour": "Glödfärg",
   "Colour of the glow. Empty = the accent colour": "Glödens färg. Tomt = accentfärgen",
-  "Accent": "Accent"
+  "Accent": "Accent",
+  "How selected and active items are marked everywhere: the bar, its menus, the control center, the dock and lists. Prism = Bifrost prism; Glow = a glowing colour": "Hur markerade och aktiva saker visas överallt: panelen, dess menyer, kontrollcentret, dockan och listor. Prisma = Bifrost-prisma; Glöd = en lysande färg",
+  "0 = a flat colour without glow, 1 = standard, 2 = strong": "0 = platt färg utan glöd, 1 = standard, 2 = stark"
 }

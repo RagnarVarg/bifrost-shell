@@ -39,8 +39,6 @@ BarWidget {
                     hovered: mouse.containsMouse
                     pressed: mouse.pressed
                     selected: trayMenu.isOpen
-                    selection: Config.values.bar.selection
-                    glowColor: Config.values.bar.selectionColor || ""
                 }
 
                 Image {

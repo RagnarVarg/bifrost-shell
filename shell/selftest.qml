@@ -260,7 +260,7 @@ ShellRoot {
         eq("prism stops", Theme.prism.stops.length, 3);
         eq("selected state uses prism", Theme.states.selected.fill, "prism");
         eq("glow states resolve", [Theme.states.glowSelected.fill, Theme.states.glowActive.fill, Theme.states.glowActive.blur > 0, Theme.states.glowActive.halo > 0], ["glow", "glow", true, true]);
-        eq("bar selection defaults to prism", Config.values.bar.selection, "prism");
+        eq("selection defaults to prism", Config.values.appearance.selection, "prism");
         for (const group of ["typography", "icon", "control", "materials", "states", "prism", "motion"])
             check("Theme exposes " + group, Theme[group] && Object.keys(Theme[group]).length > 0);
         eq("typography role resolves family", Theme.typography.body.family, "Inter");
@@ -289,6 +289,18 @@ ShellRoot {
         Config.set("appearance.prism.intensity", 0);
         Theme.rebuild();
         eq("prism intensity 0 falls back to solid", Theme.states.selected.fill, "solid");
+        const glowBase = Theme.states.glowActive;
+        Config.set("appearance.selection", "glow");
+        Config.set("appearance.glow.color", "#3DE0FF");
+        Theme.rebuild();
+        eq("glow selection replaces selected / active", [Theme.states.selected.fill, Theme.states.active.fill, Theme.states.active.color, Theme.states.active.halo], ["glow", "glow", "#3DE0FF", glowBase.halo]);
+        Config.set("appearance.glow.strength", 0);
+        Theme.rebuild();
+        eq("glow strength 0 = flat colour", [Theme.states.active.halo, Theme.states.active.blur, Theme.states.active.opacity], [0, 0, glowBase.opacity / 2]);
+        Config.set("appearance.selection", "prism");
+        Config.set("appearance.glow.color", null);
+        Config.set("appearance.glow.strength", 1);
+        Theme.rebuild();
         setGlass("materials.transparency", 25);
         Theme.rebuild();
         check("one transparency reaches every surface", ["bar", "dock", "panel", "popover", "osd", "launcher", "controlCenter", "notifications", "settings", "settingsGroups"].every(k => Math.abs(Theme.materials[k].opacity - 0.75) < 1e-9 && Theme.materials[k].transparency === 25));

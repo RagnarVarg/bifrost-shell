@@ -208,42 +208,6 @@
       }
     },
     {
-      "key": "bar.selection",
-      "type": "enum",
-      "default": "prism",
-      "options": [
-        "prism",
-        "glow"
-      ],
-      "optionLabels": {
-        "prism": "Prism",
-        "glow": "Glow"
-      },
-      "label": "Selection",
-      "description": "How the active workspace and open buttons are marked in the bar. Prism = Bifrost prism; Glow = a glowing accent colour",
-      "group": "appearance",
-      "scope": "shell",
-      "apply": "live"
-    },
-    {
-      "key": "bar.selectionColor",
-      "type": "color",
-      "default": null,
-      "nullable": true,
-      "inherit": "palette.accent",
-      "nullLabel": "Accent",
-      "label": "Glow colour",
-      "description": "Colour of the glow. Empty = the accent colour",
-      "group": "appearance",
-      "scope": "shell",
-      "apply": "live",
-      "dependsOnValue": {
-        "bar.selection": [
-          "glow"
-        ]
-      }
-    },
-    {
       "key": "bar.autohide.enabled",
       "type": "bool",
       "default": false,

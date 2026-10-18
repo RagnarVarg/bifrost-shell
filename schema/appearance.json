@@ -140,6 +140,54 @@
       "label": "Bifrost prism",
       "group": "identity",
       "description": "Refraction on hover, selection and active items. 0 = off, 1 = standard, 3 = strong"
+    },
+    {
+      "key": "appearance.selection",
+      "type": "enum",
+      "default": "prism",
+      "options": [
+        "prism",
+        "glow"
+      ],
+      "optionLabels": {
+        "prism": "Prism",
+        "glow": "Glow"
+      },
+      "label": "Selection",
+      "description": "How selected and active items are marked everywhere: the bar, its menus, the control center, the dock and lists. Prism = Bifrost prism; Glow = a glowing colour",
+      "group": "identity"
+    },
+    {
+      "key": "appearance.glow.color",
+      "type": "color",
+      "default": null,
+      "nullable": true,
+      "inherit": "palette.accent",
+      "nullLabel": "Accent",
+      "label": "Glow colour",
+      "description": "Colour of the glow. Empty = the accent colour",
+      "group": "identity",
+      "dependsOnValue": {
+        "appearance.selection": [
+          "glow"
+        ]
+      }
+    },
+    {
+      "key": "appearance.glow.strength",
+      "type": "real",
+      "default": 1.0,
+      "min": 0,
+      "max": 2,
+      "step": 0.05,
+      "label": "Glow strength",
+      "description": "0 = a flat colour without glow, 1 = standard, 2 = strong",
+      "group": "identity",
+      "dependsOnValue": {
+        "appearance.selection": [
+          "glow"
+        ]
+      }
     }
   ]
 }

@@ -64,8 +64,6 @@ BarWidget {
             hovered: status.interactive && mouse.containsMouse
             pressed: status.interactive && mouse.pressed
             selected: status.selected
-            selection: Config.values.bar.selection
-            glowColor: Config.values.bar.selectionColor || ""
         }
 
         BIcon {

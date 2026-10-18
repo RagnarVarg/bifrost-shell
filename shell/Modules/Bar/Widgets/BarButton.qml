@@ -30,8 +30,6 @@ Item {
         pressed: mouse.pressed
         selected: button.selected
         active: button.active
-        selection: Config.values.bar.selection
-        glowColor: Config.values.bar.selectionColor || ""
     }
 
     BarRow {

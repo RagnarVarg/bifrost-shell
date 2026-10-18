@@ -275,6 +275,21 @@ function build(chain, variant, app, materials) {
     // Buttons without their own glass keep the plain control fill.
     if (!t.materials.controlButtons.custom)
         t.materials.controlButtons.fill = t.color.controlFill;
+    // Selection "glow": selected / active use the glow states (solid colour
+    // with a halo) instead of the prism; strength scales fill, halo and blur.
+    if (app.selection === "glow") {
+        const glow = app.glow || {};
+        const strength = typeof glow.strength === "number" ? Math.max(0, glow.strength) : 1;
+        for (const [k, g] of [["selected", "glowSelected"], ["active", "glowActive"]]) {
+            const s = L.clone(t.states[g]);
+            if (typeof glow.color === "string" && /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(glow.color))
+                s.color = glow.color.toUpperCase();
+            s.opacity = clamp(s.opacity * (0.5 + 0.5 * strength), 0, 1);
+            s.halo = clamp(s.halo * strength, 0, 1);
+            s.blur = Math.round(s.blur * strength);
+            t.states[k] = s;
+        }
+    }
     if (t.prism.enabled === false)
         for (const k in t.states)
             if (t.states[k].fill === "prism")
