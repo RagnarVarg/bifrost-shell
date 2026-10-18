@@ -434,7 +434,7 @@
     }
   },
   "lit": {
-    "_comment": "Lit look for selected/active items (appearance.selection = lit): one even, strong colour. fill = fill opacity per state.",
+    "_comment": "Lit look for selected/active items (appearance.selection = lit): one even, opaque colour. fill = how far the colour is mixed from the surface colour toward the full colour, per state (times appearance.lit.strength).",
     "fill": {
       "selected": 0.55,
       "active": 0.75

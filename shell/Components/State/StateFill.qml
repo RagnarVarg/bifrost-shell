@@ -4,7 +4,7 @@ import qs.Components.Motion
 
 // Draws one interaction state spec from Theme.states:
 //   fill "solid" → translucent colour, "prism" → Bifrost prism, "ring" → rim only,
-//   "lit" → one even, strong colour.
+//   "lit" → one even, opaque colour.
 // Fades in/out with motion tokens; keeps the last spec while fading out.
 Item {
     id: root

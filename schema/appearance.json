@@ -181,7 +181,7 @@
       "max": 2,
       "step": 0.05,
       "label": "Selection strength",
-      "description": "How strongly they light up. 1 = standard, 2 = strong",
+      "description": "How strong the colour is: low = closer to the background, 2 = the full colour",
       "group": "identity",
       "dependsOnValue": {
         "appearance.selection": [

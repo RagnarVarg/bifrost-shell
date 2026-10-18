@@ -276,17 +276,23 @@ function build(chain, variant, app, materials) {
     if (!t.materials.controlButtons.custom)
         t.materials.controlButtons.fill = t.color.controlFill;
     // Selection "lit": selected / active use the lit states (one even colour)
-    // instead of the prism; strength scales the fill.
+    // instead of the prism. The colour is opaque, so the glass behind it (and
+    // its top-to-bottom shading) never shows through; strength mixes it from
+    // the surface colour toward the full colour.
     if (app.selection === "lit") {
         const lit = app.lit || {};
         const strength = typeof lit.strength === "number" ? Math.max(0, lit.strength) : 1;
+        const rgb = c => /^#[0-9a-fA-F]{8}$/.test(c) ? "#" + c.substring(3) : c;
         for (const [k, l] of [["selected", "litSelected"], ["active", "litActive"]]) {
             const s = L.clone(t.states[l]);
-            if (typeof lit.color === "string" && /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(lit.color))
-                s.color = lit.color.toUpperCase();
-            s.opacity = clamp(s.opacity * strength, 0, 1);
+            const color = typeof lit.color === "string" && /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(lit.color) ? lit.color : s.color;
+            s.color = mixHex(rgb(t.palette.surface), rgb(color), clamp(s.opacity * strength, 0, 1));
+            s.opacity = 1;
             t.states[k] = s;
         }
+        // Hover without the prism's light line under the top edge.
+        if (t.states.hover.fill === "prism")
+            t.states.hover.fill = "solid";
     }
     if (t.prism.enabled === false)
         for (const k in t.states)
