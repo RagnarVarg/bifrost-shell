@@ -259,6 +259,8 @@ ShellRoot {
         eq("easing curve", Theme.motion.curve.standard.length, 6);
         eq("prism stops", Theme.prism.stops.length, 3);
         eq("selected state uses prism", Theme.states.selected.fill, "prism");
+        eq("glow states resolve", [Theme.states.glowSelected.fill, Theme.states.glowActive.fill, Theme.states.glowActive.blur > 0, Theme.states.glowActive.halo > 0], ["glow", "glow", true, true]);
+        eq("bar selection defaults to prism", Config.values.bar.selection, "prism");
         for (const group of ["typography", "icon", "control", "materials", "states", "prism", "motion"])
             check("Theme exposes " + group, Theme[group] && Object.keys(Theme[group]).length > 0);
         eq("typography role resolves family", Theme.typography.body.family, "Inter");

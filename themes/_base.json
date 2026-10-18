@@ -433,6 +433,15 @@
       "focus": 0.5
     }
   },
+  "glow": {
+    "_comment": "Glowing colour look for selected/active items (bar.selection = glow): a solid accent fill plus a soft halo of the same colour around it. fill = fill opacity per state, halo = halo opacity, blur = halo softness in px.",
+    "fill": {
+      "selected": 0.5,
+      "active": 0.7
+    },
+    "halo": 0.9,
+    "blur": 14
+  },
   "typography": {
     "display": {
       "family": "@font.ui",
@@ -608,6 +617,22 @@
       "color": "@color.focus",
       "width": "@border.focus",
       "prism": "@prism.intensity.focus"
+    },
+    "glowSelected": {
+      "fill": "glow",
+      "color": "@palette.accent",
+      "opacity": "@glow.fill.selected",
+      "halo": "@glow.halo",
+      "blur": "@glow.blur",
+      "prism": 0
+    },
+    "glowActive": {
+      "fill": "glow",
+      "color": "@palette.accent",
+      "opacity": "@glow.fill.active",
+      "halo": "@glow.halo",
+      "blur": "@glow.blur",
+      "prism": 0
     }
   },
   "density": {

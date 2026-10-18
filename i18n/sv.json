@@ -1179,5 +1179,12 @@
   "Working…": "Jobbar…",
   "Done — your turn": "Klar – din tur",
   "Ready": "Redo",
-  "Claude Code": "Claude Code"
+  "Claude Code": "Claude Code",
+  "Prism": "Prisma",
+  "Glow": "Glöd",
+  "Selection": "Markering",
+  "How the active workspace and open buttons are marked in the bar. Prism = Bifrost prism; Glow = a glowing accent colour": "Hur aktiv arbetsyta och öppna knappar markeras i panelen. Prisma = Bifrost-prisma; Glöd = en lysande accentfärg",
+  "Glow colour": "Glödfärg",
+  "Colour of the glow. Empty = the accent colour": "Glödens färg. Tomt = accentfärgen",
+  "Accent": "Accent"
 }

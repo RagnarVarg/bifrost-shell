@@ -98,6 +98,8 @@ BarWidget {
                     anchors.fill: parent
                     radius: Math.min(width, height) / 2
                     active: pill.isActive
+                    selection: Config.values.bar.selection
+                    glowColor: Config.values.bar.selectionColor || ""
                     hovered: mouse.containsMouse
                     pressed: mouse.pressed
                 }

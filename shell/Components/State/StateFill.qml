@@ -1,9 +1,11 @@
 import QtQuick
+import QtQuick.Effects
 import qs.Core
 import qs.Components.Motion
 
 // Draws one interaction state spec from Theme.states:
-//   fill "solid" → translucent colour, "prism" → Bifrost prism, "ring" → rim only.
+//   fill "solid" → translucent colour, "prism" → Bifrost prism, "ring" → rim only,
+//   "glow" → solid colour with a soft halo of the same colour.
 // Fades in/out with motion tokens; keeps the last spec while fading out.
 Item {
     id: root
@@ -34,9 +36,17 @@ Item {
         BNumberAnimation {}
     }
 
+    RectangularShadow {
+        anchors.fill: parent
+        visible: root.shown !== null && root.shown.fill === "glow"
+        radius: root.radius
+        blur: root.shown && root.shown.blur !== undefined ? root.shown.blur : 0
+        color: Qt.alpha(root.specColor, root.shown && root.shown.halo !== undefined ? root.shown.halo : 0)
+    }
+
     Rectangle {
         anchors.fill: parent
-        visible: root.shown !== null && root.shown.fill === "solid"
+        visible: root.shown !== null && (root.shown.fill === "solid" || root.shown.fill === "glow")
         radius: root.radius
         color: Qt.alpha(root.specColor, root.shown && root.shown.opacity !== undefined ? root.shown.opacity : 0)
     }
