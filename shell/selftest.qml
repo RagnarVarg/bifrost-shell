@@ -259,7 +259,7 @@ ShellRoot {
         eq("easing curve", Theme.motion.curve.standard.length, 6);
         eq("prism stops", Theme.prism.stops.length, 3);
         eq("selected state uses prism", Theme.states.selected.fill, "prism");
-        eq("lit states resolve", [Theme.states.litSelected.fill, Theme.states.litActive.fill, Theme.states.litActive.highlight > 0, Theme.states.litActive.rim > 0], ["lit", "lit", true, true]);
+        eq("lit states resolve", [Theme.states.litSelected.fill, Theme.states.litActive.fill, Theme.states.litActive.opacity > 0], ["lit", "lit", true]);
         eq("selection defaults to prism", Config.values.appearance.selection, "prism");
         for (const group of ["typography", "icon", "control", "materials", "states", "prism", "motion"])
             check("Theme exposes " + group, Theme[group] && Object.keys(Theme[group]).length > 0);
@@ -293,10 +293,10 @@ ShellRoot {
         Config.set("appearance.selection", "lit");
         Config.set("appearance.lit.color", "#3DE0FF");
         Theme.rebuild();
-        eq("lit selection replaces selected / active", [Theme.states.selected.fill, Theme.states.active.fill, Theme.states.active.color, Theme.states.active.rim], ["lit", "lit", "#3DE0FF", litBase.rim]);
+        eq("lit selection replaces selected / active", [Theme.states.selected.fill, Theme.states.active.fill, Theme.states.active.color, Theme.states.active.opacity], ["lit", "lit", "#3DE0FF", litBase.opacity]);
         Config.set("appearance.lit.strength", 0.5);
         Theme.rebuild();
-        eq("lit strength scales fill, highlight and rim", [Theme.states.active.opacity, Theme.states.active.highlight, Theme.states.active.rim], [litBase.opacity / 2, litBase.highlight / 2, litBase.rim / 2]);
+        eq("lit strength scales the fill", Theme.states.active.opacity, litBase.opacity / 2);
         Config.set("appearance.selection", "prism");
         Config.set("appearance.lit.color", null);
         Config.set("appearance.lit.strength", 1);

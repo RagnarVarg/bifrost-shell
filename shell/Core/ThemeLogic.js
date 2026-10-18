@@ -275,8 +275,8 @@ function build(chain, variant, app, materials) {
     // Buttons without their own glass keep the plain control fill.
     if (!t.materials.controlButtons.custom)
         t.materials.controlButtons.fill = t.color.controlFill;
-    // Selection "lit": selected / active use the lit states (the colour lit
-    // from within) instead of the prism; strength scales fill, highlight and rim.
+    // Selection "lit": selected / active use the lit states (one even colour)
+    // instead of the prism; strength scales the fill.
     if (app.selection === "lit") {
         const lit = app.lit || {};
         const strength = typeof lit.strength === "number" ? Math.max(0, lit.strength) : 1;
@@ -285,8 +285,6 @@ function build(chain, variant, app, materials) {
             if (typeof lit.color === "string" && /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(lit.color))
                 s.color = lit.color.toUpperCase();
             s.opacity = clamp(s.opacity * strength, 0, 1);
-            s.highlight = clamp(s.highlight * strength, 0, 1);
-            s.rim = clamp(s.rim * strength, 0, 1);
             t.states[k] = s;
         }
     }

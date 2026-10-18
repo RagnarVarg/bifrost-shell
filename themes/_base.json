@@ -434,15 +434,11 @@
     }
   },
   "lit": {
-    "_comment": "Lit look for selected/active items (appearance.selection = lit): the colour lit from within, no halo. fill = fill opacity per state, highlight = how much lighter the top is, rim = opacity of the light inner rim, rimLight = how much lighter the rim is than the colour, light = the light mixed in.",
+    "_comment": "Lit look for selected/active items (appearance.selection = lit): one even, strong colour. fill = fill opacity per state.",
     "fill": {
       "selected": 0.55,
       "active": 0.75
-    },
-    "highlight": 0.35,
-    "rim": 0.6,
-    "rimLight": 0.5,
-    "light": "#FFFFFF"
+    }
   },
   "typography": {
     "display": {
@@ -624,20 +620,12 @@
       "fill": "lit",
       "color": "@palette.accent",
       "opacity": "@lit.fill.selected",
-      "highlight": "@lit.highlight",
-      "rim": "@lit.rim",
-      "rimLight": "@lit.rimLight",
-      "light": "@lit.light",
       "prism": 0
     },
     "litActive": {
       "fill": "lit",
       "color": "@palette.accent",
       "opacity": "@lit.fill.active",
-      "highlight": "@lit.highlight",
-      "rim": "@lit.rim",
-      "rimLight": "@lit.rimLight",
-      "light": "@lit.light",
       "prism": 0
     }
   },

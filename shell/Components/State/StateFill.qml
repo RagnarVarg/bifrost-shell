@@ -4,7 +4,7 @@ import qs.Components.Motion
 
 // Draws one interaction state spec from Theme.states:
 //   fill "solid" → translucent colour, "prism" → Bifrost prism, "ring" → rim only,
-//   "lit" → colour lit from within: lighter towards the top, light inner rim.
+//   "lit" → one even, strong colour.
 // Fades in/out with motion tokens; keeps the last spec while fading out.
 Item {
     id: root
@@ -37,33 +37,9 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        visible: root.shown !== null && root.shown.fill === "solid"
+        visible: root.shown !== null && (root.shown.fill === "solid" || root.shown.fill === "lit")
         radius: root.radius
         color: Qt.alpha(root.specColor, root.shown && root.shown.opacity !== undefined ? root.shown.opacity : 0)
-    }
-
-    Rectangle {
-        id: litFill
-
-        readonly property bool on: root.shown !== null && root.shown.fill === "lit"
-        readonly property real fillOpacity: on ? root.shown.opacity : 0
-        readonly property color topColor: on ? Qt.tint(root.specColor, Qt.alpha(root.shown.light, root.shown.highlight)) : "transparent"
-
-        anchors.fill: parent
-        visible: on
-        radius: root.radius
-        gradient: Gradient {
-            GradientStop {
-                position: 0
-                color: Qt.alpha(litFill.topColor, litFill.fillOpacity)
-            }
-            GradientStop {
-                position: 1
-                color: Qt.alpha(root.specColor, litFill.fillOpacity)
-            }
-        }
-        border.width: on ? Theme.border.hairline : 0
-        border.color: on ? Qt.alpha(Qt.tint(root.specColor, Qt.alpha(root.shown.light, root.shown.rimLight)), root.shown.rim) : "transparent"
     }
 
     ShaderEffect {
