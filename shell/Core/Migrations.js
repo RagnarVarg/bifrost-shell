@@ -249,6 +249,22 @@ const steps = {
         }
         doc.version = 11;
         return doc;
+    },
+    // 11 → 12: resizing by dragging borders moved from Input to
+    // Windows & compositor → Tiling (input.resizeOnBorder → hyprland.tiling.resizeOnBorder).
+    11: function (doc) {
+        const vals = doc.values || {};
+        const inp = vals.input;
+        if (inp && typeof inp === "object" && "resizeOnBorder" in inp) {
+            const x = inp.resizeOnBorder;
+            delete inp.resizeOnBorder;
+            const h = vals.hyprland = vals.hyprland || {};
+            const tiling = h.tiling = h.tiling || {};
+            if (!("resizeOnBorder" in tiling))
+                tiling.resizeOnBorder = x;
+        }
+        doc.version = 12;
+        return doc;
     }
 };
 

@@ -155,6 +155,7 @@ ShellRoot {
         const out9 = Migrations.migrate({ version: 8, values: { bar: { boxes: { transparency: 30, tint: { dark: "#112233" }, blur: false, round: true } } } }, Config.formatVersion).values;
         eq("8 → 9: the boxes' glass moves to the Widgets group, unlinked", [out9.bar.boxes, out9.materials], [{ round: true }, { widgets: { tint: { dark: "#112233" }, transparency: { light: 30, dark: 30 }, blur: { light: false, dark: false } }, linked: false }]);
         eq("9 → 10: the control center's own glass group is dropped", Migrations.migrate({ version: 9, values: { materials: { linked: false, controlCenter: { transparency: 100 }, panels: { transparency: 46 } } } }, Config.formatVersion).values.materials, { linked: false, panels: { transparency: { light: 46, dark: 46 } } });
+        eq("11 → 12: border resizing moves to Tiling", Migrations.migrate({ version: 11, values: { input: { resizeOnBorder: true, trackpadDragLock: 2 } } }, Config.formatVersion).values, { input: { trackpadDragLock: 2 }, hyprland: { tiling: { resizeOnBorder: true } } });
         eq("7 → 8: the faint bar panel becomes the panel", Migrations.migrate({ version: 7, values: { bar: { background: "subtle", height: 40 } } }, Config.formatVersion).values.bar, { background: "panel", height: 40 });
         const v6 = { version: 6, values: { appearance: { accent: "#123456" }, materials: { tint: "#0F1516", blur: 5 } } };
         const out7 = Migrations.migrate(v6, Config.formatVersion).values;

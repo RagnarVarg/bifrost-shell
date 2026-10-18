@@ -49,7 +49,7 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-FORMAT_VERSION = 11
+FORMAT_VERSION = 12
 NULLABLE_TYPES = {"bool", "int", "real", "color", "string", "font", "icon", "path"}
 APPLY_MODES = {"live", "reload", "restart"}
 SCOPES = {"shell", "hyprland", "system"}
@@ -772,6 +772,15 @@ def migrate(doc):
     if v == 10:
         migrate_10(doc.setdefault("values", {}))
         v = 11
+    if v == 11:
+        # Resizing by dragging borders moved from Input to Windows & compositor → Tiling.
+        vals = doc.setdefault("values", {})
+        inp = vals.get("input")
+        if isinstance(inp, dict) and "resizeOnBorder" in inp:
+            x = inp.pop("resizeOnBorder")
+            tiling = vals.setdefault("hyprland", {}).setdefault("tiling", {})
+            tiling.setdefault("resizeOnBorder", x)
+        v = 12
     doc["version"] = v
     return doc
 
@@ -2071,7 +2080,7 @@ def generate_hypr(cfg) -> str:
     lines.append('hl.curve("bifrost_workspace", {type="bezier", points={{0.42,0},{0.58,1}}})')
     for leaf in ("workspaces", "workspacesIn", "workspacesOut"):
         lines.append('hl.animation({leaf='+lua_str(leaf)+', enabled=true, speed='+str(v("workspaces.transitionSpeed") or 4)+', bezier="bifrost_workspace", style="slide"})')
-    lines.append("hl.config({ general = { resize_on_border = " + str(bool(v("input.resizeOnBorder"))).lower() + " } })")
+    lines.append("hl.config({ general = { resize_on_border = " + str(bool(v("hyprland.tiling.resizeOnBorder"))).lower() + " } })")
     lines.append("hl.config({ input = { touchpad = { drag_lock = " + str(int(v("input.trackpadDragLock") or 0)) + " } } })")
     lines.append(input_backend.generate(v("input.devices") or {}, v("input.gestures") or {}, v("input.activeLayouts") or {}, gesture_actions()))
     binds = effective_keybinds(cfg)

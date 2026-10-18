@@ -258,7 +258,7 @@ class BifrostctlTest(unittest.TestCase):
         cfg = ctl.Config(self.schema)
         cfg.set("hyprland.manage", False)
         for enabled in (True, False):
-            cfg.set("input.resizeOnBorder", enabled)
+            cfg.set("hyprland.tiling.resizeOnBorder", enabled)
             cfg.save()
             text = ctl.generate_hypr(ctl.Config(self.schema))
             self.assertIn("resize_on_border = " + str(enabled).lower(), text)
@@ -647,6 +647,12 @@ class BifrostctlTest(unittest.TestCase):
             self.assertNotIn(str(ctl.REPO), ctl.install_bin_lua())
         finally:
             del os.environ["XDG_DATA_HOME"]
+
+    def test_migrate_11_to_12_border_resize_moves_to_tiling(self):
+        doc = {"version": 11, "values": {"input": {"resizeOnBorder": True, "trackpadDragLock": 2}}}
+        v = ctl.migrate(doc)["values"]
+        self.assertEqual(v["input"], {"trackpadDragLock": 2})
+        self.assertEqual(v["hyprland"], {"tiling": {"resizeOnBorder": True}})
 
     def test_migrate_4_to_6_blur_amounts(self):
         doc = {"version": 4, "values": {"materials": {"blurStrength": 49, "bar": {"blur": True}, "dock": {"blur": False}}}}

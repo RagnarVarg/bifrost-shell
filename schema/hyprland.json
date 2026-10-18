@@ -50,6 +50,16 @@
       "dependsOn": "hyprland.manage"
     },
     {
+      "key": "hyprland.tiling.resizeOnBorder",
+      "type": "bool",
+      "default": false,
+      "apply": "live",
+      "label": "Resize windows by dragging borders",
+      "description": "Drag the borders or the gaps between tiled windows with the left mouse button to change their size (also works on floating windows).",
+      "group": "tiling",
+      "scope": "hyprland"
+    },
+    {
       "key": "hyprland.tiling.onClose",
       "type": "enum",
       "default": "fill",

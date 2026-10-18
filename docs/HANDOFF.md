@@ -1014,3 +1014,8 @@ Validation: 535 QML, 46 CLI tests including HDR/hdredid/SDR persistence and gene
 - Offscreen-skärmbilder med glas och ikoner: `QT_QUICK_BACKEND=rhi QSG_RHI_BACKEND=opengl QT_QPA_PLATFORM=offscreen`
   (mjukvarurenderaren ritar inga shaders, så ikoner och glas saknas där; Vulkan offscreen hänger sig).
 - Selftest 623/0. Väntar på användarens granskning innan merge och `./install.sh --no-hypr --no-greeter`.
+
+### Tiling: resize by dragging borders moved to Tiling (2026-10-18)
+The border-resize toggle moved from Input to Settings → Windows & compositor → Tiling: `input.resizeOnBorder` →
+`hyprland.tiling.resizeOnBorder` (config format 12, migration 11 → 12 in Migrations.js and bifrostctl). Still writes
+`general.resize_on_border`, independent of `hyprland.manage`.
