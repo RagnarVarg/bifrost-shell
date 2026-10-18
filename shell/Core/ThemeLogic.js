@@ -119,6 +119,7 @@ function groupGlass(s, group, variant) {
         blur: ownB === false ? 0 : ownB === true ? (shared > 0 ? shared : 20) : shared,
         tint: tint,
         border: s.border,
+        shading: s.shading !== false,
         custom: typeof ownT === "number" || typeof ownB === "boolean" || (own.tint && typeof own.tint[variant] === "string") === true
     };
 }
@@ -158,6 +159,11 @@ function applyMaterial(m, s, glass, name, variant) {
     m.bevelStrength = (glass.bevelStrength || 0.06) * body;
     m.refraction = (glass.refraction || 0) * body;
     m.glow = 0;
+    // Shading off: one even colour, no light top, darker bottom or bevel.
+    if (s.shading === false) {
+        for (const k of ["depth", "density", "highlight", "sheen", "grain", "edgeTopBias", "bevelStrength"])
+            m[k] = 0;
+    }
     m.opacity = clamp(m.opacity, 0, 1);
     m.fill = withAlpha(m.tint, m.opacity);
     m.transparency = Math.round((1 - m.opacity) * 100);

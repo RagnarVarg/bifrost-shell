@@ -289,6 +289,12 @@ ShellRoot {
         Config.set("appearance.prism.intensity", 0);
         Theme.rebuild();
         eq("prism intensity 0 falls back to solid", Theme.states.selected.fill, "solid");
+        Config.set("materials.shading", false);
+        Theme.rebuild();
+        check("shading off flattens the glass", ["bar", "panel", "dock"].every(k => Theme.materials[k].depth === 0 && Theme.materials[k].highlight === 0 && Theme.materials[k].density === 0 && Theme.materials[k].edgeTopBias === 0));
+        Config.set("materials.shading", true);
+        Theme.rebuild();
+        check("shading on keeps the glass's depth", Theme.materials.bar.depth > 0);
         Config.set("appearance.selection", "lit");
         Config.set("appearance.lit.color", "#3DE0FF");
         Theme.rebuild();

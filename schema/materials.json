@@ -56,6 +56,14 @@
       "group": "all"
     },
     {
+      "key": "materials.shading",
+      "type": "bool",
+      "default": true,
+      "label": "Shading",
+      "description": "The glass is lighter at the top and darker toward the bottom. Off = one even colour",
+      "group": "all"
+    },
+    {
       "key": "materials.linked",
       "type": "bool",
       "default": true,

@@ -1188,5 +1188,7 @@
   "Selection strength": "Markeringsstyrka",
   "Glow strength": "Glödens styrka",
   "How selected and active items are marked everywhere: the bar, its menus, the control center, the dock and lists. Prism = Bifrost prism; Lit = one even, strong colour": "Hur markerade och aktiva saker visas överallt: panelen, dess menyer, kontrollcentret, dockan och listor. Prisma = Bifrost-prisma; Lysande = en jämn, stark färg",
-  "How strong the colour is: low = closer to the background, 2 = the full colour": "Hur stark färgen är: lågt = närmare bakgrunden, 2 = hela färgen"
+  "How strong the colour is: low = closer to the background, 2 = the full colour": "Hur stark färgen är: lågt = närmare bakgrunden, 2 = hela färgen",
+  "Shading": "Skuggning",
+  "The glass is lighter at the top and darker toward the bottom. Off = one even colour": "Glaset är ljusare upptill och mörkare nedåt. Av = en jämn färg"
 }
