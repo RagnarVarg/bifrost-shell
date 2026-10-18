@@ -28,7 +28,17 @@ except Exception:
 }
 
 mapped() {
-    ipc status | grep -q '"mapped":true'
+    local status pid
+    status="$(ipc status)" || return 1
+    grep -q '"mapped":true' <<<"$status" || return 1
+    # An instance can report its window mapped while the compositor has no
+    # window for it (lost surface): under Hyprland, ask the compositor too.
+    command -v hyprctl >/dev/null && [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] || return 0
+    pid="$(sed -n 's/.*"pid":\([0-9]*\).*/\1/p' <<<"$status")"
+    hyprctl clients -j 2>/dev/null | python3 -c '
+import json, sys
+pid = int(sys.argv[1] or 0)
+sys.exit(0 if any(c.get("pid") == pid and c.get("mapped") for c in json.load(sys.stdin)) else 1)' "$pid"
 }
 
 start() {
