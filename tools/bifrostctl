@@ -1982,10 +1982,16 @@ def generate_hypr(cfg) -> str:
         shadow_alpha = round(min(1, shadow_base["opacity"]) * 255)
         shadow_colour = f"rgba({shadow_rgb}{shadow_alpha:02x})"
         fx = window_effects(cfg, active, inactive, shadow_rgb, shadow_base["opacity"], pal)
+        # Hyprland starts a border drag only on a point outside the window
+        # but inside its grab area: with no gaps and no border every point
+        # is inside some tiled window, so keep a 1 px border to grab.
+        border_size = v("hyprland.borderSize")
+        if v("hyprland.tiling.resizeOnBorder") and not v("hyprland.gapsIn") and not border_size:
+            border_size = 1
         lines += [
             "-- Appearance (hyprland.manage)",
             "hl.config({",
-            f"\tgeneral = {{ gaps_in = {v('hyprland.gapsIn')}, gaps_out = {v('hyprland.gapsOut')}, border_size = {v('hyprland.borderSize')},",
+            f"\tgeneral = {{ gaps_in = {v('hyprland.gapsIn')}, gaps_out = {v('hyprland.gapsOut')}, border_size = {border_size},",
             f'\t\tcol = {{ active_border = {fx["active"] if fx else lua_str(f"rgb({active})")}, inactive_border = {fx["inactive"] if fx else lua_str(f"rgb({inactive})")} }} }},',
             f"\tdecoration = {{ rounding = {rounding}, active_opacity = {round(1 - apps_t / 100, 3)}, inactive_opacity = {round(1 - apps_t / 100, 3)},",
             f"\t\tshadow = {{ enabled = true, range = {shadow_range}, render_power = 3, color = {lua_str(fx['shadow'] if fx else shadow_colour)}, color_inactive = \"{shadow_colour}\" }},",

@@ -55,7 +55,7 @@
       "default": false,
       "apply": "live",
       "label": "Resize windows by dragging borders",
-      "description": "Drag the borders or the gaps between tiled windows with the left mouse button to change their size (also works on floating windows).",
+      "description": "Drag the borders or the gaps between tiled windows with the left mouse button to change their size (also works on floating windows). With no gaps and no border, windows get a 1 px border to grab.",
       "group": "tiling",
       "scope": "hyprland"
     },

@@ -521,6 +521,15 @@ class BifrostctlTest(unittest.TestCase):
         self.assertNotIn("gaps_in =", text)  # appearance disabled; input still applies
         self.assertNotIn('bind("', text)
 
+    def test_hypr_border_resize_keeps_grab_area(self):
+        for k, x in (("hyprland.gapsIn", "0"), ("hyprland.borderSize", "0")):
+            ctl.main(["set", k, x])
+        self.assertIn("border_size = 0,", ctl.generate_hypr(ctl.Config(ctl.Schema())))
+        ctl.main(["set", "hyprland.tiling.resizeOnBorder", "true"])
+        self.assertIn("border_size = 1,", ctl.generate_hypr(ctl.Config(ctl.Schema())))  # nothing to grab otherwise
+        ctl.main(["set", "hyprland.gapsIn", "4"])
+        self.assertIn("border_size = 0,", ctl.generate_hypr(ctl.Config(ctl.Schema())))
+
     def test_vrr_mode_selector_reapplies_same_physical_mode(self):
         output = dict(width=5120, height=1440, refresh=239.761, vrr=False)
         off = ctl.output_mode(output)
