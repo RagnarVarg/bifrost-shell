@@ -29,7 +29,6 @@
   "Inner highlight strength": "Inre reflexens styrka",
   "Active glow": "Glöd på aktivt fönster",
   "A subtle blue glow around the focused window only": "En diskret blå glöd, bara runt fönstret i fokus",
-  "Glow strength": "Glödstyrka",
   "Prism frame": "Prismaram",
   "A subtle cyan → blue → violet gradient along the top of the focused window": "En diskret gradient i cyan → blått → violett längs överkanten på fönstret i fokus",
   "Focus animation": "Fokusanimation",
@@ -1181,11 +1180,13 @@
   "Ready": "Redo",
   "Claude Code": "Claude Code",
   "Prism": "Prisma",
-  "Glow": "Glöd",
   "Selection": "Markering",
-  "Glow colour": "Glödfärg",
-  "Colour of the glow. Empty = the accent colour": "Glödens färg. Tomt = accentfärgen",
   "Accent": "Accent",
-  "How selected and active items are marked everywhere: the bar, its menus, the control center, the dock and lists. Prism = Bifrost prism; Glow = a glowing colour": "Hur markerade och aktiva saker visas överallt: panelen, dess menyer, kontrollcentret, dockan och listor. Prisma = Bifrost-prisma; Glöd = en lysande färg",
-  "0 = a flat colour without glow, 1 = standard, 2 = strong": "0 = platt färg utan glöd, 1 = standard, 2 = stark"
+  "Lit": "Lysande",
+  "Selection colour": "Markeringsfärg",
+  "Colour of selected and active items. Empty = the accent colour": "Färg på markerade och aktiva saker. Tomt = accentfärgen",
+  "Selection strength": "Markeringsstyrka",
+  "How strongly they light up. 1 = standard, 2 = strong": "Hur starkt de lyser. 1 = standard, 2 = stark",
+  "How selected and active items are marked everywhere: the bar, its menus, the control center, the dock and lists. Prism = Bifrost prism; Lit = a colour that lights up from within, without a glow around it": "Hur markerade och aktiva saker visas överallt: panelen, dess menyer, kontrollcentret, dockan och listor. Prisma = Bifrost-prisma; Lysande = en färg som lyser inifrån, utan sken runt om",
+  "Glow strength": "Glödens styrka"
 }

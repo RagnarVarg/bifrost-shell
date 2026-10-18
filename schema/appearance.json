@@ -147,45 +147,45 @@
       "default": "prism",
       "options": [
         "prism",
-        "glow"
+        "lit"
       ],
       "optionLabels": {
         "prism": "Prism",
-        "glow": "Glow"
+        "lit": "Lit"
       },
       "label": "Selection",
-      "description": "How selected and active items are marked everywhere: the bar, its menus, the control center, the dock and lists. Prism = Bifrost prism; Glow = a glowing colour",
+      "description": "How selected and active items are marked everywhere: the bar, its menus, the control center, the dock and lists. Prism = Bifrost prism; Lit = a colour that lights up from within, without a glow around it",
       "group": "identity"
     },
     {
-      "key": "appearance.glow.color",
+      "key": "appearance.lit.color",
       "type": "color",
       "default": null,
       "nullable": true,
       "inherit": "palette.accent",
       "nullLabel": "Accent",
-      "label": "Glow colour",
-      "description": "Colour of the glow. Empty = the accent colour",
+      "label": "Selection colour",
+      "description": "Colour of selected and active items. Empty = the accent colour",
       "group": "identity",
       "dependsOnValue": {
         "appearance.selection": [
-          "glow"
+          "lit"
         ]
       }
     },
     {
-      "key": "appearance.glow.strength",
+      "key": "appearance.lit.strength",
       "type": "real",
       "default": 1.0,
-      "min": 0,
+      "min": 0.25,
       "max": 2,
       "step": 0.05,
-      "label": "Glow strength",
-      "description": "0 = a flat colour without glow, 1 = standard, 2 = strong",
+      "label": "Selection strength",
+      "description": "How strongly they light up. 1 = standard, 2 = strong",
       "group": "identity",
       "dependsOnValue": {
         "appearance.selection": [
-          "glow"
+          "lit"
         ]
       }
     }

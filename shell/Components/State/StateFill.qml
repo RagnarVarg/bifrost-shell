@@ -1,11 +1,10 @@
 import QtQuick
-import QtQuick.Effects
 import qs.Core
 import qs.Components.Motion
 
 // Draws one interaction state spec from Theme.states:
 //   fill "solid" → translucent colour, "prism" → Bifrost prism, "ring" → rim only,
-//   "glow" → solid colour with a soft halo of the same colour.
+//   "lit" → colour lit from within: lighter towards the top, light inner rim.
 // Fades in/out with motion tokens; keeps the last spec while fading out.
 Item {
     id: root
@@ -36,19 +35,35 @@ Item {
         BNumberAnimation {}
     }
 
-    RectangularShadow {
+    Rectangle {
         anchors.fill: parent
-        visible: root.shown !== null && root.shown.fill === "glow"
+        visible: root.shown !== null && root.shown.fill === "solid"
         radius: root.radius
-        blur: root.shown && root.shown.blur !== undefined ? root.shown.blur : 0
-        color: Qt.alpha(root.specColor, root.shown && root.shown.halo !== undefined ? root.shown.halo : 0)
+        color: Qt.alpha(root.specColor, root.shown && root.shown.opacity !== undefined ? root.shown.opacity : 0)
     }
 
     Rectangle {
+        id: litFill
+
+        readonly property bool on: root.shown !== null && root.shown.fill === "lit"
+        readonly property real fillOpacity: on ? root.shown.opacity : 0
+        readonly property color topColor: on ? Qt.tint(root.specColor, Qt.alpha(root.shown.light, root.shown.highlight)) : "transparent"
+
         anchors.fill: parent
-        visible: root.shown !== null && (root.shown.fill === "solid" || root.shown.fill === "glow")
+        visible: on
         radius: root.radius
-        color: Qt.alpha(root.specColor, root.shown && root.shown.opacity !== undefined ? root.shown.opacity : 0)
+        gradient: Gradient {
+            GradientStop {
+                position: 0
+                color: Qt.alpha(litFill.topColor, litFill.fillOpacity)
+            }
+            GradientStop {
+                position: 1
+                color: Qt.alpha(root.specColor, litFill.fillOpacity)
+            }
+        }
+        border.width: on ? Theme.border.hairline : 0
+        border.color: on ? Qt.alpha(Qt.tint(root.specColor, Qt.alpha(root.shown.light, root.shown.rimLight)), root.shown.rim) : "transparent"
     }
 
     ShaderEffect {

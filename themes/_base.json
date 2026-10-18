@@ -433,14 +433,16 @@
       "focus": 0.5
     }
   },
-  "glow": {
-    "_comment": "Glowing colour look for selected/active items (bar.selection = glow): a solid accent fill plus a soft halo of the same colour around it. fill = fill opacity per state, halo = halo opacity, blur = halo softness in px.",
+  "lit": {
+    "_comment": "Lit look for selected/active items (appearance.selection = lit): the colour lit from within, no halo. fill = fill opacity per state, highlight = how much lighter the top is, rim = opacity of the light inner rim, rimLight = how much lighter the rim is than the colour, light = the light mixed in.",
     "fill": {
-      "selected": 0.5,
-      "active": 0.7
+      "selected": 0.55,
+      "active": 0.75
     },
-    "halo": 0.9,
-    "blur": 14
+    "highlight": 0.35,
+    "rim": 0.6,
+    "rimLight": 0.5,
+    "light": "#FFFFFF"
   },
   "typography": {
     "display": {
@@ -618,20 +620,24 @@
       "width": "@border.focus",
       "prism": "@prism.intensity.focus"
     },
-    "glowSelected": {
-      "fill": "glow",
+    "litSelected": {
+      "fill": "lit",
       "color": "@palette.accent",
-      "opacity": "@glow.fill.selected",
-      "halo": "@glow.halo",
-      "blur": "@glow.blur",
+      "opacity": "@lit.fill.selected",
+      "highlight": "@lit.highlight",
+      "rim": "@lit.rim",
+      "rimLight": "@lit.rimLight",
+      "light": "@lit.light",
       "prism": 0
     },
-    "glowActive": {
-      "fill": "glow",
+    "litActive": {
+      "fill": "lit",
       "color": "@palette.accent",
-      "opacity": "@glow.fill.active",
-      "halo": "@glow.halo",
-      "blur": "@glow.blur",
+      "opacity": "@lit.fill.active",
+      "highlight": "@lit.highlight",
+      "rim": "@lit.rim",
+      "rimLight": "@lit.rimLight",
+      "light": "@lit.light",
       "prism": 0
     }
   },
