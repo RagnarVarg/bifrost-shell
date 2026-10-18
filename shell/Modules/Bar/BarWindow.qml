@@ -183,7 +183,7 @@ PanelWindow {
     component MaskRect: Region {
         property Item source: null
         readonly property rect r: {
-            void [root.width, root.height, root.vertical, band.y, band.height, content.x, content.y, content.width, content.height, menuHost.shapeX, menuHost.shapeWidth, menuHost.shapeHeight, root.revealed];
+            void [root.width, root.height, root.vertical, band.y, band.height, content.x, content.y, content.width, content.height, slide.y, menuHost.shapeX, menuHost.shapeWidth, menuHost.shapeHeight, root.revealed];
             const i = source;
             if (!i)
                 return Qt.rect(0, 0, 0, 0);
@@ -259,6 +259,8 @@ PanelWindow {
                 height: root.barHeight
 
                 transform: Translate {
+                    id: slide
+
                     y: root.revealed ? 0 : content.hiddenOffset
 
                     Behavior on y {
