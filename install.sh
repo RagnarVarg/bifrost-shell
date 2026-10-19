@@ -17,7 +17,8 @@
 #   1. copies Bifrost to $XDG_DATA_HOME/bifrost-shell (or links it with --link)
 #   2. links the commands (bifrost-ipc, bifrost-settings, bifrost-terminal,
 #      bifrost-screenshot, bifrost-shell, bifrostctl) into ~/.local/bin
-#   3. installs the systemd user service bifrost.service
+#   3. installs the systemd user services bifrost.service and
+#      bifrost-bluetooth.service (powers Bluetooth back on after suspend)
 #   4. writes ~/.config/bifrost/hypr/bifrost.lua (keybindings, window look,
 #      displays) and, after asking, loads it at the end of hyprland.lua
 #   5. installs the bundled FullBlue icon theme
@@ -89,8 +90,8 @@ EOF
 }
 
 if ((uninstall)); then
-    systemctl --user disable --now bifrost.service 2>/dev/null || true
-    rm -f "$unit_dir/bifrost.service" "$unit_dir/bifrost-session.target"
+    systemctl --user disable --now bifrost.service bifrost-bluetooth.service 2>/dev/null || true
+    rm -f "$unit_dir/bifrost.service" "$unit_dir/bifrost-bluetooth.service" "$unit_dir/bifrost-session.target"
     systemctl --user daemon-reload 2>/dev/null || true
     for c in "${commands[@]}" bifrostctl; do
         [[ -L "$bin_dir/$c" ]] && rm -f "$bin_dir/$c"
@@ -151,9 +152,13 @@ cp "$dest/systemd/bifrost-session.target" "$unit_dir/bifrost-session.target"
 exec_path="$dest/bin/bifrost-shell"
 [[ "$exec_path" == "$HOME/"* ]] && exec_path="%h/${exec_path#"$HOME/"}"
 sed "s|@EXEC@|$exec_path|" "$dest/systemd/bifrost.service" >"$unit_dir/bifrost.service"
+bt_exec="$dest/bin/bifrost-bluetooth-resume"
+[[ "$bt_exec" == "$HOME/"* ]] && bt_exec="%h/${bt_exec#"$HOME/"}"
+sed "s|@EXEC@|$bt_exec|" "$dest/systemd/bifrost-bluetooth.service" >"$unit_dir/bifrost-bluetooth.service"
 systemctl --user daemon-reload 2>/dev/null || true
 if ((enable)); then
     systemctl --user enable bifrost.service >/dev/null 2>&1 && say "bifrost.service enabled (starts with the graphical session)"
+    systemctl --user enable bifrost-bluetooth.service >/dev/null 2>&1 && say "bifrost-bluetooth.service enabled (Bluetooth on after suspend)"
 fi
 
 # ── 4. Hyprland integration ──────────────────────────────────────────────

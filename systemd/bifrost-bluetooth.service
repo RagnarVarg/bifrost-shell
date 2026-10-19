@@ -1,0 +1,15 @@
+# Powers Bluetooth back on after suspend. Installed by install.sh, which
+# replaces @EXEC@ with the installed bin/bifrost-bluetooth-resume.
+[Unit]
+Description=Bifrost: keep Bluetooth on after suspend
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=@EXEC@
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

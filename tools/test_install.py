@@ -45,6 +45,7 @@ with tempfile.TemporaryDirectory(prefix='bifrost-install-') as td:
     for command in ('bifrost-shell', 'bifrost-settings', 'bifrostctl'):
         assert (home/'.local/bin'/command).is_symlink()
     assert '%h/.local/share/bifrost-shell/bin/bifrost-shell' in (config/'systemd/user/bifrost.service').read_text()
+    assert '%h/.local/share/bifrost-shell/bin/bifrost-bluetooth-resume' in (config/'systemd/user/bifrost-bluetooth.service').read_text()
     for app_id in ('bifrost.shell', 'bifrost.settings'):
         assert 'NoDisplay=true' in (home/'.local/share/applications'/f'{app_id}.desktop').read_text()
     (dest/'obsolete-test-file').write_text('stale')
@@ -59,6 +60,7 @@ with tempfile.TemporaryDirectory(prefix='bifrost-install-') as td:
     run('--uninstall')
     assert not dest.exists()
     assert not (config/'systemd/user/bifrost.service').exists()
+    assert not (config/'systemd/user/bifrost-bluetooth.service').exists()
     assert not (home/'.local/bin/bifrost-shell').is_symlink()
     assert (config/'hypr/hyprland.lua').read_text()=='-- existing user config\n'
     assert (config/'bifrost/hypr/bifrost.lua').exists()
