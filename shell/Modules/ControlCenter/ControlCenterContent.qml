@@ -146,7 +146,12 @@ Item {
                 enabled: BluetoothStatus.available
                 expandable: true
                 expanded: center.detail === "bluetooth"
-                onExpand: ShellState.controlCenterDetail = center.detail === "bluetooth" ? "" : "bluetooth"
+                // Opening the device list turns Bluetooth on if it is off.
+                onExpand: {
+                    if (center.detail !== "bluetooth" && !BluetoothStatus.enabled)
+                        BluetoothStatus.setEnabled(true);
+                    ShellState.controlCenterDetail = center.detail === "bluetooth" ? "" : "bluetooth";
+                }
                 onClicked: {
                     if (BluetoothStatus.enabled && BluetoothStatus.inputDevices.length > 0 && !armed) {
                         armed = true;

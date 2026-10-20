@@ -40,6 +40,32 @@ Singleton {
         return i.indexOf("audio") >= 0 || i.indexOf("headset") >= 0 || i.indexOf("headphone") >= 0 ? "volume" : i.startsWith("input-") ? "apps" : i.indexOf("phone") >= 0 ? "display" : "bluetooth";
     }
 
+    // After suspend the USB adapter re-registers powered off (or briefly
+    // rfkill-blocked), and Quickshell can keep reporting it off even once
+    // bifrost-bluetooth-resume has powered it on. Whenever an adapter
+    // (re)appears, power it on from here too, retrying for a while, so the
+    // control center shows it on without a manual toggle.
+    onAdapterChanged: if (available) {
+        powerOnTries = 0;
+        powerOn.restart();
+    }
+
+    property int powerOnTries: 0
+
+    Timer {
+        id: powerOn
+
+        interval: 1000
+        repeat: true
+        onTriggered: {
+            if (!available || enabled || ++powerOnTries > 15) {
+                stop();
+                return;
+            }
+            adapter.enabled = true;
+        }
+    }
+
     function setEnabled(on: bool) {
         if (available)
             adapter.enabled = on;
