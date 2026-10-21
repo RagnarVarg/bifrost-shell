@@ -123,6 +123,16 @@ ShellRoot {
         eq("resolveRefs", L.resolveRefs({ a: "@b.c", b: { c: "@d" }, d: 5 }, { a: "@b.c", b: { c: "@d" }, d: 5 }).a, 5);
         eq("resolveRefs cycle terminates", typeof L.resolveRefs("@x", { x: "@x" }), "string");
 
+        const gen = { variants: { dark: { palette: { accent: "#AA5500" } } }, _generated: { wallpaper: "k1" } };
+        eq("wallpaperLayer off by default", L.wallpaperLayer({}, "/w.jpg", "k1", gen), null);
+        eq("wallpaperLayer when made from this wallpaper", L.wallpaperLayer({ colorSource: "wallpaper" }, "/w.jpg", "k1", gen), gen);
+        eq("wallpaperLayer stale for another wallpaper", L.wallpaperLayer({ colorSource: "wallpaper" }, "/other.jpg", "k2", gen), null);
+        eq("wallpaperLayer without wallpaper or file", [L.wallpaperLayer({ colorSource: "wallpaper" }, "", "k1", gen), L.wallpaperLayer({ colorSource: "wallpaper" }, "/w.jpg", "k1", null)], [null, null]);
+
+        const own = L.yieldToWallpaper({ accent: { dark: "#111111" }, foreground: { dark: "#222222" }, lit: { color: "#333333", strength: 2 }, mode: "dark" },
+                                         { tint: { dark: "#444444" }, bar: { tint: { dark: "#555555" }, transparency: { dark: 30 } }, transparency: { dark: 49 } });
+        eq("own colours give way to the wallpaper, the rest stays", [own.appearance, own.materials], [{ lit: { strength: 2 }, mode: "dark" }, { bar: { transparency: { dark: 30 } }, transparency: { dark: 49 } }]);
+
         check("version compare", V.atLeast("0.56.2", "0.55.0") && !V.atLeast("0.54.9", "0.55.0") && V.atLeast("v0.56.2-dirty", "0.56.2"));
     }
 
@@ -266,6 +276,22 @@ ShellRoot {
         eq("typography role resolves family", Theme.typography.body.family, "Inter");
         eq("control tokens resolve refs", Theme.control.radius, Theme.radius.md);
         check("material has glass params", ["depth", "density", "sheen", "edgeTopBias", "grain", "highlight"].every(k => typeof Theme.materials.panel[k] === "number"));
+
+        // Colours from the wallpaper: a palette layer over the chosen theme,
+        // and glass opaque enough for muted text over a bright picture.
+        const base = reader.read(Paths.themesDir + "/_base.json").data;
+        const graphite = reader.read(Paths.themesDir + "/bifrost-graphite.json").data;
+        const layer = { id: "bifrost-wallpaper", variants: { dark: { palette: { accent: "#C3D26A", base: "#15140C", text: "#E7E2D5", textMuted: "#CBC6B5" } } } };
+        const plain = ThemeLogic.build([base, graphite], "dark", {}, { transparency: { dark: 49 } }).tokens;
+        const over = ThemeLogic.build([base, graphite, layer], "dark", {}, { transparency: { dark: 49 } }).tokens;
+        eq("wallpaper layer sets the palette, the theme keeps the rest", [over.color.accent, over.palette.success, over.radius.lg], ["#C3D26A", plain.palette.success, plain.radius.lg]);
+        eq("no backdrop: glass as set", over.materials.panel.opacity, plain.materials.panel.opacity);
+        layer.variants.dark.wallpaper = { backdrop: "#C5C4B4" };
+        const lit = ThemeLogic.build([base, graphite, layer], "dark", {}, { transparency: { dark: 49 } }).tokens;
+        const p = lit.materials.panel;
+        check("bright wallpaper raises the glass until muted text reads", p.opacity > plain.materials.panel.opacity
+              && ThemeLogic.contrast("#CBC6B5", ThemeLogic.mixHex("#C5C4B4", p.tint.substring(0, 7), p.opacity)) >= 4.5, p.opacity);
+        check("ordinary themes unchanged by the floor", ThemeLogic.build([base, graphite], "dark", {}, { transparency: { dark: 49 } }).tokens.materials.bar.opacity === plain.materials.bar.opacity);
 
         Config.set("appearance.foreground.dark", "#ABCDEF");
         Theme.rebuild();

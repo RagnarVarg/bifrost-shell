@@ -209,3 +209,35 @@ function resolveRefs(node, root, depth) {
     }
     return node;
 }
+
+// Colours from the wallpaper (appearance.colorSource = "wallpaper"): the
+// generated theme (themes/bifrost-wallpaper.json, from bifrostctl
+// wallpaper-colors) is laid over the chosen theme, but only while it was made
+// from the wallpaper now set (`wallpaperKey` = Qt.md5 of wallpaper.path).
+// Otherwise null: the chosen theme as it is. Mirrors bifrostctl wallpaper_layer.
+function wallpaperLayer(appearance, wallpaperPath, wallpaperKey, generated) {
+    if (!appearance || appearance.colorSource !== "wallpaper" || !wallpaperPath)
+        return null;
+    const meta = isPlainObject(generated) ? generated._generated : null;
+    if (!isPlainObject(meta) || !isPlainObject(generated.variants))
+        return null;
+    return meta.wallpaper === wallpaperKey ? generated : null;
+}
+
+// While colours come from the wallpaper (a wallpaper layer is in use), these
+// own colours give way to it: accent, text and icons, the Lit selection
+// colour and the glass tint (shared and per group). Their values stay in the
+// config and apply again with colours from the theme. Mirrors bifrostctl
+// WALLPAPER_YIELDS.
+function yieldToWallpaper(appearance, materials) {
+    const a = clone(appearance || {}), m = clone(materials || {});
+    delete a.accent;
+    delete a.foreground;
+    if (isPlainObject(a.lit))
+        delete a.lit.color;
+    delete m.tint;
+    for (const g in m)
+        if (isPlainObject(m[g]))
+            delete m[g].tint;
+    return { appearance: a, materials: m };
+}

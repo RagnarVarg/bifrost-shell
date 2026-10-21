@@ -239,7 +239,7 @@
     {
       "id": "matugen",
       "level": "optional",
-      "purpose": "Wallpaper-derived palettes (future theme feature)",
+      "purpose": "Colours from the wallpaper (Theme & colours → Colours from = Wallpaper); without it the chosen theme's colours are used",
       "check": {
         "type": "command",
         "cmd": [

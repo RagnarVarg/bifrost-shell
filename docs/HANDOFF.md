@@ -1019,3 +1019,28 @@ Validation: 535 QML, 46 CLI tests including HDR/hdredid/SDR persistence and gene
 The border-resize toggle moved from Input to Settings → Windows & compositor → Tiling: `input.resizeOnBorder` →
 `hyprland.tiling.resizeOnBorder` (config format 12, migration 11 → 12 in Migrations.js and bifrostctl). Still writes
 `general.resize_on_border`, independent of `hyprland.manage`.
+
+## 2026-10-21 — Färger från bakgrundsbilden (Claude)
+`appearance.colorSource` = `theme` | `wallpaper` (standard theme; Theme & colours → Colours from).
+- **Generering bara i bifrostctl:** `bifrostctl wallpaper-colors generate|status [--force] [--json]` kör matugen
+  (tom config, `--dry-run`, `-t scheme-tonal-spot`; nästan grå källfärg → `scheme-neutral`; `--fallback-color` = valt temas
+  accent) och skriver `~/.config/bifrost/themes/bifrost-wallpaper.json`: palett för dark + light (`matugen_palette`),
+  `_generated` (md5 av wallpaper.path, mtime, storlek, schema – inga sökvägar) och per läge `wallpaper.backdrop`
+  (matugens base16 base05/base02 = bildens ljusa/mörka sida). Samma bild → hoppas över. Misslyckas (ingen matugen/bild) →
+  filen tas bort så att alla processer faller tillbaka till valt tema; `doctor` visar "wallpaper colours".
+- **Lager, inte tema:** `ConfigLogic.wallpaperLayer` ↔ `bifrostctl wallpaper_layer` – filen läggs sist i valt temas kedja,
+  bara om den gjordes från bakgrunden som nu är satt. Theme.qml, `theme_chain` och `theme_palette` (Hyprland-kanter).
+  Vanliga teman oförändrade; filen döljs i temaväljaren.
+- **Kontrast:** text ≥ 7, textMuted ≥ 4.5, textFaint ≥ 3, accent ≥ 3 mot alla ytor, accentText ≥ 4.5 mot accenten
+  (`with_contrast`). Glasgolv i `ThemeLogic.build`: med `wallpaper.backdrop` görs varje material (utom settingsGroups och
+  controlButtons) så täckande att textMuted når 4.5 mot backdrop blandat med tinten. Godkänt av användaren.
+- **Egna färger viker** (användarens beslut): i bakgrundsläget ignoreras appearance.accent, appearance.foreground,
+  appearance.lit.color och materials(.grupp).tint (`ConfigLogic.yieldToWallpaper` ↔ `bifrostctl own_colour`); värdena
+  ligger kvar i config.
+- **Körs om:** `Modules/WallpaperColors` (shellet, alla lägen) vid start, när inställningen slås på och vid byte av
+  wallpaper.path. Theme bevakar filen i varje process; CompositorSync kör `hypr apply` när accent/surfaceRaised/void ändras.
+- Testat i nested med fyra bakgrunder (ljus, mörk lila, färgstark nebulosa, grått berg) × ljust/mörkt, Settings live,
+  fallback utan matugen. Tester: selftest 643, bifrostctl 78.
+- **Inte ännu i production:** installera (`./install.sh --no-hypr --no-greeter`) och starta om bifrost.service + Settings.
+  Login-greetern visar valt tema (greeter sync skriver om wallpaper-sökvägen, så lagret matchar inte där).
+- Nästa: eget ikontema i palettens färger (del 2). Stilförslag A Glas / B Sten / C Norrsken i scratch; stil ej vald ännu.

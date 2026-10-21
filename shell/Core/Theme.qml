@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import qs.Compat
 import "ThemeLogic.js" as T
+import "ConfigLogic.js" as L
 
 // Central design tokens. Built from themes/_base.json → theme chain (via
 // `extends`) → variant (dark/light) → appearance settings.
@@ -25,6 +26,13 @@ Singleton {
     // Light or dark comes from appearance.mode through ThemeMode (fixed,
     // system preference, or sunrise/sunset).
     readonly property string variant: ThemeMode.variant
+
+    // appearance.colorSource = "wallpaper": the generated palette laid over
+    // the chosen theme (bifrostctl wallpaper-colors; Modules/WallpaperColors).
+    readonly property string wallpaperThemeId: "bifrost-wallpaper"
+    readonly property string wallpaperPath: (Config.values.wallpaper || {}).path || ""
+    // True while the shell's colours come from the wallpaper.
+    property bool fromWallpaper: false
 
     property var tokens: ({})
     property var issues: []
@@ -98,8 +106,17 @@ Singleton {
             loaded = loadChain("bifrost-graphite");
             errs = errs.concat(["falling back to bifrost-graphite"], loaded.errors);
         }
-        const res = T.build(loaded.chain, variant, appearance, Config.values.materials || ({}));
-        chainIds = loaded.chain.map(t => t.id);
+        let chain = loaded.chain;
+        if (appearance.colorSource === "wallpaper") {
+            const gen = reader.read(Paths.userThemesDir + "/" + wallpaperThemeId + ".json");
+            const layer = L.wallpaperLayer(appearance, wallpaperPath, Qt.md5(wallpaperPath), gen.ok ? gen.data : null);
+            if (layer && chain.length)
+                chain = chain.concat([layer]);
+        }
+        fromWallpaper = chain !== loaded.chain;
+        const own = fromWallpaper ? L.yieldToWallpaper(appearance, Config.values.materials) : { appearance: appearance, materials: Config.values.materials || ({}) };
+        const res = T.build(chain, variant, own.appearance, own.materials);
+        chainIds = chain.map(t => t.id);
         tokens = res.tokens;
         issues = errs.concat(res.issues);
         revision++;
@@ -129,6 +146,11 @@ Singleton {
     WatchedFile {
         path: Paths.userThemesDir + "/" + root.themeId + ".json"
         onContentChanged: rebuildLater.restart()
+    }
+
+    WatchedFile {
+        path: Paths.userThemesDir + "/" + root.wallpaperThemeId + ".json"
+        onContentChanged: if (root.appearance.colorSource === "wallpaper") rebuildLater.restart()
     }
 
     JsonReader {

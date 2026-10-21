@@ -4,7 +4,8 @@ import qs.Settings
 import qs.Core
 import qs.Components.Controls
 
-// Themes found in the repo and in ~/.config/bifrost/themes.
+// Themes found in the repo and in ~/.config/bifrost/themes (not the generated
+// wallpaper palette: appearance.colorSource picks that).
 EditorBase {
     id: editor
 
@@ -34,7 +35,7 @@ EditorBase {
         const found = [];
         for (const file of out.split("\n").filter(f => f && !f.endsWith("/_base.json"))) {
             const res = reader.read(file);
-            if (res.ok && res.data.id && !found.some(t => t.value === res.data.id))
+            if (res.ok && res.data.id && !res.data._generated && !found.some(t => t.value === res.data.id))
                 found.push({ value: res.data.id, label: res.data.name || res.data.id });
         }
         editor.themes = found;

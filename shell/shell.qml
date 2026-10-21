@@ -66,6 +66,8 @@ ShellRoot {
 
     Wallpaper {}
 
+    WallpaperColors {}
+
     Bar {}
 
     Dock {}

@@ -169,6 +169,22 @@ function applyMaterial(m, s, glass, name, variant) {
     m.transparency = Math.round((1 - m.opacity) * 100);
 }
 
+// Colours from the wallpaper: the wallpaper itself is what shows through the
+// glass, so a material is made at least as opaque as muted text needs to
+// read (contrast >= minContrast) over the generated theme's estimate of the
+// picture (wallpaper.backdrop). Ordinary themes have no backdrop: unchanged.
+function contrast(a, b) {
+    const la = luminance(a), lb = luminance(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+function readableOpacity(m, backdrop, text, minContrast) {
+    for (let a = m.opacity; a < 1; a += 0.02)
+        if (contrast(text, mixHex(backdrop, m.tint, a)) >= minContrast)
+            return a;
+    return 1;
+}
+
 // Builds final tokens from a theme chain (base first) and appearance settings.
 //   chain: [themeData...], variant: "dark"|"light", app: Config.values.appearance
 // Returns { tokens, issues }.
@@ -277,6 +293,22 @@ function build(chain, variant, app, materials) {
         const g = groupGlass(materials, groupOf(k), variant);
         applyMaterial(t.materials[k], g, t.glass, k, variant);
         t.materials[k].custom = g.custom;
+    }
+    const backdrop = (t.wallpaper || {}).backdrop;
+    const muted = t.palette.textMuted;
+    if (/^#[0-9a-fA-F]{6}$/.test(backdrop) && /^#[0-9a-fA-F]{6}$/.test(muted)) {
+        for (const k in t.materials) {
+            const m = t.materials[k];
+            // These lie on another glass, not on the wallpaper.
+            if (k === "settingsGroups" || k === "controlButtons" || !/^#[0-9a-fA-F]{6}$/.test(m.tint))
+                continue;
+            const floor = readableOpacity(m, backdrop, muted, t.wallpaper.minContrast || 4.5);
+            if (floor > m.opacity) {
+                m.opacity = Math.round(floor * 100) / 100;
+                m.fill = withAlpha(m.tint, m.opacity);
+                m.transparency = Math.round((1 - m.opacity) * 100);
+            }
+        }
     }
     // Buttons without their own glass keep the plain control fill.
     if (!t.materials.controlButtons.custom)

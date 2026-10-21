@@ -20,6 +20,8 @@
     bifrostctl hypr status [--json]         generated file current? hooked into hyprland.lua?
     bifrostctl icons list|effective|index [THEME] [--json]   icon themes, the one Bifrost uses, its lookup index
     bifrostctl appearance status|apply [--variant V] [--json] push light/dark + icons to GTK, Qt, the portal
+    bifrostctl wallpaper-colors status|generate [--force] [--json]
+                                            colours from the wallpaper (matugen → themes/bifrost-wallpaper.json)
     bifrostctl env                          environment for Bifrost's Quickshell processes
     bifrostctl doctor --production          read-only checks before switching from DMS to Bifrost
     bifrostctl import-dms [--apply] [--appearance] [--themes]
@@ -36,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import math
 import json
 import os
@@ -1003,6 +1006,14 @@ def doctor(_args):
         cfg = Config(schema)
         detail = f"{config_file()} ({len(cfg.issues)} issues)" if config_file().exists() else f"{config_file()} (not created yet — all defaults)"
         report("warn" if cfg.issues else "ok", "config.json", detail, "; ".join(cfg.issues))
+        wc = wallpaper_colors_status(cfg)
+        if wc["reason"] != "off":
+            why = {"ok": "from the wallpaper", "no-matugen": f"matugen missing — using theme {wc['theme']}",
+                   "no-wallpaper": f"no wallpaper set — using theme {wc['theme']}",
+                   "not-generated": f"not generated for this wallpaper — using theme {wc['theme']}"}[wc["reason"]]
+            report("ok" if wc["active"] else "warn", "wallpaper colours", why,
+                   install_hint(next(d for d in manifest["dependencies"] if d["id"] == "matugen"), distro_info()[0])
+                   if wc["reason"] == "no-matugen" else "bifrostctl wallpaper-colors generate")
     except json.JSONDecodeError as e:
         report("fail", "config.json", f"invalid JSON: {e}", "fix the file; Bifrost refuses to overwrite it")
 
@@ -1300,16 +1311,22 @@ def hypr_file() -> Path:
     return config_dir() / "hypr" / "bifrost.lua"
 
 
-def theme_palette(cfg):
+def theme_palette(cfg, variant=None, wallpaper=True):
     """Resolved palette of the active theme/variant (for border colours)."""
     theme_id = deep_get(cfg.values, "appearance.theme")[0] or "bifrost-graphite"
-    variant = effective_variant(cfg)
+    variant = variant or effective_variant(cfg)
     for d in (config_dir() / "themes", REPO / "themes"):
         f = d / f"{theme_id}.json"
         if f.exists():
             t = json.loads(f.read_text())
-            return t.get("variants", {}).get(variant, {}).get("palette", {})
-    return {}
+            pal = dict(t.get("variants", {}).get(variant, {}).get("palette", {}))
+            break
+    else:
+        pal = {}
+    layer = wallpaper_layer(cfg) if wallpaper else None
+    if layer:
+        pal.update(layer.get("variants", {}).get(variant, {}).get("palette", {}))
+    return pal
 
 
 def lua_str(s):
@@ -1789,7 +1806,8 @@ def theme_chain(cfg):
         t = json.loads(f.read_text())
         chain.insert(0, t)
         theme_id = t.get("extends")
-    return chain
+    layer = wallpaper_layer(cfg)
+    return chain + [layer] if layer and chain else chain
 
 
 def theme_effects(cfg):
@@ -1800,6 +1818,217 @@ def theme_effects(cfg):
         for layer in (theme, theme.get("variants", {}).get(variant, {})):
             fx.update(layer.get("effects", {}))
     return fx
+
+
+# ── Colours from the wallpaper (appearance.colorSource = "wallpaper") ───────
+# `wallpaper-colors generate` runs matugen on wallpaper.path and writes
+# themes/bifrost-wallpaper.json: a palette for both modes in the chosen
+# theme's slots. It is laid over the chosen theme (everything else — glass,
+# opacity, materials — stays the theme's), and only while it was made from
+# the wallpaper now set; otherwise the chosen theme is used as it is.
+WALLPAPER_THEME = "bifrost-wallpaper"
+MATUGEN_SCHEME = "scheme-tonal-spot"
+# A nearly grey wallpaper (source colour's max − min channel below this, of
+# 255) gets the neutral scheme, so it isn't turned into a strong blue.
+MATUGEN_NEUTRAL = ("scheme-neutral", 24)
+# Minimum WCAG contrast against every surface the colour sits on.
+WALLPAPER_CONTRAST = {"text": 7.0, "textMuted": 4.5, "textFaint": 3.0, "accent": 3.0, "accentText": 4.5}
+# The wallpaper seen through the glass, for ThemeLogic's readability floor:
+# matugen's base16 ramp spans the picture's tones (base00 darkest … base07
+# lightest); dark mode guards against its light side, light mode its dark side.
+WALLPAPER_BACKDROP = {"dark": "base05", "light": "base02"}
+
+
+def wallpaper_theme_file() -> Path:
+    return config_dir() / "themes" / f"{WALLPAPER_THEME}.json"
+
+
+def wallpaper_key(path) -> str:
+    """ConfigLogic.wallpaperLayer's fingerprint of wallpaper.path (Qt.md5)."""
+    return hashlib.md5((path or "").encode()).hexdigest()
+
+
+def wallpaper_layer(cfg):
+    """ConfigLogic.wallpaperLayer: the generated theme when colours come from
+    the wallpaper and it was made from the wallpaper now set, else None."""
+    v = lambda k: deep_get(cfg.values, k)[0]
+    if v("appearance.colorSource") != "wallpaper" or not v("wallpaper.path"):
+        return None
+    try:
+        gen = json.loads(wallpaper_theme_file().read_text())
+    except (OSError, ValueError):
+        return None
+    meta = gen.get("_generated") if isinstance(gen, dict) else None
+    if not isinstance(meta, dict) or not isinstance(gen.get("variants"), dict):
+        return None
+    return gen if meta.get("wallpaper") == wallpaper_key(v("wallpaper.path")) else None
+
+
+# While the wallpaper layer is in use these own colours give way to it
+# (ConfigLogic.yieldToWallpaper); of them only the accent reaches this file.
+WALLPAPER_YIELDS = ("appearance.accent", "appearance.foreground", "appearance.lit.color", "materials.tint")
+
+
+def own_colour(cfg, key):
+    """A colour setting's value, or None while it gives way to the wallpaper."""
+    yields = any(key == k or key.startswith(k + ".") for k in WALLPAPER_YIELDS) or re.match(r"materials\.[^.]+\.tint(\.|$)", key)
+    if yields and wallpaper_layer(cfg):
+        return None
+    return deep_get(cfg.values, key)[0]
+
+
+def srgb_luminance(colour):
+    c = [int(colour.lstrip("#")[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    c = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+
+
+def contrast(a, b) -> float:
+    la, lb = sorted((srgb_luminance(a), srgb_luminance(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def with_contrast(colour, backgrounds, ratio, toward):
+    """`colour`, moved toward `toward` (white in dark mode, black in light)
+    only as far as needed to reach `ratio` against every background."""
+    for step in range(21):
+        c = "#" + mix_hex(colour, toward, step / 20).upper()
+        if min(contrast(c, b) for b in backgrounds) >= ratio:
+            return c
+    return "#" + toward.lstrip("#").upper()
+
+
+def matugen_backdrop(scheme, variant):
+    v = scheme.get("base16", {}).get(WALLPAPER_BACKDROP[variant], {})
+    v = v.get("default", v) if isinstance(v, dict) else v
+    v = v.get("color") if isinstance(v, dict) else v
+    return "#" + v.lstrip("#")[:6].upper() if isinstance(v, str) and re.fullmatch(r"#?[0-9a-fA-F]{6}", v) else None
+
+
+def matugen_palette(colors, variant):
+    """Material You roles (matugen) → the Bifrost palette slots for one mode.
+    Semantic colours (success/warning/danger) stay the theme's."""
+    def role(name):
+        v = colors[name]
+        v = v.get(variant, v.get("default")) if isinstance(v, dict) else v
+        v = v.get("color") if isinstance(v, dict) else v
+        return "#" + v.lstrip("#")[:6].upper()
+    dark = variant == "dark"
+    toward = "#FFFFFF" if dark else "#000000"
+    p = {"void": role("surface_container_lowest") if dark else role("on_surface"),
+         "base": role("surface") if dark else role("surface_container"),
+         "surface": role("surface_container_low"),
+         "surfaceRaised": role("surface_container") if dark else role("surface_container_lowest"),
+         "surfaceHover": role("surface_container_high") if dark else role("surface_container_highest"),
+         "silver": role("on_surface_variant") if dark else role("outline"),
+         "silverBright": "#" + mix_hex(role("on_surface"), "#FFFFFF", 0.4).upper() if dark else "#FFFFFF",
+         "accentDeep": role("on_primary_fixed_variant"),
+         "aurora": [role("primary"), role("tertiary"), role("secondary")]}
+    surfaces = [p["base"], p["surface"], p["surfaceRaised"], p["surfaceHover"]]
+    p["text"] = with_contrast(role("on_surface"), surfaces, WALLPAPER_CONTRAST["text"], toward)
+    p["textMuted"] = with_contrast(role("on_surface_variant"), surfaces, WALLPAPER_CONTRAST["textMuted"], toward)
+    p["textFaint"] = with_contrast(role("outline"), surfaces, WALLPAPER_CONTRAST["textFaint"], toward)
+    p["accent"] = with_contrast(role("primary"), surfaces, WALLPAPER_CONTRAST["accent"], toward)
+    # Toward whichever of black and white contrasts more with the accent
+    # (one of them always reaches 4.5).
+    end = max(("#000000", "#FFFFFF"), key=lambda c: contrast(c, p["accent"]))
+    p["accentText"] = with_contrast(role("on_primary"), [p["accent"]], WALLPAPER_CONTRAST["accentText"], end)
+    return p
+
+
+def matugen_version():
+    code, out = run(["matugen", "--version"]) if shutil.which("matugen") else (127, "")
+    m = re.search(r"(\d+\.\d+\.\d+)", out) if code == 0 else None
+    return m.group(1) if m else None
+
+
+def run_matugen(image: Path, fallback, scheme=MATUGEN_SCHEME):
+    """matugen's colour roles for an image ({role: {dark, light}}). Runs with
+    an empty config and --dry-run: no templates, no hooks, no wallpaper set.
+    `fallback` (the theme's accent) is used when the image has no colour."""
+    with tempfile.TemporaryDirectory() as tmp:
+        conf = Path(tmp) / "config.toml"
+        conf.write_text("[config]\n\n[templates]\n")
+        p = subprocess.run(["matugen", "image", str(image), "-c", str(conf), "--dry-run", "-q", "-j", "hex",
+                            "-t", scheme, "--source-color-index", "0", "--fallback-color", fallback],
+                           capture_output=True, text=True, timeout=60, cwd=tmp)
+    if p.returncode != 0:
+        raise RuntimeError(((p.stderr or p.stdout).strip().splitlines() or ["matugen failed"])[-1])
+    return json.loads(p.stdout)
+
+
+def source_chroma(colors) -> int:
+    v = colors.get("source_color", {})
+    v = v.get("default", v) if isinstance(v, dict) else v
+    v = (v.get("color") if isinstance(v, dict) else v or "#000000").lstrip("#")
+    rgb = [int(v[i:i + 2], 16) for i in (0, 2, 4)]
+    return max(rgb) - min(rgb)
+
+
+def wallpaper_colors_status(cfg):
+    """Where the shell's colours come from now, and why."""
+    v = lambda k: deep_get(cfg.values, k)[0]
+    theme = v("appearance.theme") or "bifrost-graphite"
+    if v("appearance.colorSource") != "wallpaper":
+        return {"active": False, "source": "theme", "theme": theme, "reason": "off"}
+    path = v("wallpaper.path")
+    if not path:
+        return {"active": False, "source": "theme", "theme": theme, "reason": "no-wallpaper"}
+    if not shutil.which("matugen"):
+        return {"active": False, "source": "theme", "theme": theme, "reason": "no-matugen"}
+    if not wallpaper_layer(cfg):
+        return {"active": False, "source": "theme", "theme": theme, "reason": "not-generated"}
+    return {"active": True, "source": "wallpaper", "theme": theme, "reason": "ok"}
+
+
+def wallpaper_colors_generate(cfg, force=False):
+    """Writes the wallpaper palette; on failure removes a stale one so every
+    Bifrost process falls back to the chosen theme. Never touches anything
+    while colours come from the theme."""
+    v = lambda k: deep_get(cfg.values, k)[0]
+    out = wallpaper_theme_file()
+    path = v("wallpaper.path")
+    if v("appearance.colorSource") != "wallpaper":
+        return {"ok": True, "changed": False, **wallpaper_colors_status(cfg)}
+    image = Path(os.path.expanduser(path)) if path else None
+
+    def fail(reason, message):
+        if out.exists():
+            out.unlink()
+        return {"ok": False, "changed": True, **wallpaper_colors_status(cfg), "reason": reason, "message": message}
+    if not image or not image.is_file():
+        return fail("no-wallpaper", f"wallpaper not found: {path}" if path else "no wallpaper set")
+    version = matugen_version()
+    if not version:
+        return fail("no-matugen", "matugen is not installed")
+    fallback = theme_palette(cfg, "dark", wallpaper=False).get("accent") or "#8FA8C8"
+    stamp = {"by": "matugen", "matugen": version, "fallback": fallback,
+             "wallpaper": wallpaper_key(path), "mtime": int(image.stat().st_mtime), "size": image.stat().st_size}
+    try:
+        old = json.loads(out.read_text()).get("_generated", {})
+    except (OSError, ValueError, AttributeError):
+        old = {}
+    if not force and {k: old.get(k) for k in stamp} == stamp:
+        return {"ok": True, "changed": False, **wallpaper_colors_status(cfg)}
+    try:
+        scheme = MATUGEN_SCHEME
+        result = run_matugen(image, fallback, scheme)
+        if source_chroma(result["colors"]) < MATUGEN_NEUTRAL[1]:
+            scheme = MATUGEN_NEUTRAL[0]
+            result = run_matugen(image, fallback, scheme)
+        colors = result["colors"]
+        variants = {m: {"palette": matugen_palette(colors, m)} for m in ("dark", "light")}
+        for m in variants:
+            if matugen_backdrop(result, m):
+                variants[m]["wallpaper"] = {"backdrop": matugen_backdrop(result, m)}
+    except (OSError, ValueError, KeyError, RuntimeError, subprocess.TimeoutExpired) as e:
+        return fail("matugen-failed", str(e))
+    write_json_atomic(out, {
+        "id": WALLPAPER_THEME, "name": "Wallpaper colours", "version": 1, "extends": "_base",
+        "description": "Generated by bifrostctl from the wallpaper (matugen); rewritten when the wallpaper changes. Laid over the chosen theme.",
+        "_generated": {**stamp, "scheme": scheme, "source": colors.get("source_color", {}).get("default", {}).get("color")},
+        "variants": variants})
+    return {"ok": True, "changed": True, **wallpaper_colors_status(cfg)}
 
 
 def hypr_rgba(colour, alpha):
@@ -1969,7 +2198,7 @@ def generate_hypr(cfg) -> str:
         pal = theme_palette(cfg)
         active = (pal.get("accent") or "#8FA8C8").lstrip("#").lower()
         inactive = (pal.get("surfaceRaised") or "#1E2126").lstrip("#").lower()
-        accent = v(f"appearance.accent.{effective_variant(cfg)}")
+        accent = own_colour(cfg, f"appearance.accent.{effective_variant(cfg)}")
         if accent:
             active = accent.lstrip("#").lower()
         if mv("hyprland.activeBorderColor"):
@@ -2459,6 +2688,10 @@ def main(argv=None):
     p.add_argument("action", choices=["apply", "status"])
     p.add_argument("--variant", choices=["light", "dark"])
     p.add_argument("--json", action="store_true")
+    p = sub.add_parser("wallpaper-colors", help="colours from the wallpaper (appearance.colorSource)")
+    p.add_argument("action", choices=["status", "generate"])
+    p.add_argument("--force", action="store_true", help="generate even if the palette is current")
+    p.add_argument("--json", action="store_true")
     sub.add_parser("env")
     p = sub.add_parser("preset")
     p.add_argument("action", choices=["list", "set"])
@@ -2638,6 +2871,11 @@ def main(argv=None):
         print(json.dumps({"variant": variant, "icons": effective_icon_theme(cfg, variant)[0], "targets": rows}) if args.json
               else "\n".join(f"{r['status']:<12} {r['target']:<8} {r['detail']}" for r in rows))
         return 0 if all(r["status"] != "error" for r in rows) else 1
+    if args.cmd == "wallpaper-colors":
+        cfg = Config(Schema())
+        res = wallpaper_colors_generate(cfg, args.force) if args.action == "generate" else wallpaper_colors_status(cfg)
+        print(json.dumps(res) if args.json else f"{res['source']} ({res['reason']})" + (f": {res['message']}" if res.get("message") else ""))
+        return 0 if res.get("ok", True) else 1
     if args.cmd == "env":
         # Environment for Bifrost's Quickshell processes (scripts/env.sh).
         theme, _ = effective_icon_theme(Config(Schema()))

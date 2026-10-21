@@ -338,6 +338,108 @@ class BifrostctlTest(unittest.TestCase):
         ctl.main(["set", "hyprland.rounding", "17"])
         self.assertEqual(ctl.window_radius(ctl.Config(self.schema)), 17)
 
+    def fake_matugen(self, primary="#3A7BC8", surface_dark="#101417", on_surface_dark="#5A5F66"):
+        """A matugen on PATH printing a fixed scheme (low-contrast text on
+        purpose, so the generator has to correct it)."""
+        roles = ["background", "on_primary", "on_primary_fixed_variant", "on_surface", "on_surface_variant", "outline",
+                 "primary", "secondary", "tertiary", "surface", "surface_container", "surface_container_high",
+                 "surface_container_highest", "surface_container_low", "surface_container_lowest", "source_color"]
+        light = {r: "#F0F2F5" for r in roles}
+        light.update(primary="#B8C4D0", on_primary="#C0C8D0", on_surface="#9AA0A8", on_surface_variant="#B0B6BD", outline="#C8CCD2")
+        dark = {r: surface_dark for r in roles}
+        dark.update(primary=primary, on_primary=primary, on_surface=on_surface_dark, on_surface_variant="#3A3F46", outline="#2A2F36",
+                    on_primary_fixed_variant="#1F3F66", source_color=primary)
+        colors = {r: {"dark": {"color": dark[r]}, "light": {"color": light[r]}, "default": {"color": dark[r]}} for r in roles}
+        doc = {"colors": colors, "base16": {"base05": {"default": {"color": "#D0D0D0"}}, "base02": {"default": {"color": "#303030"}}}}
+        bin_ = Path(self.tmp.name) / "bin"
+        bin_.mkdir(exist_ok=True)
+        (bin_ / "doc.json").write_text(json.dumps(doc))
+        (bin_ / "calls").write_text("")
+        script = bin_ / "matugen"
+        script.write_text(f"#!/bin/sh\nif [ \"$1\" = --version ]; then echo 'matugen 4.2.0'; exit 0; fi\n"
+                          f"echo \"$@\" >> {bin_}/calls\ncat {bin_}/doc.json\n")
+        script.chmod(0o755)
+        return patch.dict(os.environ, {"PATH": f"{bin_}:{os.environ['PATH']}"})
+
+    def wallpaper(self, name="w.jpg"):
+        f = Path(self.tmp.name) / name
+        f.write_bytes(b"not really a picture")
+        ctl.main(["set", "wallpaper.path", str(f)])
+        return f
+
+    def test_wallpaper_colours_off_by_default_and_touch_nothing(self):
+        self.wallpaper()
+        with self.fake_matugen():
+            res = ctl.wallpaper_colors_generate(ctl.Config(self.schema))
+        self.assertEqual((res["source"], res["reason"], ctl.wallpaper_theme_file().exists()), ("theme", "off", False))
+        self.assertIsNone(ctl.wallpaper_layer(ctl.Config(self.schema)))
+
+    def test_wallpaper_colours_generate_readable_palette_over_theme(self):
+        self.wallpaper()
+        ctl.main(["set", "appearance.colorSource", "wallpaper"])
+        with self.fake_matugen():
+            res = ctl.wallpaper_colors_generate(ctl.Config(self.schema))
+            self.assertEqual((res["ok"], res["changed"], res["source"]), (True, True, "wallpaper"))
+            again = ctl.wallpaper_colors_generate(ctl.Config(self.schema))
+            self.assertFalse(again["changed"], "same wallpaper: not generated again")
+            calls = (Path(self.tmp.name) / "bin" / "calls").read_text()
+        self.assertIn("--dry-run", calls)
+        self.assertIn("--fallback-color", calls)
+        gen = json.loads(ctl.wallpaper_theme_file().read_text())
+        self.assertNotIn(self.tmp.name, json.dumps(gen), "no personal paths in the generated theme")
+        for mode in ("dark", "light"):
+            pal = gen["variants"][mode]["palette"]
+            surfaces = [pal[k] for k in ("base", "surface", "surfaceRaised", "surfaceHover")]
+            for slot, ratio in (("text", 7.0), ("textMuted", 4.5), ("textFaint", 3.0), ("accent", 3.0)):
+                self.assertGreaterEqual(min(ctl.contrast(pal[slot], b) for b in surfaces), ratio, f"{mode} {slot}")
+            self.assertGreaterEqual(ctl.contrast(pal["accentText"], pal["accent"]), 4.5)
+            self.assertNotIn("danger", pal, "status colours stay the theme's")
+            self.assertIn("backdrop", gen["variants"][mode]["wallpaper"])
+        cfg = ctl.Config(self.schema)
+        self.assertEqual([t["id"] for t in ctl.theme_chain(cfg)], ["_base", "bifrost-graphite", "bifrost-wallpaper"])
+        self.assertEqual(ctl.theme_palette(cfg)["accent"], gen["variants"][ctl.effective_variant(cfg)]["palette"]["accent"])
+        # Window borders: the inactive one is the palette's raised surface.
+        self.assertIn(f'inactive_border = "rgba({gen["variants"]["dark"]["palette"]["surfaceRaised"].lstrip("#").lower()}', ctl.generate_hypr(cfg))
+
+    def test_wallpaper_colours_follow_the_wallpaper_and_fall_back(self):
+        self.wallpaper("a.jpg")
+        ctl.main(["set", "appearance.colorSource", "wallpaper"])
+        with self.fake_matugen():
+            ctl.wallpaper_colors_generate(ctl.Config(self.schema))
+        self.assertIsNotNone(ctl.wallpaper_layer(ctl.Config(self.schema)))
+        self.wallpaper("b.jpg")
+        self.assertIsNone(ctl.wallpaper_layer(ctl.Config(self.schema)), "made from another wallpaper: theme colours")
+        with patch.dict(os.environ, {"PATH": "/nonexistent"}):
+            res = ctl.wallpaper_colors_generate(ctl.Config(self.schema))
+            self.assertEqual((res["ok"], res["reason"], res["source"]), (False, "no-matugen", "theme"))
+            self.assertEqual(ctl.wallpaper_colors_status(ctl.Config(self.schema))["reason"], "no-matugen")
+        self.assertFalse(ctl.wallpaper_theme_file().exists(), "stale palette removed so every process falls back")
+        self.assertEqual([t["id"] for t in ctl.theme_chain(ctl.Config(self.schema))], ["_base", "bifrost-graphite"])
+
+    def test_own_accent_gives_way_to_the_wallpaper(self):
+        self.wallpaper()
+        ctl.main(["set", "appearance.mode", "dark"])
+        ctl.main(["set", "appearance.accent.dark", "#A9AAAA"])
+        cfg = ctl.Config(self.schema)
+        self.assertEqual(ctl.own_colour(cfg, "appearance.accent.dark"), "#A9AAAA", "colours from the theme: own accent applies")
+        ctl.main(["set", "appearance.colorSource", "wallpaper"])
+        with self.fake_matugen():
+            ctl.wallpaper_colors_generate(ctl.Config(self.schema))
+        cfg = ctl.Config(self.schema)
+        self.assertIsNone(ctl.own_colour(cfg, "appearance.accent.dark"))
+        self.assertIsNone(ctl.own_colour(cfg, "materials.bar.tint.dark"))
+        self.assertEqual(ctl.own_colour(cfg, "materials.transparency.dark"), None if ctl.deep_get(cfg.values, "materials.transparency.dark")[0] is None else ctl.deep_get(cfg.values, "materials.transparency.dark")[0])
+        self.assertEqual(ctl.deep_get(cfg.values, "appearance.accent.dark")[0], "#A9AAAA", "the value stays in the config")
+
+    def test_grey_wallpaper_uses_the_neutral_scheme(self):
+        self.wallpaper()
+        ctl.main(["set", "appearance.colorSource", "wallpaper"])
+        with self.fake_matugen(primary="#5A5C5E"):
+            ctl.wallpaper_colors_generate(ctl.Config(self.schema))
+            calls = (Path(self.tmp.name) / "bin" / "calls").read_text().splitlines()
+        self.assertIn("scheme-neutral", calls[-1])
+        self.assertEqual(json.loads(ctl.wallpaper_theme_file().read_text())["_generated"]["scheme"], "scheme-neutral")
+
     def test_theme_catalog_data_only_install_update_remove_offline(self):
         data = ('system: "base16"\nname: "Test"\nauthor: "Test author"\nvariant: "dark"\npalette:\n'
                 + ''.join(f'  base{i:02X}: "#{i:02x}{i:02x}{i:02x}"\n' for i in range(16))).encode()

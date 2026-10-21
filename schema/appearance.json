@@ -19,6 +19,22 @@
       "editor": "ThemeEditor"
     },
     {
+      "key": "appearance.colorSource",
+      "type": "enum",
+      "default": "theme",
+      "options": [
+        "theme",
+        "wallpaper"
+      ],
+      "optionLabels": {
+        "theme": "Theme",
+        "wallpaper": "Wallpaper"
+      },
+      "label": "Colours from",
+      "description": "Wallpaper = the panel, dock, menus, Settings and the tint of the glass take their colours from the current wallpaper (needs matugen), in place of your own accent, text, selection and glass colours. Shape and status colours stay the theme's; without matugen the theme's colours are used",
+      "group": "theme"
+    },
+    {
       "key": "appearance.mode",
       "type": "enum",
       "default": "dark",
@@ -83,7 +99,7 @@
       "default": null,
       "nullable": true,
       "label": "Accent colour",
-      "description": "Selection, sliders, focus rings and window borders. Empty = the theme's accent",
+      "description": "Selection, sliders, focus rings and window borders. Empty = the theme's accent. Ignored while colours come from the wallpaper",
       "group": "colors",
       "inherit": "palette.accent",
       "nullLabel": "Bifrost default",
@@ -95,7 +111,7 @@
       "default": null,
       "nullable": true,
       "label": "Text and icons",
-      "description": "Shell text and monochrome icons, including the panel. Empty uses the theme colour.",
+      "description": "Shell text and monochrome icons, including the panel. Empty uses the theme colour. Ignored while colours come from the wallpaper",
       "group": "colors",
       "inherit": "palette.text",
       "nullLabel": "Theme",
@@ -165,7 +181,7 @@
       "inherit": "palette.accent",
       "nullLabel": "Accent",
       "label": "Selection colour",
-      "description": "Colour of selected and active items. Empty = the accent colour",
+      "description": "Colour of selected and active items. Empty = the accent colour. Ignored while colours come from the wallpaper",
       "group": "identity",
       "dependsOnValue": {
         "appearance.selection": [

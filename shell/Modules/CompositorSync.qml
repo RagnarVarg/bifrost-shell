@@ -14,7 +14,8 @@ Scope {
     id: sync
 
     readonly property bool enabled: RunMode.appliesHyprlandSettings
-    readonly property var derivedKeys: ["appearance.accent.light", "appearance.accent.dark", "appearance.theme", "appearance.mode", "appearance.radiusScale", "bar.background", "bar.widgetStyle"]
+    property string paletteUsed: ""
+    readonly property var derivedKeys: ["appearance.accent.light", "appearance.accent.dark", "appearance.theme", "appearance.colorSource", "appearance.mode", "appearance.radiusScale", "bar.background", "bar.widgetStyle"]
 
     function affects(key: string): bool {
         const d = Schema.entries[key];
@@ -51,6 +52,17 @@ Scope {
 
         function onVariantChanged() {
             applyLater.restart();
+        }
+
+        // …and the palette from the wallpaper, which changes with no
+        // setting either (Modules/WallpaperColors): the colours the
+        // generated file takes from the palette.
+        function onRevisionChanged() {
+            const p = Theme.palette;
+            const used = [p.accent, p.surfaceRaised, p.void, p.silverBright].join();
+            if (sync.paletteUsed && used !== sync.paletteUsed)
+                applyLater.restart();
+            sync.paletteUsed = used;
         }
     }
 
