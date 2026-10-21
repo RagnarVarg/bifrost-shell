@@ -1043,12 +1043,13 @@ The border-resize toggle moved from Input to Settings → Windows & compositor �
   fallback utan matugen. Tester: selftest 643, bifrostctl 78.
 - **Inte ännu i production:** installera (`./install.sh --no-hypr --no-greeter`) och starta om bifrost.service + Settings.
   Login-greetern visar valt tema (greeter sync skriver om wallpaper-sökvägen, så lagret matchar inte där).
-- Nästa: eget ikontema i palettens färger (del 2). Stilförslag A Glas / B Sten / C Norrsken i scratch; stil ej vald ännu.
+- Del 2 (eget ikontema) gjord, se nästa avsnitt.
 
 ## 2026-10-21 — Bifrosts eget ikontema (Claude)
 `appearance.icons.bifrost` (av/på, standard av) och `appearance.icons.inherit` (tema för övriga ikoner; tomt = appikontemat).
-- **Ritning:** `tools/icon_theme.py` (stdlib). Stil vald av användaren: "Sten" (platt, två toner, hela pixlar) för 16/24 px
-  (Fixed), "Norrsken" (palettens aurora under ljus slöja) för scalable 32–512. 27 ritningar, 97 namn med alias (symlänkar):
+- **Ritning:** `tools/icon_theme.py` (stdlib). Stil vald av användaren (2026-10-21): "Sten" med fjordlinjen överallt –
+  platt, två toner, symboler i mörkare ton. 16/24 px (Fixed, hela pixlar), 32 px (Fixed, stora ritningen platt),
+  scalable 48–512 (stora ritningen + svag ljus överkant och mjuk skugga, från förslag A). VERSION 2. 27 ritningar, 97 namn med alias (symlänkar):
   mappar (vanlig, öppen, hem, skrivbord, dokument, hämtade, musik, bilder, videor, mallar, publik, projekt), papperskorg
   tom/full, dator, nätverk, hårddisk, USB, filtyper (text, kod, bild, ljud, video, arkiv, PDF, kalkyl, presentation).
   Inga appikoner: `Inherits=<arvt tema>,hicolor`, `Hidden=true` (syns inte i temalistor). Färgerna är lägesoberoende

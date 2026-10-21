@@ -1,11 +1,12 @@
 """Bifrost's own icon theme: folders, places, devices and common file types
 drawn as SVG in the shell's palette. Standard library only.
 
-Two drawings per icon:
-  small (16 and 24 px, fixed size) – "Sten": flat and matte in two tones,
-      edges on whole pixels, symbols cut into the front in a darker tone;
-  large (32 px and up, scalable)   – "Norrsken": the front carries the
-      palette's aurora under a light veil, a thin bright rim on top.
+One style, "Sten": flat and matte in two tones, symbols (the fjord line on
+a plain folder) cut into the front in a darker tone. Three drawings:
+  16 and 24 px (fixed)    – on whole pixels;
+  32 px (fixed)           – the large drawing, flat;
+  48 px and up (scalable) – the large drawing with a faint light rim on top
+                            and a soft shadow.
 Everything else (app icons above all) comes from the inherited theme.
 
 bifrostctl (`icons generate`) decides when to draw, where (the two theme
@@ -18,9 +19,10 @@ import os
 from pathlib import Path
 
 # Raised whenever the drawings change, so every installed copy is redrawn.
-VERSION = 1
+VERSION = 2
 
 SMALL_SIZES = (16, 24)
+FLAT_SIZE = 32
 
 
 # ── colours ───────────────────────────────────────────────────────────────
@@ -41,7 +43,6 @@ def colours(dark, light, accent=None):
     accent = accent or {}
     acc = {m: accent.get(m) or p.get("accent", "#8FA8C8") for m, p in (("dark", dark), ("light", light))}
     front = mix(acc["dark"], acc["light"], 0.4)
-    au = [mix(a, b, 0.4) for a, b in zip(dark.get("aurora") or [acc["dark"]] * 3, light.get("aurora") or [acc["light"]] * 3)]
     status = {k: mix(dark.get(k, "#888888"), light.get(k, "#888888"), 0.5) for k in ("success", "warning", "danger")}
     return {
         "front": front,
@@ -51,13 +52,11 @@ def colours(dark, light, accent=None):
         "page": mix(light.get("surfaceHover", "#dde2e9"), dark.get("surfaceRaised", "#1e2126"), 0.15),
         "line": mix(light.get("silver", "#5e6773"), "#ffffff", 0.55),
         "ink": mix(front, "#000000", 0.2),
-        "glass": mix(light.get("surfaceRaised", "#fafbfc"), front, 0.12),
-        "aurora0": au[0], "aurora1": au[1], "aurora2": au[2],
         **status,
     }
 
 
-# Which colour pair a file type is tinted with: (small strip, large band).
+# The status colour a file type's strip takes (others: the folder colour).
 TYPE_TINT = {"pdf": "danger", "spreadsheet": "success", "presentation": "warning"}
 
 
@@ -168,91 +167,95 @@ def small_device(c, size, kind):
     return svg(size, body)
 
 
-# ── large: Norrsken (scalable, drawn on 128) ────────────────────────────────
+# ── large: Sten (32 px flat; 48 px and up with a faint light rim and a soft
+# shadow), drawn on 128 ─────────────────────────────────────────────────────
 SHADOW = '<filter id="sh" x="-20%" y="-20%" width="140%" height="160%"><feGaussianBlur stdDeviation="2.2"/></filter>'
+RIM = ('<linearGradient id="rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/>'
+       '<stop offset=".14" stop-color="#fff" stop-opacity="0"/></linearGradient>')
+FRONT = "M8 46a6 6 0 0 1 6-6h100a6 6 0 0 1 6 6v58a6 6 0 0 1-6 6H14a6 6 0 0 1-6-6z"
+FRONT_OPEN = "M4 54a6 6 0 0 1 6-6h108a6 6 0 0 1 5.9 7l-7.2 49.5A6 6 0 0 1 110.8 110H17.2a6 6 0 0 1-5.9-5.5L4.1 55z"
+PAGE = "M30 12h46l26 26v72a6 6 0 0 1-6 6H30a6 6 0 0 1-6-6V18a6 6 0 0 1 6-6z"
 
 
-def _aurora(c, gid="au", diagonal=True):
-    x2, y1 = ("1", "1") if diagonal else ("1", "0")
-    return (f'<linearGradient id="{gid}" x1="0" y1="{y1}" x2="{x2}" y2="0"><stop offset="0" stop-color="{c["aurora0"]}"/>'
-            f'<stop offset=".55" stop-color="{c["aurora1"]}"/><stop offset="1" stop-color="{c["aurora2"]}"/></linearGradient>')
+def _lit(shape, top, shadow, rim_path=None):
+    """48 px and up: a soft shadow under `shadow` (cx, cy, rx) and a faint
+    light rim along the top of `shape` (top edge path `rim_path`)."""
+    cx, cy, rx = shadow
+    under = f'<ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="5" fill="#000" opacity=".2" filter="url(#sh)"/>'
+    over = f'<path d="{shape}" fill="url(#rim)"/>'
+    if rim_path:
+        over += f'<path d="{rim_path}" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.5"/>'
+    return under, over
 
 
-VEIL = ('<linearGradient id="veil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/>'
-        '<stop offset=".5" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient>')
-FRONT = "M10 48a8 8 0 0 1 8-8h92a8 8 0 0 1 8 8v52a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8z"
-FRONT_OPEN = "M6 56a8 8 0 0 1 8-8h100a8 8 0 0 1 7.9 9.3l-6.6 44A8 8 0 0 1 107.4 108H20.6a8 8 0 0 1-7.9-6.7l-6.6-44z"
-PAGE = "M28 12h50l26 26v70a6 6 0 0 1-6 6H28a6 6 0 0 1-6-6V18a6 6 0 0 1 6-6z"
+def large(c, under, body, over, lit):
+    return svg(128, (under if lit else "") + body + (over if lit else ""), SHADOW + RIM if lit else "")
 
 
-def large_folder(c, emblem=None, open_=False):
-    defs = SHADOW + _aurora(c) + VEIL
+def large_folder(c, emblem=None, open_=False, lit=True):
     front = FRONT_OPEN if open_ else FRONT
-    body = (f'<ellipse cx="64" cy="112" rx="50" ry="6" fill="#000" opacity=".22" filter="url(#sh)"/>'
-            f'<path d="M14 26a8 8 0 0 1 8-8h26c3 0 5 1 7 3l6 6h45a8 8 0 0 1 8 8v66H14z" fill="{c["deep"]}"/>'
-            f'<rect x="22" y="{26 if open_ else 32}" width="84" height="40" rx="4" fill="{c["paper"]}" opacity=".9"/>'
-            f'<path d="{front}" fill="url(#au)"/><path d="{front}" fill="url(#veil)"/>'
-            f'<path d="{"M14 48.75h100" if open_ else "M18 41h92a7 7 0 0 1 7 7"}" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.5"/>')
-    if emblem:
-        body += glyph(emblem, 46, 58, 36, "#ffffff", 6, 0.85)
-    return svg(128, body, defs)
+    under, over = _lit(front, 40, (64, 112, 50), "M10 48.75h108" if open_ else "M14 40.75h100a5.25 5.25 0 0 1 5.25 5.25")
+    body = f'<path d="M12 28a8 8 0 0 1 8-8h28l10 9h50a8 8 0 0 1 8 8v63H12z" fill="{c["back"]}"/>'
+    if open_:
+        body += f'<rect x="20" y="30" width="88" height="34" rx="3" fill="{c["paper"]}"/>'
+    body += f'<path d="{front}" fill="{c["front"]}"/>'
+    if not open_:
+        body += glyph(emblem or "fjord", 44, 55, 40, c["deep"], 5, 0.55)
+    return large(c, under, body, over, lit)
 
 
-def large_page(c, kind):
-    if kind in TYPE_TINT:
-        t = c[TYPE_TINT[kind]]
-        band = (f'<linearGradient id="band" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="{t}"/>'
-                f'<stop offset="1" stop-color="{mix(t, "#ffffff", 0.3)}"/></linearGradient>')
-    else:
-        band = _aurora(c, "band", diagonal=False)
-    defs = SHADOW + band + f'<clipPath id="page"><path d="{PAGE}"/></clipPath>'
-    body = (f'<ellipse cx="64" cy="116" rx="38" ry="5" fill="#000" opacity=".22" filter="url(#sh)"/>'
-            f'<path d="{PAGE}" fill="#ffffff"/>'
-            f'<rect x="22" y="12" width="82" height="22" fill="url(#band)" clip-path="url(#page)" opacity=".9"/>'
-            f'<path d="M78 12v20a6 6 0 0 0 6 6h20z" fill="{c["back"]}"/>'
-            + glyph(kind, 39, 52, 48, c["ink"], 5, 0.55)
-            + f'<path d="{PAGE}" fill="none" stroke="{c["back"]}" stroke-opacity=".25" stroke-width="1.5"/>')
-    return svg(128, body, defs)
+def large_page(c, kind, lit=True):
+    tint = c[TYPE_TINT[kind]] if kind in TYPE_TINT else c["front"]
+    under, over = _lit(PAGE, 12, (64, 118, 38), "M30 12.75h45.5")
+    body = (f'<path d="{PAGE}" fill="{c["page"]}"/>'
+            f'<path d="M76 12v26h26z" fill="{c["back"]}"/>'
+            f'<path d="M30 12h4v104h-4a6 6 0 0 1-6-6V18a6 6 0 0 1 6-6z" fill="{tint}"/><rect x="30" y="12" width="4" height="104" fill="{tint}"/>'
+            + glyph(kind, 42, 54, 46, c["deep"], 5, 0.5))
+    return large(c, under, body, over, lit)
 
 
-def large_trash(c, full=False):
-    defs = SHADOW + _aurora(c, "au", diagonal=False) + VEIL
-    body = (f'<ellipse cx="64" cy="118" rx="36" ry="5" fill="#000" opacity=".22" filter="url(#sh)"/>'
-            f'<path d="M30 38h68l-6 72a6 6 0 0 1-6 5.5H42a6 6 0 0 1-6-5.5z" fill="{c["glass"]}"/>'
-            f'<path d="M30 38h68l-6 72a6 6 0 0 1-6 5.5H42a6 6 0 0 1-6-5.5z" fill="url(#veil)"/>'
-            + "".join(f'<path d="M{x} 50v52" stroke="{c["back"]}" stroke-opacity=".3" stroke-width="4" stroke-linecap="round"/>' for x in (50, 64, 78)))
-    lid = (f'<rect x="22" y="26" width="84" height="12" rx="5" fill="url(#au)"/>'
-           f'<path d="M52 26v-4a4 4 0 0 1 4-4h16a4 4 0 0 1 4 4v4" fill="none" stroke="{c["deep"]}" stroke-width="5"/>')
+def large_trash(c, full=False, lit=True):
+    bin_ = "M30 38h68l-6 72a6 6 0 0 1-6 5.5H42a6 6 0 0 1-6-5.5z"
+    under, over = _lit(bin_, 38, (64, 118, 36))
+    body = (f'<path d="{bin_}" fill="{c["page"]}"/>'
+            + "".join(f'<path d="M{x} 50v52" stroke="{c["deep"]}" stroke-opacity=".45" stroke-width="5" stroke-linecap="round"/>' for x in (50, 64, 78)))
+    lid = (f'<path d="M52 26v-4a4 4 0 0 1 4-4h16a4 4 0 0 1 4 4v4" fill="none" stroke="{c["back"]}" stroke-width="5"/>'
+           f'<rect x="22" y="26" width="84" height="12" rx="5" fill="{c["front"]}"/>'
+           + ('<path d="M27 26.75h74" stroke="#fff" stroke-opacity=".45" stroke-width="1.5"/>' if lit else ""))
     if full:
         body += (f'<path d="M36 38c2-10 10-16 18-12 4-8 16-9 20-1 8-4 16 2 18 13z" fill="{c["paper"]}" stroke="{c["line"]}" stroke-width="1.5"/>'
                  f'<g transform="rotate(-10 64 32) translate(0 -10)">{lid}</g>')
     else:
         body += lid
-    return svg(128, body, defs)
+    return large(c, under, body, over, lit)
 
 
-def large_device(c, kind):
-    defs = SHADOW + _aurora(c) + VEIL
-    shadow = '<ellipse cx="64" cy="114" rx="46" ry="5" fill="#000" opacity=".22" filter="url(#sh)"/>'
+def large_device(c, kind, lit=True):
     if kind == "computer":
-        body = (shadow + f'<rect x="10" y="16" width="108" height="72" rx="8" fill="{c["deep"]}"/>'
-                f'<rect x="16" y="22" width="96" height="60" rx="4" fill="url(#au)"/><rect x="16" y="22" width="96" height="60" rx="4" fill="url(#veil)"/>'
-                f'<path d="M54 88h20l4 16H50z" fill="{c["back"]}"/><rect x="38" y="102" width="52" height="8" rx="4" fill="{c["deep"]}"/>')
+        shape = "M18 16h92a8 8 0 0 1 8 8v56a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8V24a8 8 0 0 1 8-8z"
+        under, over = _lit(shape, 16, (64, 114, 46), "M18 16.75h92")
+        body = (f'<path d="{shape}" fill="{c["back"]}"/><rect x="16" y="22" width="96" height="60" rx="4" fill="{c["front"]}"/>'
+                + glyph("fjord", 44, 32, 40, c["deep"], 5, 0.55)
+                + f'<path d="M54 88h20l4 16H50z" fill="{c["deep"]}"/><rect x="38" y="102" width="52" height="8" rx="4" fill="{c["deep"]}"/>')
     elif kind == "network":
-        body = (shadow + '<circle cx="64" cy="62" r="48" fill="url(#au)"/><circle cx="64" cy="62" r="48" fill="url(#veil)"/>'
-                f'<g fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="3"><ellipse cx="64" cy="62" rx="20" ry="48"/>'
-                f'<path d="M16 62h96M22 38h84M22 86h84"/></g>')
+        shape = "M16 62a48 48 0 1 0 96 0 48 48 0 1 0-96 0z"
+        under, over = _lit(shape, 14, (64, 114, 40))
+        body = (f'<path d="{shape}" fill="{c["front"]}"/><g fill="none" stroke="{c["deep"]}" stroke-opacity=".55" stroke-width="5">'
+                f'<ellipse cx="64" cy="62" rx="20" ry="47"/><path d="M17 62h94M24 38h80M24 86h80"/></g>')
     elif kind == "harddisk":
-        body = (shadow + f'<rect x="12" y="36" width="104" height="58" rx="10" fill="{c["glass"]}"/>'
-                f'<rect x="12" y="36" width="104" height="58" rx="10" fill="url(#veil)"/>'
-                f'<path d="M12 72h104v12a10 10 0 0 1-10 10H22a10 10 0 0 1-10-10z" fill="url(#au)"/>'
+        shape = "M22 36h84a10 10 0 0 1 10 10v38a10 10 0 0 1-10 10H22a10 10 0 0 1-10-10V46a10 10 0 0 1 10-10z"
+        under, over = _lit(shape, 36, (64, 102, 50), "M22 36.75h84")
+        body = (f'<path d="{shape}" fill="{c["page"]}"/>'
+                f'<path d="M12 72h104v12a10 10 0 0 1-10 10H22a10 10 0 0 1-10-10z" fill="{c["back"]}"/>'
                 f'<circle cx="98" cy="83" r="4" fill="{c["success"]}"/>')
     else:
-        body = (shadow + f'<rect x="46" y="8" width="36" height="30" rx="3" fill="{c["page"]}"/>'
+        shape = "M46 36h36a12 12 0 0 1 12 12v54a12 12 0 0 1-12 12H46a12 12 0 0 1-12-12V48a12 12 0 0 1 12-12z"
+        under, over = _lit(shape, 36, (64, 118, 30), "M46 36.75h36")
+        body = (f'<rect x="46" y="8" width="36" height="30" rx="3" fill="{c["page"]}"/>'
                 f'<rect x="54" y="16" width="7" height="7" fill="{c["deep"]}"/><rect x="67" y="16" width="7" height="7" fill="{c["deep"]}"/>'
-                f'<rect x="34" y="36" width="60" height="78" rx="12" fill="url(#au)"/><rect x="34" y="36" width="60" height="78" rx="12" fill="url(#veil)"/>'
-                f'<path d="M46 37h36" stroke="#fff" stroke-opacity=".7" stroke-width="1.5"/>')
-    return svg(128, body, defs)
+                f'<path d="{shape}" fill="{c["front"]}"/>'
+                f'<path d="M34 92h60v10a12 12 0 0 1-12 12H46a12 12 0 0 1-12-12z" fill="{c["back"]}"/>')
+    return large(c, under, body, over, lit)
 
 
 # ── the theme ─────────────────────────────────────────────────────────────
@@ -296,21 +299,21 @@ DEVICES = {
 
 
 def icons(c):
-    """Yields (context, name, aliases, small(size) -> svg, large svg)."""
+    """Yields (context, name, aliases, small(size) -> svg, large(lit) -> svg)."""
     for name, (emblem, aliases) in FOLDERS.items():
-        yield ("places", name, aliases, lambda s, e=emblem: small_folder(c, s, e), large_folder(c, emblem))
+        yield ("places", name, aliases, lambda s, e=emblem: small_folder(c, s, e), lambda lit, e=emblem: large_folder(c, e, lit=lit))
     yield ("places", "folder-open", ["folder-drag-accept", "folder-visiting"],
-           lambda s: small_folder(c, s, open_=True), large_folder(c, open_=True))
-    yield ("places", "user-trash", ["trashcan_empty"], lambda s: small_trash(c, s), large_trash(c))
-    yield ("places", "user-trash-full", ["trashcan_full"], lambda s: small_trash(c, s, True), large_trash(c, True))
+           lambda s: small_folder(c, s, open_=True), lambda lit: large_folder(c, open_=True, lit=lit))
+    yield ("places", "user-trash", ["trashcan_empty"], lambda s: small_trash(c, s), lambda lit: large_trash(c, lit=lit))
+    yield ("places", "user-trash-full", ["trashcan_full"], lambda s: small_trash(c, s, True), lambda lit: large_trash(c, True, lit))
     for kind, names in DEVICES.items():
-        yield ("devices", names[0], names[1:], lambda s, k=kind: small_device(c, s, k), large_device(c, kind))
+        yield ("devices", names[0], names[1:], lambda s, k=kind: small_device(c, s, k), lambda lit, k=kind: large_device(c, k, lit))
     for kind, names in FILE_TYPES.items():
-        yield ("mimetypes", names[0], names[1:], lambda s, k=kind: small_page(c, s, k), large_page(c, kind))
+        yield ("mimetypes", names[0], names[1:], lambda s, k=kind: small_page(c, s, k), lambda lit, k=kind: large_page(c, k, lit))
 
 
 def index_theme(name, inherits):
-    dirs = [f"{s}x{s}/{ctx}" for s in SMALL_SIZES for ctx in ("places", "devices", "mimetypes")] + \
+    dirs = [f"{s}x{s}/{ctx}" for s in SMALL_SIZES + (FLAT_SIZE,) for ctx in ("places", "devices", "mimetypes")] + \
            [f"scalable/{ctx}" for ctx in ("places", "devices", "mimetypes")]
     out = ["[Icon Theme]", f"Name={name}",
            "Comment=Generated by Bifrost in the shell's colours (bifrostctl icons generate); rewritten automatically",
@@ -320,7 +323,7 @@ def index_theme(name, inherits):
     for d in dirs:
         size, ctx = d.split("/")
         out += [f"[{d}]", f"Context={ctx.capitalize() if ctx != 'mimetypes' else 'MimeTypes'}"]
-        out += (["Size=128", "MinSize=32", "MaxSize=512", "Type=Scalable"] if size == "scalable"
+        out += (["Size=128", "MinSize=48", "MaxSize=512", "Type=Scalable"] if size == "scalable"
                 else [f"Size={size.split('x')[0]}", "Type=Fixed"])
         out.append("")
     return "\n".join(out)
@@ -337,11 +340,12 @@ def write_theme(root: Path, name, c, inherits):
             (d / f"{icon}.svg").write_text(small(size))
             for a in aliases:
                 os.symlink(f"{icon}.svg", d / f"{a}.svg")
-        d = root / "scalable" / ctx
-        d.mkdir(parents=True, exist_ok=True)
-        (d / f"{icon}.svg").write_text(large)
-        for a in aliases:
-            os.symlink(f"{icon}.svg", d / f"{a}.svg")
+        for dirname, lit in ((f"{FLAT_SIZE}x{FLAT_SIZE}", False), ("scalable", True)):
+            d = root / dirname / ctx
+            d.mkdir(parents=True, exist_ok=True)
+            (d / f"{icon}.svg").write_text(large(lit))
+            for a in aliases:
+                os.symlink(f"{icon}.svg", d / f"{a}.svg")
         count += 1 + len(aliases)
     (root / "index.theme").write_text(index_theme(name, inherits))
     return count
