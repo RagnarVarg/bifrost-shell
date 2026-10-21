@@ -15,10 +15,11 @@ import qs.Compat
 Singleton {
     id: root
 
-    readonly property var choice: ((Config.values.appearance || {}).icons || {}).theme || null
+    // appearance.icons.theme, .bifrost (Bifrost's own icons, Modules/BifrostIcons) and .inherit.
+    readonly property string choice: JSON.stringify((Config.values.appearance || {}).icons || {})
     readonly property string variant: Theme.variant
     readonly property string theme: IconLookup.theme
-    property string source: ""       // default | system | custom | missing | default-missing
+    property string source: ""       // default | system | system-restore | custom | missing | default-missing | bifrost
 
     function refresh() {
         Ctl.run(["icons", "effective", "--variant", variant, "--json"], (ok, out, data) => {
@@ -50,6 +51,12 @@ Singleton {
 
         interval: 50
         onTriggered: root.refresh()
+    }
+
+    // A new drawing of Bifrost's icons (in any process) switches the slot.
+    WatchedFile {
+        path: Platform.env("XDG_CACHE_HOME") ? Platform.env("XDG_CACHE_HOME") + "/bifrost/bifrost-icons.json" : Platform.env("HOME") + "/.cache/bifrost/bifrost-icons.json"
+        onContentChanged: refreshLater.restart()
     }
 
     JsonReader {

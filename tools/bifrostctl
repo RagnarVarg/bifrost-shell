@@ -19,6 +19,7 @@
     bifrostctl hypr binds [--json]          the effective keybindings
     bifrostctl hypr status [--json]         generated file current? hooked into hyprland.lua?
     bifrostctl icons list|effective|index [THEME] [--json]   icon themes, the one Bifrost uses, its lookup index
+    bifrostctl icons generate [--force] [--json]  draw Bifrost's own icons (appearance.icons.bifrost)
     bifrostctl appearance status|apply [--variant V] [--json] push light/dark + icons to GTK, Qt, the portal
     bifrostctl wallpaper-colors status|generate [--force] [--json]
                                             colours from the wallpaper (matugen → themes/bifrost-wallpaper.json)
@@ -38,6 +39,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import fcntl
 import hashlib
 import math
 import json
@@ -454,16 +456,118 @@ def system_icon_theme():
     return "hicolor"
 
 
-def effective_icon_theme(cfg, variant=None):
-    """Resolve the shared FullBlue default, explicit system/custom choice and fallback."""
+DEFAULT_ICON_THEME = "Gruvbox-Plus-Dark-IceBlue-FullBlue"
+
+
+def base_icon_theme(cfg):
+    """The app icon theme (appearance.icons.theme): the shared FullBlue
+    default, the system's or a named one, with fallback. Never one of
+    Bifrost's own slots: with "system" while the desktop shows a slot (Bifrost
+    set it), the theme it replaced."""
     choice = deep_get(cfg.values, "appearance.icons.theme")[0]
-    variant = variant or effective_variant(cfg)
     if choice == "system":
-        return system_icon_theme(), "system"
-    if choice:
+        sys_theme = system_icon_theme()
+        if not is_bifrost_icons(sys_theme):
+            return sys_theme, "system"
+        prev = bifrost_icons_state().get("replaced")
+        return (prev, "system-restore") if icon_theme_exists(prev) and not is_bifrost_icons(prev) else (
+            (DEFAULT_ICON_THEME, "system-restore") if icon_theme_exists(DEFAULT_ICON_THEME) else ("hicolor", "system-restore"))
+    if choice and not is_bifrost_icons(choice):
         return (choice, "custom") if icon_theme_exists(choice) else (system_icon_theme(), "missing")
-    default = "Gruvbox-Plus-Dark-IceBlue-FullBlue"
-    return (default, "default") if icon_theme_exists(default) else (system_icon_theme(), "default-missing")
+    return (DEFAULT_ICON_THEME, "default") if icon_theme_exists(DEFAULT_ICON_THEME) else (system_icon_theme(), "default-missing")
+
+
+def effective_icon_theme(cfg, variant=None):
+    """The icon theme the desktop gets: Bifrost's own (its active slot) while
+    appearance.icons.bifrost is on and drawn, else the app icon theme."""
+    if deep_get(cfg.values, "appearance.icons.bifrost")[0]:
+        slot = bifrost_icons_state().get("slot")
+        if slot and icon_theme_exists(bifrost_icons_name(slot)):
+            return bifrost_icons_name(slot), "bifrost"
+    return base_icon_theme(cfg)
+
+
+# ── Bifrost's own icons (appearance.icons.bifrost) ─────────────────────────
+# tools/icon_theme.py draws folders, places, devices and file types in the
+# palette; everything else is inherited (appearance.icons.inherit, else the
+# app icon theme) and then hicolor. Two slots in ~/.local/share/icons take
+# turns: a new drawing goes into the slot not in use, and switching the theme
+# name makes GTK and Qt apps reload their icons at once. Redrawn only when the
+# colours, the inherited theme or the drawings change (hash).
+BIFROST_ICONS = "bifrost-icons"
+
+
+def bifrost_icons_name(slot) -> str:
+    return f"{BIFROST_ICONS}-{slot}"
+
+
+def is_bifrost_icons(theme) -> bool:
+    return bool(theme) and theme in (bifrost_icons_name("a"), bifrost_icons_name("b"))
+
+
+def bifrost_icons_root() -> Path:
+    return Path(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")) / "icons"
+
+
+def bifrost_icons_state_file() -> Path:
+    return Path(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")) / "bifrost" / "bifrost-icons.json"
+
+
+def bifrost_icons_state():
+    try:
+        st = json.loads(bifrost_icons_state_file().read_text())
+        return st if isinstance(st, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def bifrost_icons_inherit(cfg):
+    choice = deep_get(cfg.values, "appearance.icons.inherit")[0]
+    if choice and not is_bifrost_icons(choice) and icon_theme_exists(choice):
+        return choice
+    return base_icon_theme(cfg)[0]
+
+
+def bifrost_icons_colours(cfg):
+    sys.path.insert(0, str(REPO / "tools"))
+    import icon_theme
+    pal = {m: theme_palette(cfg, m) for m in ("dark", "light")}
+    accent = {m: own_colour(cfg, f"appearance.accent.{m}") for m in pal}
+    return icon_theme, icon_theme.colours(pal["dark"], pal["light"], {m: a for m, a in accent.items() if a})
+
+
+def bifrost_icons_generate(cfg, force=False):
+    """Draws Bifrost's icons into the free slot when anything they're drawn
+    from changed. Returns {ok, changed, theme, slot, hash}."""
+    if not deep_get(cfg.values, "appearance.icons.bifrost")[0]:
+        return {"ok": True, "changed": False, "theme": None, "reason": "off"}
+    icon_theme, c = bifrost_icons_colours(cfg)
+    inherit = bifrost_icons_inherit(cfg)
+    digest = hashlib.sha256(json.dumps({"v": icon_theme.VERSION, "c": c, "inherit": inherit}, sort_keys=True).encode()).hexdigest()[:16]
+    root = bifrost_icons_root()
+    lock_file = bifrost_icons_state_file().with_suffix(".lock")
+    lock_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_file, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        st = bifrost_icons_state()
+        cur = st.get("slot")
+        if not force and cur and st.get("hash") == digest and icon_theme_exists(bifrost_icons_name(cur)):
+            return {"ok": True, "changed": False, "theme": bifrost_icons_name(cur), "slot": cur, "hash": digest}
+        slot = "b" if cur == "a" else "a"
+        target = root / bifrost_icons_name(slot)
+        tmp = root / f".{bifrost_icons_name(slot)}.new"
+        shutil.rmtree(tmp, ignore_errors=True)
+        tmp.mkdir(parents=True)
+        count = icon_theme.write_theme(tmp, f"Bifrost ({slot})", c, [inherit])
+        shutil.rmtree(target, ignore_errors=True)
+        tmp.rename(target)
+        replaced = st.get("replaced")
+        if not replaced:
+            sys_theme = system_icon_theme()
+            replaced = sys_theme if not is_bifrost_icons(sys_theme) else None
+        write_json_atomic(bifrost_icons_state_file(), {"slot": slot, "hash": digest, "inherit": inherit, "icons": count,
+                                                       "replaced": replaced, "at": now_iso()})
+    return {"ok": True, "changed": True, "theme": bifrost_icons_name(slot), "slot": slot, "hash": digest, "icons": count}
 
 
 def icon_theme_chain(theme):
@@ -612,7 +716,7 @@ def appearance_apply(cfg, variant, dry=False):
     rows = []
     add = lambda t, st, d: rows.append({"target": t, "status": st, "detail": d})
     icons, source = effective_icon_theme(cfg, variant)
-    manage_icons = source in ("default", "custom")
+    manage_icons = source in ("default", "custom", "bifrost", "system-restore")
     cursor, cursor_size = effective_cursor(cfg)
     gs = shutil.which("gsettings")
     iface = "org.gnome.desktop.interface"
@@ -2677,7 +2781,8 @@ def main(argv=None):
     p.add_argument("action", choices=["query"])
     p.add_argument("--json", action="store_true")
     p = sub.add_parser("icons")
-    p.add_argument("action", choices=["list", "effective", "index"])
+    p.add_argument("action", choices=["list", "effective", "index", "generate"])
+    p.add_argument("--force", action="store_true", help="generate: draw Bifrost's icons even if unchanged")
     p.add_argument("theme", nargs="?")
     p.add_argument("--variant", choices=["light", "dark"])
     p.add_argument("--json", action="store_true")
@@ -2846,6 +2951,9 @@ def main(argv=None):
         if args.action == "list":
             items = installed_icon_themes()
             print(json.dumps(items) if args.json else "\n".join(f"{t['id']:<32} {t['name']}" for t in items))
+        elif args.action == "generate":
+            res = bifrost_icons_generate(cfg, args.force)
+            print(json.dumps(res) if args.json else f"{res['theme'] or 'off'}" + (" (redrawn)" if res["changed"] else ""))
         elif args.action == "effective":
             theme, source = effective_icon_theme(cfg, args.variant)
             print(json.dumps({"theme": theme, "source": source}) if args.json else theme)

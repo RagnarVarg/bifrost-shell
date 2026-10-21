@@ -68,6 +68,8 @@ ShellRoot {
 
     WallpaperColors {}
 
+    BifrostIcons {}
+
     Bar {}
 
     Dock {}

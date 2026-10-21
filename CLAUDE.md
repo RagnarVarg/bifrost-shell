@@ -21,7 +21,8 @@ Bifrost is the user's own Quickshell desktop shell. Since 2026-09-25 it **is** t
   Bifrost sets in Hyprland goes through the generated `~/.config/bifrost/hypr/bifrost.lua` (bifrostctl).
 - Don't run `hyprctl reload` or window/workspace dispatches against the user's session without asking; test in
   nested mode or a scratch overlay instance (see HANDOFF §4).
-- Bifrost writes to this repo, `~/.config/bifrost/`, `$XDG_RUNTIME_DIR/bifrost*/`, `~/.cache/bifrost/`, and — only via
+- Bifrost writes to this repo, `~/.config/bifrost/`, `$XDG_RUNTIME_DIR/bifrost*/`, `~/.cache/bifrost/`,
+  `~/.local/share/icons/bifrost-icons-{a,b}/` (its own icon theme, `bifrostctl icons generate`), and — only via
   `bifrostctl appearance apply` with one-time backups — single keys in gsettings, GTK settings.ini and qt5ct/qt6ct.
   `~/.config/gtk-4.0/gtk.css`: only a marked BIFROST_BEGIN/END `@import` block at the top (one-time backup), added
   once Settings → Appearance → Apps is in use; the style itself is `~/.config/bifrost/gtk/nautilus.css`.

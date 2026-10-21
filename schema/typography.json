@@ -47,6 +47,32 @@
       "group": "icons",
       "apply": "live",
       "editor": "IconThemeEditor"
+    },
+    {
+      "key": "appearance.icons.bifrost",
+      "type": "bool",
+      "default": false,
+      "label": "Bifrost's own icons",
+      "description": "Folders, places, drives and common file types drawn in the shell's colours (they follow the wallpaper too). App icons come from the theme below",
+      "group": "icons",
+      "apply": "live"
+    },
+    {
+      "key": "appearance.icons.inherit",
+      "type": "icon",
+      "default": null,
+      "nullable": true,
+      "label": "Theme for the other icons",
+      "description": "Where app icons and everything else Bifrost doesn't draw come from. Empty = the app icon theme above",
+      "group": "icons",
+      "apply": "live",
+      "editor": "IconThemeEditor",
+      "nullLabel": "Same as the app icon theme",
+      "dependsOnValue": {
+        "appearance.icons.bifrost": [
+          true
+        ]
+      }
     }
   ]
 }

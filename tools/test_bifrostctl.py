@@ -431,6 +431,56 @@ class BifrostctlTest(unittest.TestCase):
         self.assertEqual(ctl.own_colour(cfg, "materials.transparency.dark"), None if ctl.deep_get(cfg.values, "materials.transparency.dark")[0] is None else ctl.deep_get(cfg.values, "materials.transparency.dark")[0])
         self.assertEqual(ctl.deep_get(cfg.values, "appearance.accent.dark")[0], "#A9AAAA", "the value stays in the config")
 
+    def icon_env(self):
+        root = Path(self.tmp.name)
+        return patch.dict(os.environ, {"XDG_DATA_HOME": str(root / "data"), "XDG_CACHE_HOME": str(root / "cache"),
+                                       "XDG_DATA_DIRS": str(root / "none")})
+
+    def test_bifrost_icons_two_slots_redrawn_only_on_change(self):
+        with self.icon_env():
+            cfg = ctl.Config(self.schema)
+            self.assertEqual(ctl.bifrost_icons_generate(cfg)["reason"], "off")
+            self.assertFalse((Path(self.tmp.name) / "data" / "icons").exists(), "off: nothing drawn")
+            ctl.main(["set", "appearance.icons.bifrost", "true"])
+            first = ctl.bifrost_icons_generate(ctl.Config(self.schema))
+            self.assertEqual((first["changed"], first["theme"]), (True, "bifrost-icons-a"))
+            self.assertFalse(ctl.bifrost_icons_generate(ctl.Config(self.schema))["changed"], "same colours: not redrawn")
+            self.assertEqual(ctl.effective_icon_theme(ctl.Config(self.schema)), ("bifrost-icons-a", "bifrost"))
+            ctl.main(["set", "appearance.accent.dark", "#C04060"])
+            second = ctl.bifrost_icons_generate(ctl.Config(self.schema))
+            self.assertEqual((second["changed"], second["theme"]), (True, "bifrost-icons-b"), "new colours go to the other slot")
+            third = ctl.bifrost_icons_generate(ctl.Config(self.schema), force=True)
+            self.assertEqual(third["theme"], "bifrost-icons-a")
+            self.assertNotIn("bifrost-icons-a", [t["id"] for t in ctl.installed_icon_themes()], "hidden from theme lists")
+            rows = ctl.appearance_apply(ctl.Config(self.schema), "dark", dry=True)
+            self.assertTrue(any(r["target"] == "icons" and "bifrost-icons-a" in r["detail"] for r in rows) or
+                            not any(r["target"] == "icons" for r in rows), "only appearance apply hands the slot to the desktop")
+            ctl.main(["set", "appearance.icons.bifrost", "false"])
+            self.assertNotEqual(ctl.effective_icon_theme(ctl.Config(self.schema))[1], "bifrost")
+
+    def test_bifrost_icons_theme_files(self):
+        import xml.etree.ElementTree as ET
+        with self.icon_env():
+            ctl.main(["set", "appearance.icons.bifrost", "true"])
+            res = ctl.bifrost_icons_generate(ctl.Config(self.schema))
+            root = Path(self.tmp.name) / "data" / "icons" / res["theme"]
+            index = (root / "index.theme").read_text()
+            self.assertIn("Inherits=", index)
+            self.assertTrue(index.splitlines()[[l.startswith("Inherits=") for l in index.splitlines()].index(True)].endswith("hicolor"))
+            for d in ("16x16/places", "24x24/mimetypes", "scalable/devices"):
+                self.assertIn(f"[{d}]", index)
+            files = list(root.rglob("*.svg"))
+            self.assertGreater(len(files), 200)
+            for f in files:
+                self.assertTrue(f.resolve().exists(), f"{f.name} resolves")
+                ET.parse(f.resolve())
+                self.assertNotIn(self.tmp.name, f.read_text(), "no personal paths")
+            for name in ("folder", "folder-open", "user-home", "folder-download", "user-trash-full", "drive-removable-media-usb",
+                         "network-workgroup", "computer", "text-x-generic", "text-x-python", "image-x-generic", "audio-x-generic",
+                         "video-x-generic", "package-x-generic", "application-pdf", "x-office-spreadsheet", "x-office-presentation"):
+                self.assertTrue(any(root.glob(f"*/*/{name}.svg")), name)
+            self.assertFalse(any(root.glob("*/apps/*")), "app icons are inherited")
+
     def test_grey_wallpaper_uses_the_neutral_scheme(self):
         self.wallpaper()
         ctl.main(["set", "appearance.colorSource", "wallpaper"])

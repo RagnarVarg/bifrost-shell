@@ -13,7 +13,7 @@ EditorBase {
     BDropdown {
         anchors.fill: parent
         searchable: true
-        model: [{ value: null, label: I18n.tr("Bifrost default (FullBlue)") }, { value: "system", label: I18n.tr("System") }].concat(editor.themes)
+        model: [{ value: null, label: editor.def.nullLabel ? I18n.tr(editor.def.nullLabel) : I18n.tr("Bifrost default (FullBlue)") }, { value: "system", label: I18n.tr("System") }].concat(editor.themes)
         currentValue: editor.value === undefined ? null : editor.value
         onActivated: v => editor.set(v)
     }

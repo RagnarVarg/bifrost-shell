@@ -1044,3 +1044,23 @@ The border-resize toggle moved from Input to Settings → Windows & compositor �
 - **Inte ännu i production:** installera (`./install.sh --no-hypr --no-greeter`) och starta om bifrost.service + Settings.
   Login-greetern visar valt tema (greeter sync skriver om wallpaper-sökvägen, så lagret matchar inte där).
 - Nästa: eget ikontema i palettens färger (del 2). Stilförslag A Glas / B Sten / C Norrsken i scratch; stil ej vald ännu.
+
+## 2026-10-21 — Bifrosts eget ikontema (Claude)
+`appearance.icons.bifrost` (av/på, standard av) och `appearance.icons.inherit` (tema för övriga ikoner; tomt = appikontemat).
+- **Ritning:** `tools/icon_theme.py` (stdlib). Stil vald av användaren: "Sten" (platt, två toner, hela pixlar) för 16/24 px
+  (Fixed), "Norrsken" (palettens aurora under ljus slöja) för scalable 32–512. 27 ritningar, 97 namn med alias (symlänkar):
+  mappar (vanlig, öppen, hem, skrivbord, dokument, hämtade, musik, bilder, videor, mallar, publik, projekt), papperskorg
+  tom/full, dator, nätverk, hårddisk, USB, filtyper (text, kod, bild, ljud, video, arkiv, PDF, kalkyl, presentation).
+  Inga appikoner: `Inherits=<arvt tema>,hicolor`, `Hidden=true` (syns inte i temalistor). Färgerna är lägesoberoende
+  (mellan ljust och mörkt lägets accent). Höj `VERSION` när ritningarna ändras. Ingen kod/ritning från Bioma (GPL-3).
+- **Platser:** `bifrostctl icons generate [--force]` ritar i den lediga av `~/.local/share/icons/bifrost-icons-{a,b}` när
+  hash(färger, arvt tema, VERSION) ändrats; tillstånd + lås i `~/.cache/bifrost/bifrost-icons.json(.lock)`; `replaced` =
+  temat som gällde innan (återställs för appearance.icons.theme = system när Bifrost-ikonerna slås av).
+  `effective_icon_theme` → aktiv plats ("bifrost"); `base_icon_theme` = det gamla beteendet. Sätts på skrivbordet bara av
+  `appearance apply` (gsettings, GTK settings.ini, qt5ct/qt6ct med engångsbackup).
+- **Flöde:** `Modules/BifrostIcons` (shellet) genererar vid start och när paletten/ikoninställningarna ändras →
+  `IconTheme` (bevakar tillståndsfilen, även i Settings) byter index → `SystemAppearance` (production) kör appearance apply.
+- Testat isolerat (scratch XDG_DATA_HOME/CACHE/CONFIG, nested, Nautilus med `GDK_DEBUG=no-portals`): ikonvy och listvy,
+  ljust/mörkt, omritning till andra platsen live i shellet. **Ej verifierat:** att GTK/Qt-appar laddar om live via
+  gsettings/portal i den riktiga sessionen (kräver att man rör användarens dconf) – prova när det slås på i production.
+  ~/Projects visas som vanlig mapp i Nautilus (inte en XDG-katalog); `folder-projects` används av appar som frågar efter den.
