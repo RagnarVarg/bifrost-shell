@@ -14,8 +14,9 @@ import qs.Settings
 // The clock's menu: time, date and week, the control center
 // (ControlCenterContent), a month calendar with today's events and reminders
 // under it (DayPanel), and what is playing with media controls. Weather
-// (Weather service, with its unavailable states spelled out), the wallpaper
-// picker and Settings are pages of their own. Grows out of the bar like
+// (Weather service, with its unavailable states spelled out), Hardware (CPU
+// and GPU temperature, memory, storage), the wallpaper picker and Settings
+// are pages of their own. Grows out of the bar like
 // every BarMenu.
 BarMenu {
     id: menu
@@ -26,7 +27,7 @@ BarMenu {
     readonly property bool showMedia: menuCfg.media !== false
     readonly property string timeFormat: cfg.format === "12h" ? "h:mm AP" : "HH:mm"
 
-    // All four views live inside the same bar menu and glass surface.
+    // All views live inside the same bar menu and glass surface.
     property string view: "clock"
     readonly property real panelWidth: Math.min(
         1040,
@@ -43,11 +44,21 @@ BarMenu {
             calendar.reset();
             Weather.retain();
             Media.retain();
+            // For the control center on the first page and the Hardware page.
+            SystemStats.retain();
+            GpuStats.retain();
+            Vpn.retain();
+            Disks.retain();
+            Power.refresh();
         } else {
             view = "clock";
             ShellState.controlCenterDetail = "";
             Weather.release();
             Media.release();
+            SystemStats.release();
+            GpuStats.release();
+            Vpn.release();
+            Disks.release();
         }
     }
 
@@ -56,7 +67,7 @@ BarMenu {
         spacing: Theme.space.lg
 
         Row {
-            readonly property int pages: weatherButton.visible ? 3 : 2
+            readonly property int pages: weatherButton.visible ? 4 : 3
             readonly property real pageButtonWidth: (width - spacing * (pages - 1) - (backButton.visible ? backButton.width + spacing : 0)) / pages
 
             width: parent.width
@@ -79,6 +90,15 @@ BarMenu {
                 size: "lg"
                 selected: menu.view === "weather"
                 onClicked: menu.view = "weather"
+            }
+
+            BButton {
+                width: parent.pageButtonWidth
+                text: I18n.tr("Hardware")
+                icon: "cpu"
+                size: "lg"
+                selected: menu.view === "hardware"
+                onClicked: menu.view = "hardware"
             }
 
             BButton {
@@ -112,6 +132,13 @@ BarMenu {
             active: menu.isOpen && menu.view === "weather"
             visible: active
             sourceComponent: WeatherView {}
+        }
+
+        Loader {
+            width: parent.width
+            active: menu.isOpen && menu.view === "hardware"
+            visible: active
+            sourceComponent: HardwareView {}
         }
 
         Loader {
@@ -322,6 +349,216 @@ BarMenu {
                     }
                 }
             }
+    }
+
+    // The hardware page: processor, graphics card and memory side by side,
+    // then every local disk with how full it is.
+    component HardwareView: Column {
+        id: hardware
+
+        readonly property real warn: Config.values.systemStats.warnPercent / 100
+
+        spacing: Theme.space.xl
+
+        Row {
+            id: cards
+
+            readonly property int count: GpuStats.available ? 3 : 2
+
+            width: parent.width
+            spacing: Theme.space.md
+
+            Card {
+                width: (cards.width - cards.spacing * (cards.count - 1)) / cards.count
+                icon: "cpu"
+                title: I18n.tr("Processor")
+                temperature: SystemStats.cpuTemp
+                lines: [[I18n.tr("Usage"), Math.round(SystemStats.cpu * 100) + " %", SystemStats.cpu >= hardware.warn]]
+            }
+
+            Card {
+                visible: GpuStats.available
+                width: (cards.width - cards.spacing * (cards.count - 1)) / cards.count
+                icon: "display"
+                title: GpuStats.name || "GPU"
+                temperature: GpuStats.temperature
+                lines: [[I18n.tr("Usage"), Math.round(GpuStats.usage * 100) + " %", GpuStats.usage >= hardware.warn]]
+                    .concat(GpuStats.memTotalMb > 0 ? [["VRAM", (GpuStats.memUsedMb / 1024).toFixed(1) + " / " + (GpuStats.memTotalMb / 1024).toFixed(0) + " GB", false]] : [])
+            }
+
+            Card {
+                width: (cards.width - cards.spacing * (cards.count - 1)) / cards.count
+                icon: "memory"
+                title: I18n.tr("Memory")
+                temperature: NaN
+                lines: [["RAM", (SystemStats.memUsedKb / 1048576).toFixed(1) + " / " + (SystemStats.memTotalKb / 1048576).toFixed(0) + " GB", SystemStats.mem >= hardware.warn],
+                        [I18n.tr("Usage"), Math.round(SystemStats.mem * 100) + " %", SystemStats.mem >= hardware.warn]]
+            }
+        }
+
+        Column {
+            width: parent.width
+            spacing: Theme.space.md
+
+            BText {
+                text: I18n.tr("Storage")
+                role: "overline"
+                tone: "muted"
+            }
+
+            BText {
+                visible: Disks.loaded && Disks.disks.length === 0
+                text: I18n.tr("No disks found")
+                role: "caption"
+                tone: "muted"
+            }
+
+            Repeater {
+                model: Disks.disks
+                delegate: Column {
+                    id: disk
+
+                    required property var modelData
+                    readonly property real full: modelData.size > 0 ? modelData.used / modelData.size : 0
+
+                    width: parent.width
+                    spacing: Theme.space.xs
+
+                    Item {
+                        width: parent.width
+                        height: diskName.implicitHeight
+
+                        Row {
+                            spacing: Theme.space.sm
+
+                            BIcon {
+                                anchors.verticalCenter: parent.verticalCenter
+                                name: "drive"
+                                size: Theme.icon.size.sm
+                                color: Theme.color.iconMuted
+                            }
+
+                            BText {
+                                id: diskName
+                                text: disk.modelData.mount === "/" ? I18n.tr("System disk") : disk.modelData.mount.split("/").pop()
+                                role: "label"
+                            }
+
+                            BText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: disk.modelData.mount + "  ·  " + disk.modelData.type
+                                role: "caption"
+                                tone: "faint"
+                            }
+                        }
+
+                        BText {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: I18n.tr("%1 free of %2").arg(Disks.bytes(disk.modelData.avail)).arg(Disks.bytes(disk.modelData.size))
+                            role: "mono"
+                            tone: disk.full >= hardware.warn ? "warning" : "muted"
+                        }
+                    }
+
+                    Rectangle {
+                        width: parent.width
+                        height: Theme.space.sm
+                        radius: height / 2
+                        color: Theme.color.track
+
+                        Rectangle {
+                            width: Math.max(height, parent.width * disk.full)
+                            height: parent.height
+                            radius: height / 2
+                            color: disk.full >= hardware.warn ? Theme.color.warning : Theme.color.trackActive
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // One hardware card: a title, the temperature large, then label/value lines.
+    component Card: Rectangle {
+        id: card
+
+        property string icon: ""
+        property string title: ""
+        property real temperature: NaN
+        // [[label, value, warn]]
+        property var lines: []
+
+        height: cardContent.implicitHeight + Theme.space.lg * 2
+        radius: Theme.radius.md
+        color: Theme.color.controlFill
+        border.width: Theme.border.hairline
+        border.color: Theme.color.hairline
+
+        Column {
+            id: cardContent
+
+            x: Theme.space.lg
+            y: Theme.space.lg
+            width: parent.width - Theme.space.lg * 2
+            spacing: Theme.space.sm
+
+            Row {
+                width: parent.width
+                spacing: Theme.space.sm
+
+                BIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    name: card.icon
+                    size: Theme.icon.size.sm
+                    color: Theme.color.iconMuted
+                }
+
+                BText {
+                    width: parent.width - Theme.icon.size.sm - parent.spacing
+                    text: card.title
+                    role: "label"
+                    elide: Text.ElideRight
+                }
+            }
+
+            BText {
+                text: isNaN(card.temperature) ? "–" : Math.round(card.temperature) + " °C"
+                role: "display"
+                tone: isNaN(card.temperature) ? "faint" : "primary"
+            }
+
+            BText {
+                text: isNaN(card.temperature) ? " " : I18n.tr("Temperature")
+                role: "caption"
+                tone: "muted"
+            }
+
+            Repeater {
+                model: card.lines
+                delegate: Item {
+                    required property var modelData
+
+                    width: cardContent.width
+                    height: Theme.control.height.sm
+
+                    BText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: parent.modelData[0]
+                        role: "caption"
+                        tone: "muted"
+                    }
+
+                    BText {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: parent.modelData[1]
+                        role: "mono"
+                        tone: parent.modelData[2] ? "warning" : "primary"
+                    }
+                }
+            }
+        }
     }
 
     // Weather now, today's range and the next days; or why there is none.

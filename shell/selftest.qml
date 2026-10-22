@@ -715,6 +715,10 @@ ShellRoot {
         Reminders.remove(Reminders.items[0].id);
         eq("reminders: removed", Reminders.items.length, 0);
         Store.set("reminders", keptReminders);
+        eq("disks: one row per device at its shortest mount, root first, spaces kept",
+           Disks.parse("Filesystem Type 1B-blocks Used Avail Mounted on\n/dev/a btrfs 100 40 60 /home\n/dev/a btrfs 100 40 60 /\n/dev/b exfat 50 10 40 /run/media/u/Odins Öga\n/dev/c vfat 0 0 0 /x\n").map(d => [d.mount, d.used]),
+           [["/", 40], ["/run/media/u/Odins Öga", 10]]);
+        eq("disks: sizes", [Disks.bytes(812498649088), Disks.bytes(1630375936), Disks.bytes(512)], ["812 GB", "1.6 GB", "512 B"]);
         for (const m of ["Modules/Bar/Widgets/WorkspacePreview", "Compat/WindowCapture", "Modules/WindowTransitions/WindowTransitions", "Modules/ControlCenter/ControlCenterContent", "Modules/ControlCenter/ControlCenter", "Modules/Dock/DockPanelHost", "Modules/Dock/Dock", "Modules/Bar/Widgets/ControlCenterWidget", "Modules/Launcher/LauncherContent", "Modules/Launcher/Launcher", "Modules/Bar/Widgets/LauncherWidget", "Modules/Bar/PanelMenu", "Modules/Notifications/NotificationCenterContent", "Modules/Notifications/NotificationCenter", "Modules/Bar/Widgets/NotificationsWidget", "Shared/AudioDevices", "Shared/WifiNetworks"]) {
             const c = Qt.createComponent(Qt.resolvedUrl(m + ".qml"));
             check("workspace preview part compiles: " + m, c.status === Component.Ready, c.errorString());
