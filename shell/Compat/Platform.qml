@@ -28,6 +28,17 @@ Singleton {
         return fb && !Quickshell.hasThemeIcon(name) ? fb : Quickshell.iconPath(name, fallback || "application-x-executable");
     }
 
+    // The first of `names` the icon theme Bifrost uses has, else `fallback`
+    // (no generic stand-in, unlike iconPath).
+    function themeIcon(names: var, fallback: string): string {
+        for (const n of names) {
+            const found = IconLookup.lookup(n);
+            if (found)
+                return found;
+        }
+        return fallback;
+    }
+
     function expandHome(path: string): string {
         return path.startsWith("~/") ? Quickshell.env("HOME") + path.substring(1) : path;
     }

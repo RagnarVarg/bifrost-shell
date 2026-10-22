@@ -23,7 +23,7 @@ Item {
     readonly property bool isOverview: model && model.kind === "overview"
     readonly property bool special: isTrash || isLauncher || isOverview
     readonly property string specialIcon: isTrash ? Platform.iconPath("user-trash", "user-trash-symbolic")
-        : isOverview ? "file://" + Paths.assetsDir + "/icons/overview.svg"
+        : isOverview ? Platform.themeIcon(["preferences-system-windows", "window-duplicate"], "file://" + Paths.assetsDir + "/icons/overview.svg")
         : isLauncher ? "file://" + Paths.assetsDir + "/icons/app-launcher.svg" : ""
     property bool labelOpen: false
     readonly property bool isTrash: model && model.kind === "trash"
