@@ -949,6 +949,8 @@ ShellRoot {
         eq("metrics: bar width is a share of the edge", Metrics.barWidth, 1);
         Config.set("bar.width", 40);
         eq("metrics: narrower bar", Metrics.barWidth, 0.4);
+        Config.set("bar.width", 0);
+        eq("metrics: 0 % = only what the widgets need", Metrics.barWidth, 0);
         Config.set("bar.layout", "frame");
         eq("metrics: a frame always spans the edge", Metrics.barWidth, 1);
         Config.reset("bar.layout");

@@ -1081,7 +1081,7 @@
   "Colour of the glass in light mode. Empty = the theme's colour": "Glasets färg i ljust läge. Tomt = temats färg",
   "Colour of the glass in dark mode. Empty = the theme's colour": "Glasets färg i mörkt läge. Tomt = temats färg",
   "Width": "Bredd",
-  "How much of the screen edge the bar covers, centred. 100 % = the full width. It never gets narrower than its widgets need. For a side bar this is its length": "Hur stor del av skärmkanten panelen täcker, centrerad. 100 % = hela bredden. Den blir aldrig smalare än widgetarna behöver. För en sidopanel är det dess längd",
+  "How much of the screen edge the bar covers, centred. 100 % = the full width, 0 % = just wide enough for its widgets. It never gets narrower than its widgets need. For a side bar this is its length": "Hur stor del av skärmkanten panelen täcker, centrerad. 100 % = hela bredden, 0 % = precis så bred som widgetarna kräver. Den blir aldrig smalare än widgetarna behöver. För en sidopanel är det dess längd",
   "Today's events": "Dagens händelser",
   "No calendar connected": "Ingen kalender ansluten",
   "No events today": "Inga händelser i dag",
