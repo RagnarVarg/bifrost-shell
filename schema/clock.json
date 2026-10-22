@@ -87,7 +87,7 @@
       "type": "bool",
       "default": true,
       "label": "Weather",
-      "description": "Current weather and forecast in the clock menu, from Open-Meteo (api.open-meteo.com) for the location under Appearance or your time zone, rounded to about 1 km",
+      "description": "Current weather and forecast on their own page in the clock menu, from Open-Meteo (api.open-meteo.com) for the location under Appearance or your time zone, rounded to about 1 km",
       "group": "menu",
       "scope": "shell",
       "apply": "live"

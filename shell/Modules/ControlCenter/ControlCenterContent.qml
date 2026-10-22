@@ -10,16 +10,21 @@ import qs.Shared
 
 // What the control center shows, wherever it opens (Placement): as a bar
 // menu grown out of the bar (ControlCenterWidget), in its own window when the
-// bar has no control center button, or grown out of the dock.
+// bar has no control center button, or grown out of the dock. The clock menu
+// also shows it on its first page (inset 0, closeRequested closes that menu).
 Item {
     id: center
 
     readonly property var cfg: Config.values.controlCenter
     readonly property string detail: ShellState.controlCenterDetail
     readonly property bool open: ShellState.controlCenterOpen
+    property real inset: Theme.space.xl
+
+    signal closeRequested
 
     function close() {
         ShellState.controlCenterOpen = false;
+        closeRequested();
     }
 
     function uptime(s) {
@@ -28,7 +33,7 @@ Item {
     }
 
     implicitWidth: Theme.layout.controlCenterWidth
-    implicitHeight: column.implicitHeight + Theme.space.xl * 2
+    implicitHeight: column.implicitHeight + inset * 2
 
     Item {
         anchors.fill: parent
@@ -39,9 +44,9 @@ Item {
     Column {
         id: column
 
-        x: Theme.space.xl
-        y: Theme.space.xl
-        width: parent.width - Theme.space.xl * 2
+        x: center.inset
+        y: center.inset
+        width: parent.width - center.inset * 2
         spacing: Theme.space.lg
 
         // System status

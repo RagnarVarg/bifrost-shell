@@ -250,7 +250,7 @@
   "Could not load themes": "Kunde inte läsa teman",
   "Could not switch keyboard layout": "Kunde inte byta tangentbordslayout",
   "Critical battery": "Kritiskt låg batterinivå",
-  "Current weather and forecast in the clock menu, from Open-Meteo (api.open-meteo.com) for the location under Appearance or your time zone, rounded to about 1 km": "Aktuellt väder och prognos i klockmenyn, från Open-Meteo (api.open-meteo.com) för platsen under Utseende eller din tidszon, avrundad till ungefär 1 km",
+  "Current weather and forecast on their own page in the clock menu, from Open-Meteo (api.open-meteo.com) for the location under Appearance or your time zone, rounded to about 1 km": "Aktuellt väder och prognos på en egen sida i klockmenyn, från Open-Meteo (api.open-meteo.com) för platsen under Utseende eller din tidszon, avrundad till ungefär 1 km",
   "Custom compositor action": "Egen compositoråtgärd",
   "Danish": "Danska",
   "Dark": "Mörkt",
