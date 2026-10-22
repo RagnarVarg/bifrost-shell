@@ -31,6 +31,8 @@ Item {
     // Additional in-body joins let the frame own dock and dock-panel glass.
     property var attachment2: null
     property var attachment3: null
+    // Room beside the body for joins drawn outside it (the bar's shoulders).
+    property real sideRoom: 0
     property bool paintEnabled: true
     // Frame: a rect cut out of the body (surface coordinates) and its corner
     // radius. The body is then the frame around it.
@@ -66,9 +68,9 @@ Item {
     // Bounds of body ∪ extension, in the surface's coordinates.
     readonly property rect extRect: attachment && attachment.ext ? attachment.ext : Qt.rect(0, 0, 0, 0)
     readonly property bool hasExt: extRect.width > 0 && extRect.height > 0
-    readonly property real minX: hasExt ? Math.min(0, extRect.x) : 0
+    readonly property real minX: Math.min(-sideRoom, hasExt ? extRect.x : 0)
     readonly property real minY: hasExt ? Math.min(0, extRect.y) : 0
-    readonly property real maxX: hasExt ? Math.max(width, extRect.x + extRect.width) : width
+    readonly property real maxX: Math.max(width + sideRoom, hasExt ? extRect.x + extRect.width : width)
     readonly property real maxY: hasExt ? Math.max(height, extRect.y + extRect.height) : height
 
     ShaderEffect {

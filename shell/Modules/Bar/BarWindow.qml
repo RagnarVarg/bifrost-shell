@@ -54,10 +54,15 @@ PanelWindow {
     readonly property bool shapesOnly: !panel && (islands || bubbles)
     readonly property real margin: Metrics.barMargin
     readonly property real barHeight: Metrics.barHeight
+    // Shoulders (bar.shoulders): an attached panel narrower than the edge
+    // gets rounded outer corners and curves out into the screen edge at both
+    // ends, like a MacBook's camera notch.
+    readonly property bool shoulders: cfg.shoulders === true && style === "attached" && !frame && background !== "none" && Metrics.barWidth < 1
+    readonly property real shoulderRadius: Math.round(barHeight * 0.45)
     readonly property var material: {
         const m = Object.assign({}, Theme.materials.bar);
         if (style === "attached" && !frame)
-            m.radius = 0;
+            m.radius = shoulders ? shoulderRadius : 0;
         return m;
     }
     // Panel and frame glass with the top-bar Bifrost Effects (highlight,
@@ -255,7 +260,8 @@ PanelWindow {
                 readonly property real neededWidth: left.width + center.width + right.width + Theme.space.sm * 2 + Theme.space.xl * 2
                 x: (band.width - width) / 2
                 y: root.atBottom ? band.height - root.margin - root.barHeight : root.margin
-                width: root.frame ? fullWidth : Math.min(fullWidth, Math.max(fullWidth * Metrics.barWidth, neededWidth))
+                // Shoulders need room beside the bar.
+                width: root.frame ? fullWidth : Math.min(fullWidth - (root.shoulders ? root.shoulderRadius * 2 : 0), Math.max(fullWidth * Metrics.barWidth, neededWidth))
                 height: root.barHeight
 
                 transform: Translate {
@@ -311,6 +317,20 @@ PanelWindow {
                     visible: root.panel && !root.frame
                     material: root.panelMaterial
                     attachment: menuHost.attachmentFor(barGlass)
+                    // Shoulders: concave fillets outside the body where it
+                    // meets the screen edge (joined as a copy of the body).
+                    sideRoom: root.shoulders ? root.shoulderRadius : 0
+                    attachment2: {
+                        if (!root.shoulders)
+                            return null;
+                        const r = root.shoulderRadius, w = width, h = height, edgeY = root.atBottom ? h : 0, dy = root.atBottom ? -r : r;
+                        return {
+                            ext: Qt.rect(0, 0, w, h),
+                            extRadii: [r, r, r, r],
+                            bridge: Qt.rect(r, 0, Math.max(0, w - r * 2), h),
+                            fillets: [[0, edgeY, -r, dy], [w, edgeY, r, dy]]
+                        };
+                    }
                 }
 
                 // Bifrost Effects: centre capsule and section dividers (the

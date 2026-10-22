@@ -158,6 +158,20 @@
       "description": "Floating = away from the screen edge with rounded corners; Attached = edge to edge"
     },
     {
+      "key": "bar.shoulders",
+      "type": "bool",
+      "default": false,
+      "label": "Curved shoulders",
+      "description": "The bar's ends curve out into the screen edge, like the camera notch on a MacBook. For an attached bar narrower than the screen (Width under 100 %) with the panel background",
+      "group": "appearance",
+      "scope": "shell",
+      "apply": "live",
+      "dependsOnValue": {
+        "bar.style": "attached",
+        "bar.layout": "bar"
+      }
+    },
+    {
       "key": "bar.background",
       "type": "enum",
       "default": "panel",

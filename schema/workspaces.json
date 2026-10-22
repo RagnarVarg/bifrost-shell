@@ -42,7 +42,7 @@
       "type": "bool",
       "default": true,
       "label": "Show empty",
-      "description": "Show workspaces without windows (beyond the always shown ones)",
+      "description": "Show workspaces without windows (beyond the always shown ones), also the ones Hyprland keeps open itself (persistent workspace rules)",
       "group": "display"
     },
     {
