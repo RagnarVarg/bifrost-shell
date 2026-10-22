@@ -56,6 +56,21 @@
       "label": "Volume step",
       "description": "For scrolling and volume keys",
       "group": "content"
+    },
+    {
+      "key": "materials.controlButtons.transparency",
+      "type": "int",
+      "default": null,
+      "nullable": true,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "label": "Button transparency",
+      "description": "The control center's buttons and sliders. Empty = the value under Glass & transparency",
+      "group": "content",
+      "nullLabel": "Glass & transparency",
+      "inherit": "materials.controlButtons.transparency",
+      "perMode": true
     }
   ]
 }

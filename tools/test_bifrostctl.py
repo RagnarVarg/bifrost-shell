@@ -815,6 +815,18 @@ class BifrostctlTest(unittest.TestCase):
         self.assertEqual(v["input"], {"trackpadDragLock": 2})
         self.assertEqual(v["hyprland"], {"tiling": {"resizeOnBorder": True}})
 
+    def test_migrate_12_to_13_dock_glass_and_own_transparency(self):
+        """Same as Migrations.js step 12 (selftest testMigrations)."""
+        doc = {"version": 12, "values": {"materials": {"bar": {"transparency": {"dark": 10}, "blur": {"dark": False}},
+                                                       "panels": {"blur": {"dark": False}, "tint": {"dark": "#112233"}}}}}
+        self.assertEqual(ctl.migrate(doc)["values"]["materials"],
+                         {"bar": {"blur": {"dark": False}}, "panels": {"blur": {"dark": False}, "tint": {"dark": "#112233"}},
+                          "dock": {"blur": {"dark": False}, "tint": {"dark": "#112233"}}})
+        doc = {"version": 12, "values": {"materials": {"linked": False, "bar": {"transparency": {"dark": 10}},
+                                                       "panels": {"transparency": {"dark": 30}}, "dock": {"blur": {"dark": True}}}}}
+        self.assertEqual(ctl.migrate(doc)["values"]["materials"],
+                         {"linked": False, "bar": {"transparency": {"dark": 10}}, "panels": {"transparency": {"dark": 30}}, "dock": {"blur": {"dark": True}}})
+
     def test_migrate_4_to_6_blur_amounts(self):
         doc = {"version": 4, "values": {"materials": {"blurStrength": 49, "bar": {"blur": True}, "dock": {"blur": False}}}}
         self.assertEqual(ctl.migrate(doc)["values"]["materials"], {"blur": {"light": 49, "dark": 49}})
@@ -845,10 +857,11 @@ class BifrostctlTest(unittest.TestCase):
         gen = lambda: ctl.generate_hypr(ctl.Config(ctl.Schema()))
         self.set_modes("materials.blur", "40")
         self.set_modes("materials.panels.blur", "false")
-        self.assertIn("blur = true,", rule(gen(), "dock"))      # linked: ignored
+        self.assertIn("blur = true,", rule(gen(), "launcher"))      # linked: ignored
         ctl.main(["set", "materials.linked", "false"])
         text = gen()
-        self.assertIn("blur = false,", rule(text, "dock"))
+        self.assertIn("blur = false,", rule(text, "launcher"))
+        self.assertIn("blur = true,", rule(text, "dock"))      # its own group
         self.assertIn("blur = false,", rule(text, "controlcenter"))   # a panel on its own
         self.assertIn("blur = true,", rule(text, "bar"))
         ctl.main(["set", "bar.background", "none"])

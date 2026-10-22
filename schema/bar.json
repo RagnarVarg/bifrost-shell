@@ -208,6 +208,36 @@
       }
     },
     {
+      "key": "materials.bar.transparency",
+      "type": "int",
+      "default": null,
+      "nullable": true,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "label": "Transparency",
+      "description": "The panel and its frame. 0 % = solid, 100 % = fully clear. Empty = the value under Glass & transparency",
+      "group": "appearance",
+      "nullLabel": "Glass & transparency",
+      "inherit": "materials.bar.transparency",
+      "perMode": true
+    },
+    {
+      "key": "materials.widgets.transparency",
+      "type": "int",
+      "default": null,
+      "nullable": true,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "label": "Widget transparency",
+      "description": "The Boxed and Grouped widget boxes. Empty = the value under Glass & transparency",
+      "group": "appearance",
+      "nullLabel": "Glass & transparency",
+      "inherit": "materials.widgets.transparency",
+      "perMode": true
+    },
+    {
       "key": "bar.autohide.enabled",
       "type": "bool",
       "default": false,

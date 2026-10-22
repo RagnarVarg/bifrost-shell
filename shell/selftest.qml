@@ -164,7 +164,13 @@ ShellRoot {
             settingsUI: { layout: "boxed" } } };
         const out9 = Migrations.migrate({ version: 8, values: { bar: { boxes: { transparency: 30, tint: { dark: "#112233" }, blur: false, round: true } } } }, Config.formatVersion).values;
         eq("8 → 9: the boxes' glass moves to the Widgets group, unlinked", [out9.bar.boxes, out9.materials], [{ round: true }, { widgets: { tint: { dark: "#112233" }, transparency: { light: 30, dark: 30 }, blur: { light: false, dark: false } }, linked: false }]);
-        eq("9 → 10: the control center's own glass group is dropped", Migrations.migrate({ version: 9, values: { materials: { linked: false, controlCenter: { transparency: 100 }, panels: { transparency: 46 } } } }, Config.formatVersion).values.materials, { linked: false, panels: { transparency: { light: 46, dark: 46 } } });
+        eq("9 → 10: the control center's own glass group is dropped", Migrations.migrate({ version: 9, values: { materials: { linked: false, controlCenter: { transparency: 100 }, panels: { transparency: 46 } } } }, Config.formatVersion).values.materials, { linked: false, panels: { transparency: { light: 46, dark: 46 } }, dock: { transparency: { light: 46, dark: 46 } } });
+        eq("12 → 13: linked drops inactive own transparency, the dock gets the panels' glass",
+           Migrations.migrate({ version: 12, values: { materials: { bar: { transparency: { dark: 10 }, blur: { dark: false } }, panels: { blur: { dark: false }, tint: { dark: "#112233" } } } } }, Config.formatVersion).values.materials,
+           { bar: { blur: { dark: false } }, panels: { blur: { dark: false }, tint: { dark: "#112233" } }, dock: { blur: { dark: false }, tint: { dark: "#112233" } } });
+        eq("12 → 13: unlinked keeps own transparency, an own dock is kept",
+           Migrations.migrate({ version: 12, values: { materials: { linked: false, bar: { transparency: { dark: 10 } }, panels: { transparency: { dark: 30 } }, dock: { blur: { dark: true } } } } }, Config.formatVersion).values.materials,
+           { linked: false, bar: { transparency: { dark: 10 } }, panels: { transparency: { dark: 30 } }, dock: { blur: { dark: true } } });
         eq("11 → 12: border resizing moves to Tiling", Migrations.migrate({ version: 11, values: { input: { resizeOnBorder: true, trackpadDragLock: 2 } } }, Config.formatVersion).values, { input: { trackpadDragLock: 2 }, hyprland: { tiling: { resizeOnBorder: true } } });
         eq("7 → 8: the faint bar panel becomes the panel", Migrations.migrate({ version: 7, values: { bar: { background: "subtle", height: 40 } } }, Config.formatVersion).values.bar, { background: "panel", height: 40 });
         const v6 = { version: 6, values: { appearance: { accent: "#123456" }, materials: { tint: "#0F1516", blur: 5 } } };
@@ -289,8 +295,12 @@ ShellRoot {
         layer.variants.dark.wallpaper = { backdrop: "#C5C4B4" };
         const lit = ThemeLogic.build([base, graphite, layer], "dark", {}, { transparency: { dark: 49 } }).tokens;
         const p = lit.materials.panel;
-        check("bright wallpaper raises the glass until muted text reads", p.opacity > plain.materials.panel.opacity
-              && ThemeLogic.contrast("#CBC6B5", ThemeLogic.mixHex("#C5C4B4", p.tint.substring(0, 7), p.opacity)) >= 4.5, p.opacity);
+        check("bright wallpaper raises the glass", p.opacity > plain.materials.panel.opacity, p.opacity);
+        const std = ThemeLogic.build([base, graphite, layer], "dark", {}, {}).tokens.materials.panel;
+        check("Standard glass keeps the full floor", ThemeLogic.contrast("#CBC6B5", ThemeLogic.mixHex("#C5C4B4", std.tint.substring(0, 7), std.opacity)) >= 4.5, std.opacity);
+        const clear = ThemeLogic.build([base, graphite, layer], "dark", {}, { transparency: { dark: 100 } }).tokens.materials.panel;
+        eq("100 % stays fully clear over the wallpaper", clear.opacity, 0);
+        check("a chosen transparency eases the floor", p.opacity > 0.51 && p.opacity < std.opacity + 0.5, p.opacity);
         check("ordinary themes unchanged by the floor", ThemeLogic.build([base, graphite], "dark", {}, { transparency: { dark: 49 } }).tokens.materials.bar.opacity === plain.materials.bar.opacity);
 
         Config.set("appearance.foreground.dark", "#ABCDEF");
@@ -363,21 +373,28 @@ ShellRoot {
         setGlass("materials.blur", 0);
         Theme.rebuild();
         check("blur 0 turns blur off everywhere", Theme.materials.launcher.blur === 0 && Theme.materials.launcher.blurMask === 0);
-        // Glass groups: linked (default) = the shared values everywhere;
-        // unlinked, a group's own values where set.
+        // Glass groups: linked (default) = the shared blur and colour
+        // everywhere; unlinked, a group's own values where set. A group's
+        // own transparency applies either way.
         setGlass("materials.blur", 40);
         setGlass("materials.transparency", 50);
         setGlass("materials.bar.transparency", 10);
         setGlass("materials.panels.blur", false);
         Config.set("materials.controlButtons.tint.dark", "#223344");
         Theme.rebuild();
-        check("linked: own group values are ignored", Theme.materials.bar.transparency === 50 && Theme.materials.launcher.blur === 40 && !Theme.materials.bar.custom && Theme.materials.controlButtons.fill === Theme.color.controlFill);
+        check("linked: own blur and colour are ignored, own transparency applies", Theme.materials.bar.transparency === 10 && Theme.materials.dock.transparency === 50 && Theme.materials.launcher.blur === 40 && Theme.materials.controlButtons.fill === Theme.color.controlFill, Theme.materials.bar.transparency);
+        setGlass("materials.panels.transparency", 30);
+        setGlass("materials.dock.transparency", 80);
+        Theme.rebuild();
+        check("the dock has its own glass group", Theme.materials.dock.transparency === 80 && Theme.materials.launcher.transparency === 30, [Theme.materials.dock.transparency, Theme.materials.launcher.transparency]);
+        Config.resetKeys(["materials.panels.transparency", "materials.dock.transparency"]);
         Config.set("materials.linked", false);
         Theme.rebuild();
         check("unlinked: each group its own, else the shared value", Theme.materials.bar.transparency === 10 && Theme.materials.bar.custom && Theme.materials.dock.transparency === 50 && Theme.materials.controlCenter.blur === 0 && Theme.materials.launcher.blur === 0 && Theme.materials.widgets.blur === 40, [Theme.materials.bar.transparency, Theme.materials.controlCenter.blur]);
         check("control center buttons get their own fill", Theme.materials.controlButtons.custom && String(Theme.materials.controlButtons.fill).toUpperCase().endsWith("223344"), Theme.materials.controlButtons.fill);
         check("widgets start as the bar glass", Theme.materials.widgets.transparency === 50 && !Theme.materials.widgets.custom);
         Config.resetSection("materials");
+        Config.resetKeys(["materials.bar.transparency"]);
         Config.set("appearance.accent.dark", "#FF8800");
         Config.set("materials.tint.dark", "#112233");
         Config.set("materials.tint.light", "#DDEEFF");

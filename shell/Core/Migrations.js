@@ -265,6 +265,30 @@ const steps = {
         }
         doc.version = 12;
         return doc;
+    },
+    // 12 → 13: the dock has its own glass group (it followed Panels and
+    // menus), and a group's own transparency applies even with Same glass
+    // everywhere on, so values that were inactive then are dropped. Same as
+    // bifrostctl migrate.
+    12: function (doc) {
+        const m = (doc.values || {}).materials;
+        if (m && typeof m === "object") {
+            if (m.linked !== false)
+                for (const g of ["bar", "widgets", "panels", "controlButtons", "windows"])
+                    if (m[g] && typeof m[g] === "object")
+                        delete m[g].transparency;
+            const p = m.panels;
+            if (p && typeof p === "object" && !m.dock) {
+                const d = {};
+                for (const k of ["transparency", "blur", "tint"])
+                    if (k in p)
+                        d[k] = JSON.parse(JSON.stringify(p[k]));
+                if (Object.keys(d).length)
+                    m.dock = d;
+            }
+        }
+        doc.version = 13;
+        return doc;
     }
 };
 

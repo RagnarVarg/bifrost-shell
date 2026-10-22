@@ -83,9 +83,10 @@ function clamp(v, lo, hi) {
 const glassGroups = {
     bar: ["bar"],
     widgets: ["widgets"],
+    dock: ["dock"],
     // The control center grows out of its bar button, so it has no glass
     // group of its own (on its own it is a panel).
-    panels: ["panel", "dock", "popover", "tooltip", "osd", "lock", "launcher", "notifications", "controlCenter"],
+    panels: ["panel", "popover", "tooltip", "osd", "lock", "launcher", "notifications", "controlCenter"],
     controlButtons: ["controlButtons"],
     windows: ["settings", "settingsGroups"]
 };
@@ -98,7 +99,8 @@ function groupOf(material) {
 }
 
 // The glass values a group uses: the shared ones while materials.linked is
-// on (the default), else its own where set. A group's blur is on/off; the
+// on (the default), else its own where set. Its own transparency (set on the
+// panel's, dock's or control center's page) applies either way. A group's blur is on/off; the
 // strength is always the shared amount. `custom` = it differs from the
 // shared glass (it then has its own shape where it would join another).
 // Same in bifrostctl (group_glass).
@@ -109,7 +111,7 @@ function groupGlass(s, group, variant) {
     const own = s.linked === false ? (s[group] || {}) : {};
     const sharedBlur = pick(s.blur);
     const shared = typeof sharedBlur === "number" ? sharedBlur : 20;
-    const ownT = pick(own.transparency), ownB = pick(own.blur);
+    const ownT = pick((s[group] || {}).transparency), ownB = pick(own.blur);
     const tint = Object.assign({}, s.tint || {});
     for (const v of ["light", "dark"])
         if (own.tint && typeof own.tint[v] === "string")
@@ -173,6 +175,7 @@ function applyMaterial(m, s, glass, name, variant) {
 // glass, so a material is made at least as opaque as muted text needs to
 // read (contrast >= minContrast) over the generated theme's estimate of the
 // picture (wallpaper.backdrop). Ordinary themes have no backdrop: unchanged.
+// A chosen transparency eases this floor (fully at Standard, none at 100 %).
 function contrast(a, b) {
     const la = luminance(a), lb = luminance(b);
     return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
@@ -289,10 +292,12 @@ function build(chain, variant, app, materials) {
     // buttons as the panel glass.
     t.materials.widgets = L.clone(t.materials.bar);
     t.materials.controlButtons = L.clone(t.materials.panel);
+    const chosen = {};
     for (const k in t.materials) {
         const g = groupGlass(materials, groupOf(k), variant);
         applyMaterial(t.materials[k], g, t.glass, k, variant);
         t.materials[k].custom = g.custom;
+        chosen[k] = g.transparency;
     }
     const backdrop = (t.wallpaper || {}).backdrop;
     const muted = t.palette.textMuted;
@@ -302,7 +307,10 @@ function build(chain, variant, app, materials) {
             // These lie on another glass, not on the wallpaper.
             if (k === "settingsGroups" || k === "controlButtons" || !/^#[0-9a-fA-F]{6}$/.test(m.tint))
                 continue;
-            const floor = readableOpacity(m, backdrop, muted, t.wallpaper.minContrast || 4.5);
+            // A transparency the user chose eases the floor in step: none
+            // left at 100 %, so fully clear stays fully clear.
+            const ease = typeof chosen[k] === "number" ? 1 - clamp(chosen[k], 0, 100) / 100 : 1;
+            const floor = m.opacity + (readableOpacity(m, backdrop, muted, t.wallpaper.minContrast || 4.5) - m.opacity) * ease;
             if (floor > m.opacity) {
                 m.opacity = Math.round(floor * 100) / 100;
                 m.fill = withAlpha(m.tint, m.opacity);
