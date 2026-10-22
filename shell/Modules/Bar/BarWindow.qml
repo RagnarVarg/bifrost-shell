@@ -146,11 +146,13 @@ PanelWindow {
     implicitWidth: thickness
     // The bar reserves its space whenever it is shown, also when auto-hiding:
     // tiled windows shrink as it slides in and grow back when it hides.
+    // bar.autohide.reveal "overlay": an auto-hiding bar never reserves, it
+    // lies over the windows.
     // Assigning exclusiveZone switches Quickshell to ExclusionMode.Normal, so
     // "no reservation" must be a zone of 0, not just ExclusionMode.Ignore.
     // A frame takes -1: it covers the whole screen, the FrameReserve zones
     // included, where 0 would place it inside them (inset by its own frame).
-    readonly property bool reserve: RunMode.reservesScreenSpace && !frame && (!cfg.autohide.enabled || revealed)
+    readonly property bool reserve: RunMode.reservesScreenSpace && !frame && (!cfg.autohide.enabled || (revealed && cfg.autohide.reveal !== "overlay"))
     exclusionMode: reserve ? ExclusionMode.Normal : ExclusionMode.Ignore
     exclusiveZone: reserve ? barHeight + margin : frame ? -1 : 0
 

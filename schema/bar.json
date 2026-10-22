@@ -262,6 +262,28 @@
       "description": "The bar hides and takes no space; tiled windows cover the whole screen"
     },
     {
+      "key": "bar.autohide.reveal",
+      "type": "enum",
+      "default": "push",
+      "options": [
+        "push",
+        "overlay"
+      ],
+      "optionLabels": {
+        "push": "Windows make room",
+        "overlay": "Over the windows"
+      },
+      "label": "When the bar appears",
+      "description": "Windows make room = tiled windows shrink while the bar is shown and grow back when it hides. Over the windows = the bar lies on top and the windows keep their size",
+      "group": "behavior",
+      "scope": "shell",
+      "apply": "live",
+      "dependsOn": "bar.autohide.enabled",
+      "dependsOnValue": {
+        "bar.layout": "bar"
+      }
+    },
+    {
       "key": "bar.autohide.smart",
       "type": "bool",
       "default": true,
