@@ -83,10 +83,9 @@ function clamp(v, lo, hi) {
 const glassGroups = {
     bar: ["bar"],
     widgets: ["widgets"],
-    dock: ["dock"],
     // The control center grows out of its bar button, so it has no glass
     // group of its own (on its own it is a panel).
-    panels: ["panel", "popover", "tooltip", "osd", "lock", "launcher", "notifications", "controlCenter"],
+    panels: ["panel", "dock", "popover", "tooltip", "osd", "lock", "launcher", "notifications", "controlCenter"],
     controlButtons: ["controlButtons"],
     windows: ["settings", "settingsGroups"]
 };
@@ -99,8 +98,7 @@ function groupOf(material) {
 }
 
 // The glass values a group uses: the shared ones while materials.linked is
-// on (the default), else its own where set. Its own transparency (set on the
-// panel's, dock's or control center's page) applies either way. A group's blur is on/off; the
+// on (the default), else its own where set. A group's blur is on/off; the
 // strength is always the shared amount. `custom` = it differs from the
 // shared glass (it then has its own shape where it would join another).
 // Same in bifrostctl (group_glass).
@@ -111,7 +109,7 @@ function groupGlass(s, group, variant) {
     const own = s.linked === false ? (s[group] || {}) : {};
     const sharedBlur = pick(s.blur);
     const shared = typeof sharedBlur === "number" ? sharedBlur : 20;
-    const ownT = pick((s[group] || {}).transparency), ownB = pick(own.blur);
+    const ownT = pick(own.transparency), ownB = pick(own.blur);
     const tint = Object.assign({}, s.tint || {});
     for (const v of ["light", "dark"])
         if (own.tint && typeof own.tint[v] === "string")

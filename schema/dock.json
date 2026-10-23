@@ -168,21 +168,6 @@
       "group": "appearance"
     },
     {
-      "key": "materials.dock.transparency",
-      "type": "int",
-      "default": null,
-      "nullable": true,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "label": "Transparency",
-      "description": "0 % = solid, 100 % = fully clear. Empty = the value under Glass & transparency",
-      "group": "appearance",
-      "nullLabel": "Glass & transparency",
-      "inherit": "materials.dock.transparency",
-      "perMode": true
-    },
-    {
       "key": "dock.trash.enabled",
       "type": "bool",
       "default": false,

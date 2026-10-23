@@ -54,7 +54,7 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-FORMAT_VERSION = 13
+FORMAT_VERSION = 12
 NULLABLE_TYPES = {"bool", "int", "real", "color", "string", "font", "icon", "path"}
 APPLY_MODES = {"live", "reload", "restart"}
 SCOPES = {"shell", "hyprland", "system"}
@@ -888,22 +888,6 @@ def migrate(doc):
             tiling = vals.setdefault("hyprland", {}).setdefault("tiling", {})
             tiling.setdefault("resizeOnBorder", x)
         v = 12
-    if v == 12:
-        # The dock has its own glass group (it followed Panels and menus); a
-        # group's own transparency applies even with Same glass everywhere on,
-        # so values that were inactive then are dropped.
-        m = doc.setdefault("values", {}).get("materials")
-        if isinstance(m, dict):
-            if m.get("linked") is not False:
-                for g in ("bar", "widgets", "panels", "controlButtons", "windows"):
-                    if isinstance(m.get(g), dict):
-                        m[g].pop("transparency", None)
-            p = m.get("panels")
-            if isinstance(p, dict) and not m.get("dock"):
-                d = {k: json.loads(json.dumps(p[k])) for k in ("transparency", "blur", "tint") if k in p}
-                if d:
-                    m["dock"] = d
-        v = 13
     doc["version"] = v
     return doc
 
@@ -1889,9 +1873,9 @@ def blur_amount(x) -> float:
 
 # Bifrost's layer namespaces that get compositor blur, and the glass group
 # (Glass & transparency, ThemeLogic.glassGroups) whose blur each follows.
-BLUR_NAMESPACES = {"bar": "bar", "dock": "dock", "launcher": "panels", "power": "panels", "controlcenter": "panels",
+BLUR_NAMESPACES = {"bar": "bar", "dock": "panels", "launcher": "panels", "power": "panels", "controlcenter": "panels",
                    "notifications": "panels", "notificationcenter": "panels", "prompt": "panels", "osd": "panels", "overview": "panels"}
-GLASS_GROUPS = ("bar", "widgets", "dock", "panels", "controlButtons", "windows")
+GLASS_GROUPS = ("bar", "widgets", "panels", "controlButtons", "windows")
 
 
 def per_mode(x, variant):
@@ -1902,11 +1886,11 @@ def per_mode(x, variant):
 def group_glass(cfg, group, variant=None):
     """ThemeLogic.groupGlass: a group's transparency and blur amount in the
     mode shown — the shared values while materials.linked is on, else its
-    own where set. Its own transparency applies either way."""
+    own where set."""
     variant = variant or effective_variant(cfg)
     v = lambda k: per_mode(deep_get(cfg.values, k)[0], variant)
     linked = deep_get(cfg.values, "materials.linked")[0] is not False
-    own_t = v(f"materials.{group}.transparency")
+    own_t = None if linked else v(f"materials.{group}.transparency")
     own_b = None if linked else v(f"materials.{group}.blur")
     shared = blur_amount(v("materials.blur"))
     blur = 0 if own_b is False else (shared if shared > 0 else 20) if own_b is True else shared
